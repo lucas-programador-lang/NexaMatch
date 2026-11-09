@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusDate</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="logo">NEXA<span>MATCH</span></div>
+        <nav>
+            <a href="#" class="active">Descobrir</a>
+            <a href="#">Meus Matches</a>
+            <a href="#">Mensagens</a>
+            <a href="#">Meu Perfil</a>
+        </nav>
+    </header>
+
+    <main>
+        <div class="controls">
+            <h1>Mural de Conexões</h1>
+            <select id="location-filter">
+                <option value="all">Todo o Brasil</option>
+                <option value="ro">Porto Velho, RO</option>
+            </select>
+        </div>
+
+        <!-- O JavaScript vai inserir os cards aqui dentro -->
+        <div id="profiles-grid" class="grid"></div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
