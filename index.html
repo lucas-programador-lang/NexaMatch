@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexaMatch</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Só entra quem estiver logado; senão vai para o login -->
+    <script src="auth.js"></script>
+    <script>Auth.requireAuth("login.html");</script>
 </head>
 <body>
     <header>
