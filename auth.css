@@ -1,0 +1,73 @@
+/* NexaMatch — telas de login e cadastro (usa as variáveis do style.css) */
+body.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+}
+
+.auth-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 26rem;
+    padding: 2rem 1.8rem;
+    background: var(--card-bg);
+    backdrop-filter: blur(22px) saturate(170%);
+    -webkit-backdrop-filter: blur(22px) saturate(170%);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg), var(--glow-violet);
+}
+
+.auth-card .logo { margin-bottom: 1.4rem; font-size: 1.35rem; }
+.auth-card h1 { font-family: var(--font-display); font-size: 1.6rem; margin-bottom: 0.25rem; }
+.auth-card .sub { color: var(--text-muted); margin-bottom: 1.2rem; font-size: 0.95rem; }
+
+.auth-card label.field-label {
+    display: block;
+    margin: 0.9rem 0 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.auth-card input[type=text],
+.auth-card input[type=email],
+.auth-card input[type=password] {
+    width: 100%;
+    padding: 0.8rem 0.9rem;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.9rem;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-card input:focus {
+    outline: none;
+    border-color: var(--violet);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+}
+
+.auth-card .remember {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.auth-card .btn-primary { width: 100%; margin-top: 1.4rem; }
+.auth-card .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.auth-card .message { margin-top: 1rem; padding: 0.65rem 0.8rem; border-radius: 0.8rem; font-size: 0.9rem; }
+.auth-card .message[hidden] { display: none; }
+.auth-card .message.error { background: rgba(255, 79, 163, 0.16); color: #ffb3d6; border: 1px solid rgba(255, 79, 163, 0.4); }
+.auth-card .message.success { background: rgba(45, 226, 245, 0.14); color: #a5f3fc; border: 1px solid rgba(45, 226, 245, 0.4); }
+
+.auth-card .alt { text-align: center; margin-top: 1.3rem; font-size: 0.9rem; color: var(--text-muted); }
+.auth-card .alt a { color: var(--cyan); font-weight: 600; text-decoration: none; }
+.auth-card .alt a:hover { text-decoration: underline; }
