@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro - NexaMatch</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="auth.css">
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <div class="logo">NEXA<span>MATCH</span></div>
+    <h1>Criar conta</h1>
+    <p class="sub">Junte-se ao NexaMatch</p>
+
+    <form id="register-form" novalidate>
+      <label class="field-label" for="name">Nome</label>
+      <input type="text" id="name" name="name" autocomplete="name" required />
+
+      <label class="field-label" for="email">E-mail</label>
+      <input type="email" id="email" name="email" autocomplete="email" required />
+
+      <label class="field-label" for="password">Senha (mín. 6 caracteres)</label>
+      <input type="password" id="password" name="password" autocomplete="new-password" required />
+
+      <label class="field-label" for="confirmPassword">Confirmar senha</label>
+      <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" required />
+
+      <button type="submit" class="btn-primary">Cadastrar</button>
+      <div id="form-message" class="message" hidden></div>
+    </form>
+
+    <p class="alt">Já tem conta? <a href="login.html">Entrar</a></p>
+  </main>
+
+  <script src="auth.js"></script>
+</body>
+</html>
