@@ -165,6 +165,11 @@ const currentUser = window.Auth ? Auth.getCurrentUser() : null;
 if (!myProfile.name && currentUser && currentUser.name) {
     myProfile.name = currentUser.name.slice(0, 40);
 }
+// Idade vem da data de nascimento informada no cadastro
+if (!myProfile.age && currentUser && currentUser.birthDate && window.Auth) {
+    const accountAge = Auth.ageFromBirthDate(currentUser.birthDate);
+    if (accountAge >= 18 && accountAge <= 99) myProfile.age = accountAge;
+}
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
 
