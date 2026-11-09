@@ -1799,27 +1799,21 @@ select:focus-visible {
 }
 
 .me-banner {
-    height: 9.5rem;
+    height: 11rem;
     background:
-        repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 22px),
-        radial-gradient(22rem 12rem at 8% 10%, rgba(45, 226, 245, 0.85), transparent 70%),
-        radial-gradient(24rem 14rem at 92% 0%, rgba(255, 79, 163, 0.80), transparent 70%),
-        linear-gradient(120deg, #4c1d95, #8b5cf6 50%, #0e7490);
-    background-size: auto, 140% 140%, 140% 140%, auto;
+        radial-gradient(22rem 11rem at 10% 20%, rgba(45, 226, 245, 0.80), transparent 70%),
+        radial-gradient(24rem 12rem at 90% 10%, rgba(255, 79, 163, 0.72), transparent 70%),
+        radial-gradient(26rem 12rem at 50% 0%, rgba(139, 92, 246, 0.95), transparent 75%);
+    background-size: 140% 140%, 140% 140%, 120% 120%;
+    /* some devagar para dentro do cartão, sem nenhuma linha de corte */
+    -webkit-mask-image: linear-gradient(#000 25%, transparent 100%);
+    mask-image: linear-gradient(#000 25%, transparent 100%);
     animation: meBanner 14s ease-in-out infinite alternate;
 }
 
-.me-banner::after {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 9.5rem;
-    background: linear-gradient(transparent 40%, rgba(14, 18, 38, 0.9));
-}
-
 @keyframes meBanner {
-    0%   { background-position: 0 0, 0% 0%, 100% 0%, 0 0; }
-    100% { background-position: 0 0, 100% 60%, 0% 80%, 0 0; }
+    0%   { background-position: 0% 0%, 100% 0%, 50% 0%; }
+    100% { background-position: 100% 60%, 0% 80%, 20% 30%; }
 }
 
 .me-hero-body {
@@ -1829,7 +1823,7 @@ select:focus-visible {
     align-items: flex-end;
     gap: 1.4rem;
     padding: 0 1.8rem;
-    margin-top: -4.6rem;
+    margin-top: -5.2rem;
 }
 
 .me-avatar-wrap {
