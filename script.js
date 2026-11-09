@@ -45,32 +45,50 @@ function renderProfiles() {
 function handleLike(id) {
     if (!likedProfiles.has(id)) {
         likedProfiles.add(id);
-        console.log(`Você curtiu o perfil ID: ${id}`);
         renderProfiles(); 
     }
 }
 
-// Controla o botão de "Ver Perfil"
+// Abre a janela modal com os detalhes do perfil
 function viewProfile(id) {
-    alert(`Abrindo detalhes do perfil ${id}`);
+    const profile = profiles.find(p => p.id === id);
+    if (!profile) return;
+
+    const modal = document.getElementById('profile-modal');
+    const modalBody = document.getElementById('modal-body');
+    const isLiked = likedProfiles.has(id);
+
+    modalBody.innerHTML = `
+        <img src="${profile.photo}" alt="Foto de ${profile.name}" class="modal-body-img">
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">${profile.name} <span style="color: var(--text-muted); font-size: 1.2rem;">${profile.age}</span></h2>
+        <p style="color: var(--gold); font-weight: 500; margin-bottom: 1rem;">📍 ${profile.location}</p>
+        <p style="color: var(--text-main); line-height: 1.5; margin-bottom: 1.5rem;">${profile.bio}</p>
+        
+        <button class="btn-like ${isLiked ? 'liked' : ''}" style="width: 100%; padding: 0.75rem; font-size: 1rem;" onclick="handleLike('${profile.id}'); closeModal();">
+            ${isLiked ? '✔ Perfil Curtido' : '❤ Curtir Perfil'}
+        </button>
+    `;
+
+    modal.style.display = 'flex';
+}
+
+// Fecha a janela modal
+function closeModal() {
+    document.getElementById('profile-modal').style.display = 'none';
 }
 
 // Controla a navegação entre as telas no Menu Superior
 function changePage(pageId, element) {
-    // Remove a marcação de ativo de todos os links
     document.querySelectorAll('nav a').forEach(link => {
         link.classList.remove('active');
     });
     
-    // Marca o link clicado como ativo
     element.classList.add('active');
 
-    // Esconde todo o conteúdo das páginas
     document.querySelectorAll('.page-content').forEach(page => {
         page.style.display = 'none';
     });
     
-    // Mostra apenas a página selecionada
     document.getElementById('page-' + pageId).style.display = 'block';
 }
 
