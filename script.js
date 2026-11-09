@@ -162,7 +162,6 @@ function saveMyProfile() {
 let myProfile = loadMyProfile();
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
-let draftInterestedIn = [...myProfile.interestedIn]; // gêneros de interesse em edição
 
 const likedProfiles = loadLikes();
 const reciprocated = loadReciprocated();
@@ -205,17 +204,38 @@ const getPending = () => [...likedProfiles].map(findProfile).filter(p => p && !l
 const visibleProfiles = () => profiles.filter(profile => myProfile.interestedIn.includes(profile.gender));
 
 function updateDiscoverFilter() {
-    const note = document.getElementById('discover-filter');
-    if (!note) return;
+    const box = document.getElementById('discover-filter');
+    if (!box) return;
 
-    const selected = GENDERS.filter(g => myProfile.interestedIn.includes(g.id)).map(g => g.label);
-    const text = selected.length === GENDERS.length
-        ? 'Todos os gêneros'
-        : selected.length > 1
-            ? selected.slice(0, -1).join(', ') + ' e ' + selected[selected.length - 1]
-            : selected[0];
+    const all = myProfile.interestedIn.length === GENDERS.length;
+    const chip = (label, on, action) =>
+        `<button type="button" class="gender-chip ${on ? 'on' : ''}" aria-pressed="${on}" onclick="${action}">${label}</button>`;
 
-    note.innerHTML = `Mostrando: <strong>${text}</strong> <button type="button" class="link-btn" onclick="goToMyProfile()">Alterar</button>`;
+    box.innerHTML = chip('Todos', all, 'selectAllGenders()') + GENDERS
+        .map(g => chip(g.label, !all && myProfile.interestedIn.includes(g.id), `toggleDiscoverGender('${g.id}')`))
+        .join('');
+}
+
+// Com "Todos" ativo, tocar em um gênero mostra só ele; depois dá para combinar
+function toggleDiscoverGender(id) {
+    const current = myProfile.interestedIn;
+    let next;
+
+    if (current.length === GENDERS.length) next = [id];
+    else if (current.includes(id)) next = current.filter(g => g !== id);
+    else next = [...current, id];
+
+    setGenderFilter(next.length ? next : [...ALL_GENDER_IDS]);
+}
+
+function selectAllGenders() {
+    setGenderFilter([...ALL_GENDER_IDS]);
+}
+
+function setGenderFilter(list) {
+    myProfile.interestedIn = list;
+    saveMyProfile();
+    renderProfiles();
 }
 
 function renderProfiles() {
@@ -229,8 +249,8 @@ function renderProfiles() {
         grid.innerHTML = `
             <div class="empty-state">
                 <h2>Nenhum perfil para esse filtro</h2>
-                <p>Não há ninguém disponível para os gêneros que você escolheu. Você pode mudar isso no seu perfil.</p>
-                <button class="btn-primary" onclick="goToMyProfile()">Alterar preferência</button>
+                <p>Ainda não há ninguém disponível para esse filtro.</p>
+                <button class="btn-primary" onclick="selectAllGenders()">Mostrar todos</button>
             </div>
         `;
         return;
@@ -562,13 +582,6 @@ function goToMatches() {
     currentProfileId = null;
     showPage('matches');
     setActiveNav(1);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function goToMyProfile() {
-    currentProfileId = null;
-    showPage('perfil');
-    setActiveNav(NAV_INDEX.perfil);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1058,18 +1071,6 @@ function renderMyProfile() {
                     <div class="chips" id="me-interests"></div>
                 </div>
 
-                <div class="field">
-                    <span>Tenho interesse em <small>aparece no Descobrir</small></span>
-                    <div class="gender-options">
-                        ${GENDERS.map(g => `
-                            <label class="gender-option">
-                                <input type="checkbox" value="${g.id}" ${draftInterestedIn.includes(g.id) ? 'checked' : ''}
-                                       onchange="toggleGender('${g.id}', this.checked)">
-                                <span>${g.label}</span>
-                            </label>`).join('')}
-                    </div>
-                </div>
-
                 <div class="me-form-actions">
                     <button type="submit" class="btn-primary">Salvar perfil</button>
                 </div>
@@ -1181,13 +1182,6 @@ function interestKey(event) {
     addInterest();
 }
 
-// ----- Gêneros de interesse -----
-function toggleGender(id, checked) {
-    draftInterestedIn = checked
-        ? [...new Set([...draftInterestedIn, id])]
-        : draftInterestedIn.filter(g => g !== id);
-}
-
 // ----- Foto -----
 // Recorta em quadrado e reduz, para caber no armazenamento do navegador
 function handlePhotoUpload(event) {
@@ -1251,16 +1245,11 @@ function saveProfileForm(event) {
         return;
     }
 
-    if (!draftInterestedIn.length) {
-        showToast('Escolha pelo menos um gênero de interesse.');
-        return;
-    }
-
     myProfile = {
         name, age, location, bio,
         interests: [...draftInterests],
         photo: draftPhoto,
-        interestedIn: [...draftInterestedIn]
+        interestedIn: [...myProfile.interestedIn]
     };
 
     if (saveMyProfile()) {
