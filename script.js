@@ -16,7 +16,8 @@ const profiles = [
         bio: 'Designer UX em busca de novas conexões.',
         interests: ['Design', 'Fotografia', 'Música', 'Viagens'],
         photo: 'https://i.pravatar.cc/800?img=11',
-        likesYou: false
+        likesYou: false,
+        likesBackAfter: 8000   // simulação: curte você de volta 8s depois que você curtir
     },
     {
         id: '3', name: 'Beatriz', age: 22, location: 'Curitiba, PR',
@@ -30,7 +31,8 @@ const profiles = [
         bio: 'Focado em cloud computing e esportes radicais.',
         interests: ['Cloud', 'Esportes radicais', 'Trilhas', 'Tecnologia'],
         photo: 'https://i.pravatar.cc/800?img=12',
-        likesYou: false
+        likesYou: false,
+        likesBackAfter: 15000  // simulação: curte você de volta 15s depois que você curtir
     }
 ];
 
@@ -74,7 +76,52 @@ function saveMessages() {
     }
 }
 
+// ---------- Quem curtiu de volta (salvo no navegador) ----------
+const RECIPROCATED_KEY = 'nexamatch:reciprocated';
+
+function loadReciprocated() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(RECIPROCATED_KEY) || '[]');
+        return new Set(saved.filter(id => profiles.some(p => p.id === id)));
+    } catch (error) {
+        return new Set();
+    }
+}
+
+function saveReciprocated() {
+    try {
+        localStorage.setItem(RECIPROCATED_KEY, JSON.stringify([...reciprocated]));
+    } catch (error) {
+        // sem armazenamento disponível: segue só na memória
+    }
+}
+
+// ---------- Notificações (salvas no navegador) ----------
+// type: 'like'  = alguém curtiu você
+//       'match' = deu match (você sabe exatamente quem foi)
+const NOTIFICATIONS_KEY = 'nexamatch:notifications';
+
+function loadNotifications() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
+        return Array.isArray(saved) ? saved.filter(n => profiles.some(p => p.id === n.profileId)) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveNotifications() {
+    try {
+        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
+    } catch (error) {
+        // sem armazenamento disponível: segue só na memória
+    }
+}
+
 const likedProfiles = loadLikes();
+const reciprocated = loadReciprocated();
+let notifications = loadNotifications();
+const likeBackTimers = {};
 const messageStore = loadMessages();
 const grid = document.getElementById('profiles-grid');
 const detail = document.getElementById('profile-detail');
@@ -82,6 +129,8 @@ const matchesContent = document.getElementById('matches-content');
 const matchesBadge = document.getElementById('matches-badge');
 const messagesContent = document.getElementById('messages-content');
 const messagesBadge = document.getElementById('messages-badge');
+const notificationsContent = document.getElementById('notifications-content');
+const notificationsBadge = document.getElementById('notifications-badge');
 const toast = document.getElementById('toast');
 let currentProfileId = null; // perfil aberto na página de detalhe
 let previousPage = 'descobrir'; // de onde a pessoa veio (para o botão Voltar)
@@ -99,9 +148,11 @@ function escapeHtml(text) {
 }
 
 const findProfile = id => profiles.find(p => p.id === id);
-const isMatch = id => likedProfiles.has(id) && Boolean(findProfile(id)?.likesYou);
-const getMatches = () => [...likedProfiles].map(findProfile).filter(p => p && p.likesYou);
-const getPending = () => [...likedProfiles].map(findProfile).filter(p => p && !p.likesYou);
+// A pessoa curte você desde o início ou curtiu de volta depois
+const likesYouNow = profile => Boolean(profile && (profile.likesYou || reciprocated.has(profile.id)));
+const isMatch = id => likedProfiles.has(id) && likesYouNow(findProfile(id));
+const getMatches = () => [...likedProfiles].map(findProfile).filter(p => p && likesYouNow(p));
+const getPending = () => [...likedProfiles].map(findProfile).filter(p => p && !likesYouNow(p));
 
 // ---------- Mural (Descobrir) ----------
 function renderProfiles() {
@@ -217,7 +268,9 @@ function refreshAll() {
     renderProfiles();
     renderMatches();
     renderMessages();
+    renderNotifications();
     updateBadge();
+    updateNotificationsBadge();
     if (currentProfileId) renderProfileDetail(currentProfileId);
 }
 
@@ -255,18 +308,49 @@ function handleLike(id) {
     likedProfiles.add(id);
     saveLikes();
 
-    // Quando dá match, a outra pessoa puxa assunto
-    if (profile.likesYou && !(messageStore.threads[id] || []).length) {
-        addMessage(id, 'them', `Oi! Vi que a gente curte ${profile.interests[0].toLowerCase()}. Como foi seu dia?`, true);
+    const matched = likesYouNow(profile);
+
+    if (matched) {
+        // a pessoa já curtia você: dá match na hora
+        startMatch(profile, true);
+    } else {
+        // simulação: algumas pessoas curtem de volta depois de um tempo
+        scheduleLikeBack(profile);
     }
 
     refreshAll();
 
-    if (profile.likesYou) {
+    if (matched) {
         showToast(`Deu match com ${profile.name}!`, 'Ver matches', goToMatches);
     } else {
         showToast(`Você curtiu ${profile.name}. Agora é esperar a resposta.`);
     }
+}
+
+// Registra o match: aviso com o nome da pessoa e conversa liberada
+function startMatch(profile, readNow) {
+    if (!(messageStore.threads[profile.id] || []).length) {
+        addMessage(profile.id, 'them', `Oi! Vi que a gente curte ${profile.interests[0].toLowerCase()}. Como foi seu dia?`, true);
+    }
+    addNotification('match', profile.id, readNow);
+    markNotificationRead('like', profile.id);
+}
+
+// Simulação: a pessoa curte você de volta depois de alguns segundos
+function scheduleLikeBack(profile) {
+    if (!profile.likesBackAfter || likesYouNow(profile) || likeBackTimers[profile.id]) return;
+
+    likeBackTimers[profile.id] = setTimeout(() => {
+        delete likeBackTimers[profile.id];
+        if (!likedProfiles.has(profile.id)) return; // você cancelou a curtida
+
+        reciprocated.add(profile.id);
+        saveReciprocated();
+        startMatch(profile, false);
+        refreshAll();
+
+        showToast(`${profile.name} curtiu você de volta. Deu match!`, 'Ver aviso', goToNotifications);
+    }, profile.likesBackAfter);
 }
 
 function removeLike(id) {
@@ -276,12 +360,20 @@ function removeLike(id) {
     likedProfiles.delete(id);
     saveLikes();
 
+    clearTimeout(likeBackTimers[id]);
+    delete likeBackTimers[id];
+
     // Sem match, sem conversa
     delete messageStore.threads[id];
     delete messageStore.unread[id];
     saveMessages();
     if (currentChatId === id) currentChatId = null;
     if (typingFor === id) typingFor = null;
+
+    // o aviso de match some; se a pessoa ainda curte você, volta o aviso de curtida
+    notifications = notifications.filter(n => !(n.type === 'match' && n.profileId === id));
+    saveNotifications();
+    syncIncomingLikes();
 
     refreshAll();
     showToast(profile ? `Curtida em ${profile.name} desfeita.` : 'Curtida desfeita.');
@@ -363,11 +455,12 @@ function viewProfile(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-const NAV_INDEX = { descobrir: 0, matches: 1, mensagens: 2 };
+const NAV_INDEX = { descobrir: 0, matches: 1, mensagens: 2, notificacoes: 3, perfil: 4 };
 
 function backLabel() {
     if (previousPage === 'matches') return 'Voltar aos matches';
     if (previousPage === 'mensagens') return 'Voltar à conversa';
+    if (previousPage === 'notificacoes') return 'Voltar aos avisos';
     return 'Ver outros perfis';
 }
 
@@ -394,6 +487,15 @@ function goToMatches() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function goToNotifications() {
+    currentProfileId = null;
+    showPage('notificacoes');
+    setActiveNav(NAV_INDEX.notificacoes);
+    renderNotifications();
+    markAllNotificationsRead();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // Controla a navegação entre as telas no Menu
 function changePage(pageId, element) {
     currentProfileId = null;
@@ -409,6 +511,106 @@ function changePage(pageId, element) {
         renderMessages();
         scrollThreadToEnd();
     }
+
+    if (pageId === 'notificacoes') {
+        // mostra o que é novo em destaque e só depois marca como lido
+        renderNotifications();
+        markAllNotificationsRead();
+    }
+}
+
+
+// ==========================================================
+// Notificações — quem curtiu você e quem deu match
+// ==========================================================
+const unreadNotifications = () => notifications.filter(n => !n.read).length;
+
+// Cria o aviso (sem repetir o mesmo aviso para a mesma pessoa)
+function addNotification(type, profileId, read = false) {
+    if (notifications.some(n => n.type === type && n.profileId === profileId)) return false;
+    notifications.unshift({ type, profileId, time: Date.now(), read });
+    saveNotifications();
+    return true;
+}
+
+function markNotificationRead(type, profileId) {
+    notifications.forEach(n => {
+        if (n.type === type && n.profileId === profileId) n.read = true;
+    });
+    saveNotifications();
+}
+
+function markAllNotificationsRead() {
+    if (!unreadNotifications()) return;
+    notifications.forEach(n => { n.read = true; });
+    saveNotifications();
+    updateNotificationsBadge();
+}
+
+function updateNotificationsBadge() {
+    if (!notificationsBadge) return;
+    const total = unreadNotifications();
+    notificationsBadge.textContent = total > 0 ? total : '';
+}
+
+// Quem já curte você aparece nos avisos, mesmo antes de você curtir de volta
+function syncIncomingLikes() {
+    profiles.forEach(profile => {
+        if (profile.likesYou && !likedProfiles.has(profile.id)) {
+            addNotification('like', profile.id, false);
+        }
+    });
+}
+
+function formatNotificationTime(timestamp) {
+    const date = new Date(timestamp);
+    const sameDay = date.toDateString() === new Date().toDateString();
+    return sameDay
+        ? formatTime(timestamp)
+        : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
+
+function renderNotifications() {
+    if (!notificationsContent) return;
+
+    // some o aviso de "curtiu você" quando você já curtiu de volta
+    const items = notifications
+        .map(n => ({ n, profile: findProfile(n.profileId) }))
+        .filter(({ n, profile }) => profile && !(n.type === 'like' && likedProfiles.has(n.profileId)))
+        .sort((a, b) => b.n.time - a.n.time);
+
+    if (!items.length) {
+        notificationsContent.innerHTML = `
+            <div class="empty-state">
+                <h2>Nenhum aviso por enquanto</h2>
+                <p>Quando alguém curtir você ou der match, o nome e a foto da pessoa aparecem aqui.</p>
+                <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
+            </div>
+        `;
+        return;
+    }
+
+    notificationsContent.innerHTML = '<div class="pending-list">' + items.map(({ n, profile }) => {
+        const isMatchNote = n.type === 'match';
+        const text = isMatchNote
+            ? `Deu match com <strong>${profile.name}</strong>!`
+            : `<strong>${profile.name}</strong> curtiu você`;
+        const action = isMatchNote
+            ? `<button class="btn-msg" onclick="goToMessages('${profile.id}')">Mensagem</button>`
+            : `<button class="btn-msg" onclick="handleLike('${profile.id}')">Curtir de volta</button>`;
+
+        return `
+            <div class="pending-item notification-item ${n.read ? '' : 'unread'}">
+                <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+                <div class="pending-info">
+                    <span class="notification-text">${text}</span>
+                    <span>${profile.name}, ${profile.age} · ${profile.location} · ${formatNotificationTime(n.time)}</span>
+                </div>
+                <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
+                ${action}
+            </div>
+        `;
+    }).join('') + '</div>';
 }
 
 
@@ -691,4 +893,6 @@ function goToMessages(id) {
 }
 
 // Inicia a aplicação
+syncIncomingLikes();
+getPending().forEach(scheduleLikeBack); // curtidas que ainda aguardam resposta
 refreshAll();
