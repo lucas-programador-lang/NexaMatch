@@ -12,7 +12,7 @@
         <nav>
             <a href="#" class="active" onclick="changePage('descobrir', this)">Descobrir</a>
             <a href="#" onclick="changePage('matches', this)">Meus Matches <span class="nav-badge" id="matches-badge"></span></a>
-            <a href="#" onclick="changePage('mensagens', this)">Mensagens</a>
+            <a href="#" onclick="changePage('mensagens', this)">Mensagens <span class="nav-badge" id="messages-badge"></span></a>
             <a href="#" onclick="changePage('perfil', this)">Meu Perfil</a>
         </nav>
     </header>
@@ -41,7 +41,8 @@
         <!-- Página 3: Mensagens (Oculta por padrão) -->
         <div id="page-mensagens" class="page-content" style="display: none;">
             <h1>Mensagens</h1>
-            <p style="color: var(--text-muted); margin-top: 1rem;">Sua caixa de entrada está vazia.</p>
+            <!-- O JavaScript monta a lista de conversas e o chat aqui dentro -->
+            <div id="messages-content"></div>
         </div>
 
         <!-- Página 4: Meu Perfil (Oculta por padrão) -->
