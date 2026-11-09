@@ -1017,84 +1017,149 @@ function profileCompletion(profile) {
     return Math.round(checks.filter(Boolean).length / checks.length * 100);
 }
 
+// ----- Ícones do Meu Perfil (SVG simples, herdam a cor do texto) -----
+const ME_ICONS = {
+    camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+    user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
+    logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+    trash: '<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+    check: '<path d="M20 6 9 17l-5-5"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>',
+    heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+    sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+    edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+};
+
+function meIcon(name) {
+    return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ME_ICONS[name] || ''}</svg>`;
+}
+
+const INTEREST_SUGGESTIONS = ['Música', 'Viagens', 'Filmes', 'Games', 'Academia', 'Pets', 'Culinária', 'Livros'];
+
+function quickInterest(text) {
+    const input = document.getElementById('me-interest-input');
+    if (!input) return;
+    input.value = text;
+    addInterest();
+}
+
 function renderMyProfile() {
     const root = document.getElementById('my-profile');
     if (!root) return;
 
     root.innerHTML = `
         <div class="me-layout">
-            <section class="me-card">
-                <div class="me-avatar" id="me-avatar"></div>
+            <aside class="me-card">
+                <div class="me-cover" aria-hidden="true"></div>
+
+                <div class="me-avatar-wrap">
+                    <div class="me-avatar" id="me-avatar"></div>
+                    <label class="me-avatar-edit" title="Trocar foto">
+                        ${meIcon('camera')}
+                        <input type="file" accept="image/*" hidden onchange="handlePhotoUpload(event)">
+                    </label>
+                </div>
+
                 <h2 class="me-name" id="me-name">Seu nome</h2>
                 <p class="me-sub" id="me-sub">Complete seu perfil</p>
 
-                <div class="me-progress" aria-hidden="true"><i id="me-progress-bar"></i></div>
-                <p class="me-progress-label" id="me-progress-label"></p>
+                <div class="me-progress-box">
+                    <div class="me-progress" aria-hidden="true"><i id="me-progress-bar"></i></div>
+                    <p class="me-progress-label" id="me-progress-label"></p>
+                </div>
 
                 <div class="me-stats" id="me-stats"></div>
 
-                <div class="me-photo-actions">
-                    <label class="btn-view me-upload">Trocar foto
-                        <input type="file" accept="image/*" hidden onchange="handlePhotoUpload(event)">
-                    </label>
-                    <button type="button" class="btn-ghost" onclick="removeMyPhoto()">Remover foto</button>
-                </div>
-            </section>
+                <button type="button" class="btn-ghost me-remove-photo" onclick="removeMyPhoto()">Remover foto</button>
+            </aside>
 
-            <form class="me-form" onsubmit="saveProfileForm(event)">
-                <h2 class="section-title">Seus dados</h2>
-
-                <div class="field-row">
-                    <label class="field">
-                        <span>Nome</span>
-                        <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
-                               placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
-                               oninput="renderMyAvatar()">
-                    </label>
-                    <label class="field field-small">
-                        <span>Idade</span>
-                        <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
-                               placeholder="18+" value="${escapeHtml(myProfile.age)}">
-                    </label>
-                </div>
-
-                <label class="field">
-                    <span>Cidade</span>
-                    <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
-                           placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
-                </label>
-
-                <label class="field">
-                    <span>Sobre você <small id="me-bio-count">${myProfile.bio.length}/200</small></span>
-                    <textarea id="me-bio-input" rows="4" maxlength="200"
-                              placeholder="Conte um pouco sobre você"
-                              oninput="document.getElementById('me-bio-count').textContent = this.value.length + '/200'">${escapeHtml(myProfile.bio)}</textarea>
-                </label>
-
-                <div class="field">
-                    <span>Interesses <small>até 8</small></span>
-                    <div class="interest-add">
-                        <input id="me-interest-input" type="text" maxlength="20" placeholder="Ex.: Café"
-                               onkeydown="interestKey(event)">
-                        <button type="button" class="btn-view" onclick="addInterest()">Adicionar</button>
+            <div class="me-main">
+                <form class="me-form" onsubmit="saveProfileForm(event)">
+                    <div class="me-form-head">
+                        <h2>Seus dados</h2>
+                        <p>É assim que as pessoas vão te ver no Mural de Conexões.</p>
                     </div>
-                    <div class="chips" id="me-interests"></div>
-                </div>
 
-                <div class="me-form-actions">
-                    <button type="submit" class="btn-primary">Salvar perfil</button>
-                </div>
+                    <div class="field-row">
+                        <label class="field">
+                            <span>Nome</span>
+                            <div class="input-wrap">
+                                ${meIcon('user')}
+                                <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
+                                       placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
+                                       oninput="renderMyAvatar()">
+                            </div>
+                        </label>
+                        <label class="field field-small">
+                            <span>Idade</span>
+                            <div class="input-wrap no-icon">
+                                <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
+                                       placeholder="18+" value="${escapeHtml(myProfile.age)}">
+                            </div>
+                        </label>
+                    </div>
 
-                <div class="danger-zone">
-                    <p>Conectado como ${escapeHtml(currentUser ? currentUser.email : '')}.</p>
-                    <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
-                </div>
+                    <label class="field">
+                        <span>Cidade</span>
+                        <div class="input-wrap">
+                            ${meIcon('pin')}
+                            <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
+                                   placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
+                        </div>
+                    </label>
 
-                <div class="danger-zone">
-                    <p>Apaga seu perfil, curtidas, mensagens e avisos deste navegador.</p>
-                    <button type="button" class="btn-ghost" onclick="resetAppData()">Apagar meus dados</button>
-                </div>
-            </form>
+                    <label class="field">
+                        <span>Sobre você <small id="me-bio-count">${myProfile.bio.length}/200</small></span>
+                        <textarea id="me-bio-input" rows="4" maxlength="200"
+                                  placeholder="Conte um pouco sobre você"
+                                  oninput="document.getElementById('me-bio-count').textContent = this.value.length + '/200'">${escapeHtml(myProfile.bio)}</textarea>
+                    </label>
+
+                    <div class="field">
+                        <span>Interesses <small id="me-int-count">${draftInterests.length}/8</small></span>
+                        <div class="interest-add">
+                            <div class="input-wrap no-icon">
+                                <input id="me-interest-input" type="text" maxlength="20" placeholder="Ex.: Café"
+                                       onkeydown="interestKey(event)">
+                            </div>
+                            <button type="button" class="btn-add" onclick="addInterest()">${meIcon('plus')}<b>Adicionar</b></button>
+                        </div>
+                        <div class="chips" id="me-interests"></div>
+                        <div class="me-suggest">
+                            <small>Sugestões:</small>
+                            ${INTEREST_SUGGESTIONS.map(item => `<button type="button" onclick="quickInterest('${item}')">+ ${item}</button>`).join('')}
+                        </div>
+                    </div>
+
+                    <div class="me-save-bar">
+                        <button type="submit" class="btn-primary btn-save">${meIcon('check')}Salvar perfil</button>
+                    </div>
+                </form>
+
+                <section class="me-account">
+                    <div class="me-account-row">
+                        <div class="me-account-icon">${meIcon('mail')}</div>
+                        <div class="me-account-text">
+                            <strong>Conta</strong>
+                            <p>${escapeHtml(currentUser ? currentUser.email : '')}</p>
+                        </div>
+                        <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
+                    </div>
+
+                    <div class="me-account-row danger">
+                        <div class="me-account-icon">${meIcon('trash')}</div>
+                        <div class="me-account-text">
+                            <strong>Zona de perigo</strong>
+                            <p>Apaga seu perfil, curtidas, mensagens e avisos deste navegador.</p>
+                        </div>
+                        <button type="button" class="btn-ghost btn-danger" onclick="resetAppData()">Apagar meus dados</button>
+                    </div>
+                </section>
+            </div>
         </div>
     `;
 
@@ -1103,6 +1168,45 @@ function renderMyProfile() {
     updateProfileSummary();
     updateProfileStats();
 }
+
+// Números da sua atividade (atualizam sozinhos)
+function updateProfileStats() {
+    const stats = document.getElementById('me-stats');
+    if (!stats) return;
+
+    const items = [
+        ['heart', 'pink', likedProfiles.size, 'Curtidas enviadas'],
+        ['sparkle', 'violet', getMatches().length, 'Matches'],
+        ['clock', 'gold', getPending().length, 'Aguardando'],
+        ['eye', 'cyan', profiles.filter(likesYouNow).length, 'Curtiram você']
+    ];
+
+    stats.innerHTML = items
+        .map(([icon, tone, value, label]) => `
+            <div class="me-stat ${tone}">
+                ${meIcon(icon)}
+                <strong>${value}</strong>
+                <span>${label}</span>
+            </div>`)
+        .join('');
+}
+
+// ----- Interesses -----
+function renderInterestChips() {
+    const box = document.getElementById('me-interests');
+    if (!box) return;
+
+    const counter = document.getElementById('me-int-count');
+    if (counter) counter.textContent = draftInterests.length + '/8';
+
+    box.innerHTML = draftInterests.length
+        ? draftInterests.map((item, index) => `
+            <span class="chip chip-edit">${escapeHtml(item)}
+                <button type="button" onclick="removeInterest(${index})" aria-label="Remover ${escapeHtml(item)}">×</button>
+            </span>`).join('')
+        : '<p class="field-hint">Adicione pelo menos 3 interesses para completar o perfil.</p>';
+}
+
 
 // Foto (ou a inicial do nome, enquanto não há foto)
 function renderMyAvatar() {
@@ -1133,36 +1237,6 @@ function updateProfileSummary() {
     document.getElementById('me-progress-label').textContent = percent === 100
         ? 'Perfil completo'
         : `Perfil ${percent}% completo`;
-}
-
-// Números da sua atividade (atualizam sozinhos)
-function updateProfileStats() {
-    const stats = document.getElementById('me-stats');
-    if (!stats) return;
-
-    const items = [
-        [likedProfiles.size, 'Curtidas enviadas'],
-        [getMatches().length, 'Matches'],
-        [getPending().length, 'Aguardando'],
-        [profiles.filter(likesYouNow).length, 'Curtiram você']
-    ];
-
-    stats.innerHTML = items
-        .map(([value, label]) => `<div><strong>${value}</strong><span>${label}</span></div>`)
-        .join('');
-}
-
-// ----- Interesses -----
-function renderInterestChips() {
-    const box = document.getElementById('me-interests');
-    if (!box) return;
-
-    box.innerHTML = draftInterests.length
-        ? draftInterests.map((item, index) => `
-            <span class="chip chip-edit">${escapeHtml(item)}
-                <button type="button" onclick="removeInterest(${index})" aria-label="Remover ${escapeHtml(item)}">×</button>
-            </span>`).join('')
-        : '<p class="field-hint">Adicione pelo menos 3 interesses para completar o perfil.</p>';
 }
 
 function addInterest() {
