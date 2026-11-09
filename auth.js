@@ -2,13 +2,15 @@
  * auth.js - Autenticação do NexaMatch
  *
  * Esta versão usa localStorage (sem backend). Para usar uma API real,
- * troque o conteúdo de findUser/saveUser/login/register por chamadas fetch().
+ * troque o conteúdo de register/login por chamadas fetch().
  */
 (function () {
   "use strict";
 
   const USERS_KEY = "nexamatch_users";
   const SESSION_KEY = "nexamatch_session";
+  const MIN_AGE = 18;
+  const GENDERS = ["mulher", "homem", "outro"];
 
   // ---------- utilidades ----------
   function readUsers() {
@@ -52,13 +54,43 @@
     el.hidden = !text;
   }
 
+  // ---------- data de nascimento ----------
+  // Retorna "YYYY-MM-DD" se a data existir de verdade; senão, null.
+  function buildBirthDate(day, month, year) {
+    const d = Number(day), m = Number(month), y = Number(year);
+    if (!d || !m || !y) return null;
+    const date = new Date(y, m - 1, d);
+    if (date.getFullYear() !== y || date.getMonth() !== m - 1 || date.getDate() !== d) return null;
+    if (date > new Date()) return null;
+    const pad = (n) => String(n).padStart(2, "0");
+    return y + "-" + pad(m) + "-" + pad(d);
+  }
+
+  function ageFromBirthDate(iso) {
+    const p = String(iso || "").split("-").map(Number);
+    if (p.length !== 3 || !p[0]) return 0;
+    const today = new Date();
+    let age = today.getFullYear() - p[0];
+    const hadBirthday =
+      today.getMonth() + 1 > p[1] || (today.getMonth() + 1 === p[1] && today.getDate() >= p[2]);
+    if (!hadBirthday) age--;
+    return age;
+  }
+
   // ---------- API pública ----------
-  async function register({ name, email, password, confirmPassword }) {
+  async function register({ name, email, password, confirmPassword, gender, birthDay, birthMonth, birthYear }) {
     name = String(name || "").trim();
     email = normalizeEmail(email);
 
     if (name.length < 2) throw new Error("Informe seu nome.");
     if (!isValidEmail(email)) throw new Error("E-mail inválido.");
+
+    const birthDate = buildBirthDate(birthDay, birthMonth, birthYear);
+    if (!birthDate) throw new Error("Informe uma data de nascimento válida.");
+    if (ageFromBirthDate(birthDate) < MIN_AGE)
+      throw new Error("O NexaMatch é só para maiores de " + MIN_AGE + " anos.");
+    if (!GENDERS.includes(gender)) throw new Error("Escolha seu gênero.");
+
     if (!password || password.length < 6)
       throw new Error("A senha deve ter pelo menos 6 caracteres.");
     if (password !== confirmPassword)
@@ -74,6 +106,8 @@
       id: Date.now().toString(36),
       name,
       email,
+      gender,
+      birthDate,
       salt,
       passwordHash,
       createdAt: new Date().toISOString(),
@@ -94,7 +128,13 @@
     if (hash !== user.passwordHash)
       throw new Error("E-mail ou senha incorretos.");
 
-    const session = { id: user.id, name: user.name, email: user.email };
+    const session = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      gender: user.gender || "",
+      birthDate: user.birthDate || "",
+    };
     const storage = remember ? localStorage : sessionStorage;
     localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
@@ -126,40 +166,60 @@
     return user;
   }
 
-  window.Auth = { register, login, logout, getCurrentUser, requireAuth };
+  window.Auth = { register, login, logout, getCurrentUser, requireAuth, ageFromBirthDate };
 
   // ---------- validação dos campos ----------
+  // Qual elemento recebe foco/aria para cada campo lógico
+  function controlOf(form, name) {
+    if (name === "birth") return form.birthDay;
+    if (name === "gender") return form.querySelector("input[name=gender]");
+    return form[name];
+  }
+
   function fieldMessage(form, name) {
-    const v = form[name].value;
     switch (name) {
       case "name":
-        return v.trim().length < 2 ? "Informe seu nome." : "";
-      case "email":
+        return form.name.value.trim().length < 2 ? "Informe seu nome." : "";
+      case "email": {
+        const v = form.email.value;
         if (!v.trim()) return "Informe seu e-mail.";
         return isValidEmail(normalizeEmail(v)) ? "" : "Digite um e-mail válido, como voce@email.com.";
-      case "password":
+      }
+      case "birth": {
+        const { birthDay, birthMonth, birthYear } = form;
+        if (!birthDay.value || !birthMonth.value || !birthYear.value)
+          return "Informe dia, mês e ano de nascimento.";
+        const iso = buildBirthDate(birthDay.value, birthMonth.value, birthYear.value);
+        if (!iso) return "Essa data não existe. Confira o dia, o mês e o ano.";
+        if (ageFromBirthDate(iso) < MIN_AGE)
+          return "O NexaMatch é só para maiores de " + MIN_AGE + " anos.";
+        return "";
+      }
+      case "gender":
+        return form.gender.value ? "" : "Escolha uma opção.";
+      case "password": {
+        const v = form.password.value;
         if (!v) return "Informe a senha.";
         if (form.id === "register-form" && v.length < 6) return "Use pelo menos 6 caracteres.";
         return "";
+      }
       case "confirmPassword":
-        return v !== form.password.value ? "As senhas não coincidem." : "";
-      case "age18":
-        return form.age18.checked ? "" : "Você precisa ter 18 anos ou mais.";
+        return form.confirmPassword.value !== form.password.value ? "As senhas não coincidem." : "";
       default:
         return "";
     }
   }
 
   function setFieldError(form, name, message) {
-    const input = form[name];
-    const box = input.closest(".af-field");
+    const control = controlOf(form, name);
+    const box = control.closest(".af-field");
     const err = document.getElementById(name + "-error");
     if (box) box.classList.toggle("is-invalid", !!message);
-    input.setAttribute("aria-invalid", message ? "true" : "false");
+    control.setAttribute("aria-invalid", message ? "true" : "false");
     if (err) {
       err.textContent = message;
       err.hidden = !message;
-      input.setAttribute("aria-describedby", err.id);
+      control.setAttribute("aria-describedby", err.id);
     }
   }
 
@@ -168,31 +228,63 @@
     names.forEach(function (name) {
       const msg = fieldMessage(form, name);
       setFieldError(form, name, msg);
-      if (msg && !first) first = form[name];
+      if (msg && !first) first = controlOf(form, name);
     });
     if (first) first.focus();
     return !first;
   }
 
+  // Elementos que disparam a validação de cada campo lógico
+  function watchedElements(form, name) {
+    if (name === "birth") return [form.birthDay, form.birthMonth, form.birthYear];
+    if (name === "gender") return Array.from(form.querySelectorAll("input[name=gender]"));
+    return [form[name]];
+  }
+
   // Valida ao sair do campo e acompanha a digitação depois do primeiro erro
   function liveValidate(form, names) {
     names.forEach(function (name) {
-      const input = form[name];
-      const evt = input.type === "checkbox" ? "change" : "input";
-      input.addEventListener("blur", function () {
-        if (input.type !== "checkbox" && !input.value) return;
-        setFieldError(form, name, fieldMessage(form, name));
-      });
-      input.addEventListener(evt, function () {
-        const box = input.closest(".af-field");
-        if (box && box.classList.contains("is-invalid")) {
+      const box = controlOf(form, name).closest(".af-field");
+      watchedElements(form, name).forEach(function (el) {
+        const isChoice = el.tagName === "SELECT" || el.type === "radio";
+        el.addEventListener("blur", function () {
+          if (!isChoice && !el.value) return;
+          if (isChoice) return;
           setFieldError(form, name, fieldMessage(form, name));
-        }
-        if (name === "password" && form.confirmPassword && form.confirmPassword.value) {
-          setFieldError(form, "confirmPassword", fieldMessage(form, "confirmPassword"));
-        }
+        });
+        el.addEventListener(isChoice ? "change" : "input", function () {
+          if (name === "birth") {
+            // só valida quando os três campos estiverem preenchidos
+            const all = form.birthDay.value && form.birthMonth.value && form.birthYear.value;
+            if (!all && !box.classList.contains("is-invalid")) return;
+          }
+          if (isChoice || box.classList.contains("is-invalid")) {
+            setFieldError(form, name, fieldMessage(form, name));
+          }
+          if (name === "password" && form.confirmPassword && form.confirmPassword.value) {
+            setFieldError(form, "confirmPassword", fieldMessage(form, "confirmPassword"));
+          }
+        });
       });
     });
+  }
+
+  // Preenche dia / mês / ano
+  function fillBirthSelects(form) {
+    const months = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+    function fill(select, placeholder, items) {
+      select.innerHTML = "";
+      select.add(new Option(placeholder, ""));
+      items.forEach((it) => select.add(new Option(it[1], it[0])));
+    }
+    const days = [];
+    for (let d = 1; d <= 31; d++) days.push([d, d]);
+    fill(form.birthDay, "Dia", days);
+    fill(form.birthMonth, "Mês", months.map((m, i) => [i + 1, m]));
+    const thisYear = new Date().getFullYear();
+    const years = [];
+    for (let y = thisYear; y >= thisYear - 100; y--) years.push([y, y]);
+    fill(form.birthYear, "Ano", years);
   }
 
   // ---------- ligação com os formulários ----------
@@ -260,7 +352,8 @@
 
     if (registerForm) {
       const msg = document.getElementById("form-message");
-      const names = ["name", "email", "password", "confirmPassword", "age18"];
+      const names = ["name", "email", "birth", "gender", "password", "confirmPassword"];
+      fillBirthSelects(registerForm);
       liveValidate(registerForm, names);
       registerForm.addEventListener("submit", async function (e) {
         e.preventDefault();
@@ -274,6 +367,10 @@
             email: registerForm.email.value,
             password: registerForm.password.value,
             confirmPassword: registerForm.confirmPassword.value,
+            gender: registerForm.gender.value,
+            birthDay: registerForm.birthDay.value,
+            birthMonth: registerForm.birthMonth.value,
+            birthYear: registerForm.birthYear.value,
           });
           showMessage(msg, "Conta criada! Levando você para o login...", "success");
           setTimeout(() => (window.location.href = "login.html"), 900);
