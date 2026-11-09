@@ -5,14 +5,14 @@
 // ==========================================================
 const profiles = [
     {
-        id: '1', name: 'Ana', age: 24, location: 'Porto Velho, RO',
+        id: '1', gender: 'mulher', name: 'Ana', age: 24, location: 'Porto Velho, RO',
         bio: 'Dev e apaixonada por tecnologia e café.',
         interests: ['Tecnologia', 'Café', 'Programação', 'Séries'],
         photo: 'https://i.pravatar.cc/800?img=5',
         likesYou: true
     },
     {
-        id: '2', name: 'Carlos', age: 28, location: 'São Paulo, SP',
+        id: '2', gender: 'homem', name: 'Carlos', age: 28, location: 'São Paulo, SP',
         bio: 'Designer UX em busca de novas conexões.',
         interests: ['Design', 'Fotografia', 'Música', 'Viagens'],
         photo: 'https://i.pravatar.cc/800?img=11',
@@ -20,14 +20,14 @@ const profiles = [
         likesBackAfter: 8000   // simulação: curte você de volta 8s depois que você curtir
     },
     {
-        id: '3', name: 'Beatriz', age: 22, location: 'Curitiba, PR',
+        id: '3', gender: 'mulher', name: 'Beatriz', age: 22, location: 'Curitiba, PR',
         bio: 'Amo viajar, ler livros de sci-fi e codar.',
         interests: ['Viagens', 'Sci-fi', 'Leitura', 'Programação'],
         photo: 'https://i.pravatar.cc/800?img=9',
         likesYou: true
     },
     {
-        id: '4', name: 'Marcos', age: 26, location: 'Rio de Janeiro, RJ',
+        id: '4', gender: 'homem', name: 'Marcos', age: 26, location: 'Rio de Janeiro, RJ',
         bio: 'Focado em cloud computing e esportes radicais.',
         interests: ['Cloud', 'Esportes radicais', 'Trilhas', 'Tecnologia'],
         photo: 'https://i.pravatar.cc/800?img=12',
@@ -35,6 +35,14 @@ const profiles = [
         likesBackAfter: 15000  // simulação: curte você de volta 15s depois que você curtir
     }
 ];
+
+// Gêneros disponíveis (para o filtro do Descobrir)
+const GENDERS = [
+    { id: 'mulher', label: 'Mulheres' },
+    { id: 'homem', label: 'Homens' },
+    { id: 'outro', label: 'Não-binário e outros' }
+];
+const ALL_GENDER_IDS = GENDERS.map(g => g.id);
 
 // ---------- Curtidas (salvas no navegador) ----------
 const STORAGE_KEY = 'nexamatch:likes';
@@ -122,7 +130,7 @@ function saveNotifications() {
 const PROFILE_KEY = 'nexamatch:myprofile';
 
 function loadMyProfile() {
-    const empty = { name: '', age: '', location: '', bio: '', interests: [], photo: '' };
+    const empty = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
     try {
         const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
         return {
@@ -131,7 +139,11 @@ function loadMyProfile() {
             location: String(saved.location || ''),
             bio: String(saved.bio || ''),
             interests: Array.isArray(saved.interests) ? saved.interests.map(String).slice(0, 8) : [],
-            photo: String(saved.photo || '')
+            photo: String(saved.photo || ''),
+            // sem escolha salva: mostra todos os gêneros
+            interestedIn: Array.isArray(saved.interestedIn) && saved.interestedIn.some(g => ALL_GENDER_IDS.includes(g))
+                ? saved.interestedIn.filter(g => ALL_GENDER_IDS.includes(g))
+                : [...ALL_GENDER_IDS]
         };
     } catch (error) {
         return empty;
@@ -150,6 +162,7 @@ function saveMyProfile() {
 let myProfile = loadMyProfile();
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
+let draftInterestedIn = [...myProfile.interestedIn]; // gêneros de interesse em edição
 
 const likedProfiles = loadLikes();
 const reciprocated = loadReciprocated();
@@ -188,11 +201,42 @@ const getMatches = () => [...likedProfiles].map(findProfile).filter(p => p && li
 const getPending = () => [...likedProfiles].map(findProfile).filter(p => p && !likesYouNow(p));
 
 // ---------- Mural (Descobrir) ----------
+// Só aparecem os gêneros marcados em "Tenho interesse em" (Meu Perfil)
+const visibleProfiles = () => profiles.filter(profile => myProfile.interestedIn.includes(profile.gender));
+
+function updateDiscoverFilter() {
+    const note = document.getElementById('discover-filter');
+    if (!note) return;
+
+    const selected = GENDERS.filter(g => myProfile.interestedIn.includes(g.id)).map(g => g.label);
+    const text = selected.length === GENDERS.length
+        ? 'Todos os gêneros'
+        : selected.length > 1
+            ? selected.slice(0, -1).join(', ') + ' e ' + selected[selected.length - 1]
+            : selected[0];
+
+    note.innerHTML = `Mostrando: <strong>${text}</strong> <button type="button" class="link-btn" onclick="goToMyProfile()">Alterar</button>`;
+}
+
 function renderProfiles() {
     if (!grid) return;
     grid.innerHTML = '';
+    updateDiscoverFilter();
 
-    profiles.forEach(profile => {
+    const visible = visibleProfiles();
+
+    if (!visible.length) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <h2>Nenhum perfil para esse filtro</h2>
+                <p>Não há ninguém disponível para os gêneros que você escolheu. Você pode mudar isso no seu perfil.</p>
+                <button class="btn-primary" onclick="goToMyProfile()">Alterar preferência</button>
+            </div>
+        `;
+        return;
+    }
+
+    visible.forEach(profile => {
         const isLiked = likedProfiles.has(profile.id);
 
         const card = document.createElement('div');
@@ -518,6 +562,13 @@ function goToMatches() {
     currentProfileId = null;
     showPage('matches');
     setActiveNav(1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goToMyProfile() {
+    currentProfileId = null;
+    showPage('perfil');
+    setActiveNav(NAV_INDEX.perfil);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1007,6 +1058,18 @@ function renderMyProfile() {
                     <div class="chips" id="me-interests"></div>
                 </div>
 
+                <div class="field">
+                    <span>Tenho interesse em <small>aparece no Descobrir</small></span>
+                    <div class="gender-options">
+                        ${GENDERS.map(g => `
+                            <label class="gender-option">
+                                <input type="checkbox" value="${g.id}" ${draftInterestedIn.includes(g.id) ? 'checked' : ''}
+                                       onchange="toggleGender('${g.id}', this.checked)">
+                                <span>${g.label}</span>
+                            </label>`).join('')}
+                    </div>
+                </div>
+
                 <div class="me-form-actions">
                     <button type="submit" class="btn-primary">Salvar perfil</button>
                 </div>
@@ -1118,6 +1181,13 @@ function interestKey(event) {
     addInterest();
 }
 
+// ----- Gêneros de interesse -----
+function toggleGender(id, checked) {
+    draftInterestedIn = checked
+        ? [...new Set([...draftInterestedIn, id])]
+        : draftInterestedIn.filter(g => g !== id);
+}
+
 // ----- Foto -----
 // Recorta em quadrado e reduz, para caber no armazenamento do navegador
 function handlePhotoUpload(event) {
@@ -1181,7 +1251,17 @@ function saveProfileForm(event) {
         return;
     }
 
-    myProfile = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
+    if (!draftInterestedIn.length) {
+        showToast('Escolha pelo menos um gênero de interesse.');
+        return;
+    }
+
+    myProfile = {
+        name, age, location, bio,
+        interests: [...draftInterests],
+        photo: draftPhoto,
+        interestedIn: [...draftInterestedIn]
+    };
 
     if (saveMyProfile()) {
         showToast('Perfil salvo!');
@@ -1189,6 +1269,7 @@ function saveProfileForm(event) {
         showToast('Não deu para salvar neste navegador (a foto pode estar grande demais).');
     }
     updateProfileSummary();
+    renderProfiles(); // o Descobrir passa a mostrar só os gêneros escolhidos
 }
 
 // ----- Apagar tudo -----
