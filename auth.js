@@ -139,6 +139,33 @@
       return;
     }
 
+    // Botão de mostrar/ocultar senha
+    document.querySelectorAll("[data-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        const input = document.getElementById(btn.dataset.toggle);
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        btn.classList.toggle("is-visible", show);
+        btn.setAttribute("aria-label", show ? "Ocultar senha" : "Mostrar senha");
+      });
+    });
+
+    // Força da senha (cadastro)
+    const strength = document.getElementById("strength");
+    if (strength && registerForm) {
+      const label = strength.querySelector("span");
+      const names = ["Mín. 6 caracteres", "Fraca", "Média", "Forte"];
+      registerForm.password.addEventListener("input", function () {
+        const v = this.value;
+        let level = 0;
+        if (v.length >= 6) level = 1;
+        if (v.length >= 8 && /[a-z]/i.test(v) && /\d/.test(v)) level = 2;
+        if (v.length >= 10 && /[a-z]/.test(v) && /[A-Z]/.test(v) && /\d/.test(v)) level = 3;
+        strength.dataset.level = level;
+        label.textContent = names[level];
+      });
+    }
+
     if (loginForm) {
       const msg = document.getElementById("form-message");
       loginForm.addEventListener("submit", async function (e) {
