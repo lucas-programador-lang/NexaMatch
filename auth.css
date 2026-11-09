@@ -701,3 +701,7 @@ body.auth-page {
     .pcard-1, .pcard-2, .pcard-3, .notice, .auth-bg i, .auth-bg b, .deck::after, .auth-card > * { animation: none !important; }
     .auth-bg b { opacity: 0.1; bottom: 20%; }
 }
+
+/* Cartão da direita: texto alinhado à direita para não ficar atrás do cartão da frente */
+.pcard-2 .pinfo { text-align: right; }
+.pcard-2 .pinfo em { margin-right: 0; margin-left: 0.25rem; }
