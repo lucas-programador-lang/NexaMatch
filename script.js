@@ -1432,8 +1432,62 @@ function logoutUser() {
 }
 
 // ----- Apagar tudo -----
-function resetAppData() {
-    if (!confirm('Apagar seu perfil, curtidas, mensagens e avisos? Isso não pode ser desfeito.')) return;
+// ----- Janela de confirmação (substitui o confirm() do navegador) -----
+function askConfirm({ title, message, items = [], confirmText = 'Confirmar', cancelText = 'Cancelar', danger = false }) {
+    return new Promise(resolve => {
+        const previousFocus = document.activeElement;
+
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal ${danger ? 'danger' : ''}" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-text">
+                <div class="modal-icon">${meIcon(danger ? 'trash' : 'check')}</div>
+                <h3 id="modal-title">${escapeHtml(title)}</h3>
+                <p id="modal-text">${escapeHtml(message)}</p>
+                ${items.length ? `<ul class="modal-list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
+                <div class="modal-actions">
+                    <button type="button" class="modal-cancel">${escapeHtml(cancelText)}</button>
+                    <button type="button" class="modal-ok">${escapeHtml(confirmText)}</button>
+                </div>
+            </div>`;
+
+        function close(result) {
+            document.removeEventListener('keydown', onKey);
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                overlay.remove();
+                document.body.style.overflow = '';
+                if (previousFocus && previousFocus.focus) previousFocus.focus();
+            }, 180);
+            resolve(result);
+        }
+
+        function onKey(event) {
+            if (event.key === 'Escape') close(false);
+        }
+
+        overlay.addEventListener('click', event => { if (event.target === overlay) close(false); });
+        overlay.querySelector('.modal-cancel').addEventListener('click', () => close(false));
+        overlay.querySelector('.modal-ok').addEventListener('click', () => close(true));
+        document.addEventListener('keydown', onKey);
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => overlay.classList.add('show'));
+        overlay.querySelector('.modal-cancel').focus();
+    });
+}
+
+async function resetAppData() {
+    const ok = await askConfirm({
+        title: 'Apagar todos os seus dados?',
+        message: 'Isso não pode ser desfeito. Vai sumir tudo que está salvo neste navegador:',
+        items: ['Seu perfil e sua foto', 'Curtidas e matches', 'Mensagens', 'Avisos'],
+        confirmText: 'Sim, apagar tudo',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!ok) return;
 
     try {
         [PROFILE_KEY, STORAGE_KEY, MESSAGES_KEY, RECIPROCATED_KEY, NOTIFICATIONS_KEY]
