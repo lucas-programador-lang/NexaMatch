@@ -1390,6 +1390,16 @@ function removeMyPhoto() {
 }
 
 // ----- Salvar -----
+// Botão "Salvar perfil" fica verde por um instante quando salva
+function flashSaved() {
+    const button = document.querySelector('.btn-save');
+    if (!button) return;
+    button.classList.remove('saved');
+    void button.offsetWidth; // reinicia a animação se clicar de novo
+    button.classList.add('saved');
+    setTimeout(() => button.classList.remove('saved'), 1600);
+}
+
 function saveProfileForm(event) {
     event.preventDefault();
 
@@ -1419,6 +1429,7 @@ function saveProfileForm(event) {
 
     if (saveMyProfile()) {
         showToast('Perfil salvo!');
+        flashSaved();
     } else {
         showToast('Não deu para salvar neste navegador (a foto pode estar grande demais).');
     }
