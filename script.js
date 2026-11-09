@@ -118,6 +118,39 @@ function saveNotifications() {
     }
 }
 
+// ---------- Meu perfil (salvo no navegador) ----------
+const PROFILE_KEY = 'nexamatch:myprofile';
+
+function loadMyProfile() {
+    const empty = { name: '', age: '', location: '', bio: '', interests: [], photo: '' };
+    try {
+        const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
+        return {
+            name: String(saved.name || ''),
+            age: saved.age ? Number(saved.age) : '',
+            location: String(saved.location || ''),
+            bio: String(saved.bio || ''),
+            interests: Array.isArray(saved.interests) ? saved.interests.map(String).slice(0, 8) : [],
+            photo: String(saved.photo || '')
+        };
+    } catch (error) {
+        return empty;
+    }
+}
+
+function saveMyProfile() {
+    try {
+        localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
+        return true;
+    } catch (error) {
+        return false; // sem armazenamento (ou foto grande demais)
+    }
+}
+
+let myProfile = loadMyProfile();
+let draftInterests = [...myProfile.interests]; // interesses em edição
+let draftPhoto = myProfile.photo;              // foto em edição
+
 const likedProfiles = loadLikes();
 const reciprocated = loadReciprocated();
 let notifications = loadNotifications();
@@ -271,6 +304,7 @@ function refreshAll() {
     renderNotifications();
     updateBadge();
     updateNotificationsBadge();
+    updateProfileStats();
     if (currentProfileId) renderProfileDetail(currentProfileId);
 }
 
@@ -894,7 +928,285 @@ function goToMessages(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// ==========================================================
+// Meu Perfil — dados da sua conta
+// ==========================================================
+function profileCompletion(profile) {
+    const checks = [
+        profile.name,
+        profile.age,
+        profile.location,
+        profile.bio,
+        profile.interests.length >= 3,
+        profile.photo
+    ];
+    return Math.round(checks.filter(Boolean).length / checks.length * 100);
+}
+
+function renderMyProfile() {
+    const root = document.getElementById('my-profile');
+    if (!root) return;
+
+    root.innerHTML = `
+        <div class="me-layout">
+            <section class="me-card">
+                <div class="me-avatar" id="me-avatar"></div>
+                <h2 class="me-name" id="me-name">Seu nome</h2>
+                <p class="me-sub" id="me-sub">Complete seu perfil</p>
+
+                <div class="me-progress" aria-hidden="true"><i id="me-progress-bar"></i></div>
+                <p class="me-progress-label" id="me-progress-label"></p>
+
+                <div class="me-stats" id="me-stats"></div>
+
+                <div class="me-photo-actions">
+                    <label class="btn-view me-upload">Trocar foto
+                        <input type="file" accept="image/*" hidden onchange="handlePhotoUpload(event)">
+                    </label>
+                    <button type="button" class="btn-ghost" onclick="removeMyPhoto()">Remover foto</button>
+                </div>
+            </section>
+
+            <form class="me-form" onsubmit="saveProfileForm(event)">
+                <h2 class="section-title">Seus dados</h2>
+
+                <div class="field-row">
+                    <label class="field">
+                        <span>Nome</span>
+                        <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
+                               placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
+                               oninput="renderMyAvatar()">
+                    </label>
+                    <label class="field field-small">
+                        <span>Idade</span>
+                        <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
+                               placeholder="18+" value="${escapeHtml(myProfile.age)}">
+                    </label>
+                </div>
+
+                <label class="field">
+                    <span>Cidade</span>
+                    <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
+                           placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
+                </label>
+
+                <label class="field">
+                    <span>Sobre você <small id="me-bio-count">${myProfile.bio.length}/200</small></span>
+                    <textarea id="me-bio-input" rows="4" maxlength="200"
+                              placeholder="Conte um pouco sobre você"
+                              oninput="document.getElementById('me-bio-count').textContent = this.value.length + '/200'">${escapeHtml(myProfile.bio)}</textarea>
+                </label>
+
+                <div class="field">
+                    <span>Interesses <small>até 8</small></span>
+                    <div class="interest-add">
+                        <input id="me-interest-input" type="text" maxlength="20" placeholder="Ex.: Café"
+                               onkeydown="interestKey(event)">
+                        <button type="button" class="btn-view" onclick="addInterest()">Adicionar</button>
+                    </div>
+                    <div class="chips" id="me-interests"></div>
+                </div>
+
+                <div class="me-form-actions">
+                    <button type="submit" class="btn-primary">Salvar perfil</button>
+                </div>
+
+                <div class="danger-zone">
+                    <p>Apaga seu perfil, curtidas, mensagens e avisos deste navegador.</p>
+                    <button type="button" class="btn-ghost" onclick="resetAppData()">Apagar meus dados</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    renderMyAvatar();
+    renderInterestChips();
+    updateProfileSummary();
+    updateProfileStats();
+}
+
+// Foto (ou a inicial do nome, enquanto não há foto)
+function renderMyAvatar() {
+    const avatar = document.getElementById('me-avatar');
+    if (!avatar) return;
+
+    if (draftPhoto) {
+        avatar.innerHTML = `<img src="${escapeHtml(draftPhoto)}" alt="Sua foto">`;
+        return;
+    }
+
+    const typed = document.getElementById('me-name-input')?.value || myProfile.name;
+    const initial = (typed.trim()[0] || '?').toUpperCase();
+    avatar.innerHTML = `<span>${escapeHtml(initial)}</span>`;
+}
+
+// Cartão do topo: nome, idade, cidade e barra de perfil completo
+function updateProfileSummary() {
+    const name = document.getElementById('me-name');
+    if (!name) return;
+
+    const details = [myProfile.age ? `${myProfile.age} anos` : '', myProfile.location].filter(Boolean).join(' · ');
+    const percent = profileCompletion(myProfile);
+
+    name.textContent = myProfile.name || 'Seu nome';
+    document.getElementById('me-sub').textContent = details || 'Complete seu perfil';
+    document.getElementById('me-progress-bar').style.width = percent + '%';
+    document.getElementById('me-progress-label').textContent = percent === 100
+        ? 'Perfil completo'
+        : `Perfil ${percent}% completo`;
+}
+
+// Números da sua atividade (atualizam sozinhos)
+function updateProfileStats() {
+    const stats = document.getElementById('me-stats');
+    if (!stats) return;
+
+    const items = [
+        [likedProfiles.size, 'Curtidas enviadas'],
+        [getMatches().length, 'Matches'],
+        [getPending().length, 'Aguardando'],
+        [profiles.filter(likesYouNow).length, 'Curtiram você']
+    ];
+
+    stats.innerHTML = items
+        .map(([value, label]) => `<div><strong>${value}</strong><span>${label}</span></div>`)
+        .join('');
+}
+
+// ----- Interesses -----
+function renderInterestChips() {
+    const box = document.getElementById('me-interests');
+    if (!box) return;
+
+    box.innerHTML = draftInterests.length
+        ? draftInterests.map((item, index) => `
+            <span class="chip chip-edit">${escapeHtml(item)}
+                <button type="button" onclick="removeInterest(${index})" aria-label="Remover ${escapeHtml(item)}">×</button>
+            </span>`).join('')
+        : '<p class="field-hint">Adicione pelo menos 3 interesses para completar o perfil.</p>';
+}
+
+function addInterest() {
+    const input = document.getElementById('me-interest-input');
+    if (!input) return;
+
+    const value = input.value.trim().slice(0, 20);
+    if (!value) return;
+
+    if (draftInterests.length >= 8) {
+        showToast('Você pode ter no máximo 8 interesses.');
+        return;
+    }
+
+    if (!draftInterests.some(item => item.toLowerCase() === value.toLowerCase())) {
+        draftInterests.push(value);
+        renderInterestChips();
+    }
+    input.value = '';
+    input.focus();
+}
+
+function removeInterest(index) {
+    draftInterests.splice(index, 1);
+    renderInterestChips();
+}
+
+// Enter no campo adiciona o interesse (e não envia o formulário)
+function interestKey(event) {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    addInterest();
+}
+
+// ----- Foto -----
+// Recorta em quadrado e reduz, para caber no armazenamento do navegador
+function handlePhotoUpload(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        showToast('Escolha um arquivo de imagem.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+        const image = new Image();
+        image.onload = () => {
+            const size = 480;
+            const scale = Math.max(size / image.width, size / image.height);
+            const width = image.width * scale;
+            const height = image.height * scale;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            canvas.getContext('2d').drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+
+            draftPhoto = canvas.toDataURL('image/jpeg', 0.82);
+            renderMyAvatar();
+            showToast('Foto pronta. Clique em Salvar perfil.');
+        };
+        image.onerror = () => showToast('Não consegui abrir essa imagem.');
+        image.src = reader.result;
+    };
+    reader.onerror = () => showToast('Não consegui ler esse arquivo.');
+    reader.readAsDataURL(file);
+}
+
+function removeMyPhoto() {
+    draftPhoto = '';
+    renderMyAvatar();
+}
+
+// ----- Salvar -----
+function saveProfileForm(event) {
+    event.preventDefault();
+
+    const name = document.getElementById('me-name-input').value.trim();
+    const age = parseInt(document.getElementById('me-age-input').value, 10);
+    const location = document.getElementById('me-location-input').value.trim();
+    const bio = document.getElementById('me-bio-input').value.trim();
+
+    if (!name) {
+        showToast('Coloque seu nome.');
+        document.getElementById('me-name-input').focus();
+        return;
+    }
+
+    if (!(age >= 18 && age <= 99)) {
+        showToast('A idade precisa estar entre 18 e 99 anos.');
+        document.getElementById('me-age-input').focus();
+        return;
+    }
+
+    myProfile = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
+
+    if (saveMyProfile()) {
+        showToast('Perfil salvo!');
+    } else {
+        showToast('Não deu para salvar neste navegador (a foto pode estar grande demais).');
+    }
+    updateProfileSummary();
+}
+
+// ----- Apagar tudo -----
+function resetAppData() {
+    if (!confirm('Apagar seu perfil, curtidas, mensagens e avisos? Isso não pode ser desfeito.')) return;
+
+    try {
+        [PROFILE_KEY, STORAGE_KEY, MESSAGES_KEY, RECIPROCATED_KEY, NOTIFICATIONS_KEY]
+            .forEach(key => localStorage.removeItem(key));
+    } catch (error) {
+        // sem armazenamento: só recarrega
+    }
+    location.reload();
+}
+
+
 // Inicia a aplicação
+renderMyProfile();
 syncIncomingLikes();
 getPending().forEach(scheduleLikeBack); // curtidas que ainda aguardam resposta
 refreshAll();
