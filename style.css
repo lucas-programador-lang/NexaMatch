@@ -555,106 +555,174 @@ select option {
     40%           { transform: scale(1.05); }
 }
 
-/* Botão grande dentro do modal: ícone + texto */
-.modal-content .btn-like {
-    width: 100%;
-    gap: 0.6rem;
-    padding: 0.85rem 1rem;
-    font-weight: 700;
-}
+/* ---------- Página de perfil da pessoa ---------- */
+.card-image-wrapper { cursor: pointer; }
 
-.modal-content .btn-like::after {
-    content: "Curtir Perfil";
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-}
-
-.modal-content .btn-like.liked::after {
-    content: "Perfil Curtido";
-}
-
-/* ---------- Modal ---------- */
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    padding: 1rem;
-    background: rgba(4, 5, 16, 0.75);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    display: flex;
-    justify-content: center;
+.btn-back {
+    display: inline-flex;
     align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    position: relative;
-    width: 100%;
-    max-width: 460px;
-    max-height: 92vh;
-    overflow-y: auto;
-    padding: 1.5rem;
-    background: linear-gradient(160deg, rgba(30, 34, 66, 0.96), rgba(12, 14, 34, 0.96));
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    padding: 0.6rem 1.1rem 0.6rem 0.9rem;
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-main);
     border: 1px solid var(--border-strong);
-    border-radius: 1.75rem;
-    box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.9), var(--glow-violet);
-    animation: modalFadeIn 0.35s cubic-bezier(.2, .8, .2, 1);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background 0.25s, transform 0.2s;
 }
 
-.modal-content::before {
+.btn-back::before {
+    content: "";
+    width: 1rem;
+    height: 1rem;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5M12 19l-7-7 7-7'/></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M19 12H5M12 19l-7-7 7-7'/></svg>") center / contain no-repeat;
+    transition: transform 0.25s;
+}
+
+.btn-back:hover { background: rgba(255, 255, 255, 0.14); }
+.btn-back:hover::before { transform: translateX(-3px); }
+
+.profile-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 440px) 1fr;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.profile-photo {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 1.75rem;
+    border: 1px solid var(--border-strong);
+    background: var(--surface-solid);
+    box-shadow: var(--shadow-lg), var(--glow-violet);
+}
+
+.profile-photo::after {
     content: "";
     position: absolute;
-    top: 0;
-    left: 12%;
-    right: 12%;
-    height: 2px;
-    background: var(--grad-brand);
-    border-radius: 0 0 4px 4px;
+    inset: 0;
+    background: linear-gradient(to top, rgba(6, 7, 19, 0.75) 0%, rgba(6, 7, 19, 0) 40%);
+    pointer-events: none;
 }
 
-@keyframes modalFadeIn {
-    from { opacity: 0; transform: translateY(24px) scale(0.96); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-close {
-    position: absolute;
-    top: 1.1rem;
-    right: 1.1rem;
-    z-index: 2;
-    width: 2.3rem;
-    height: 2.3rem;
-    display: grid;
-    place-items: center;
-    background: rgba(6, 7, 19, 0.6);
-    border: 1px solid var(--border-strong);
-    border-radius: 50%;
-    color: var(--text-main);
-    font-size: 1.4rem;
-    line-height: 1;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    transition: background 0.25s, transform 0.25s, border-color 0.25s;
-}
-
-.modal-close:hover {
-    background: var(--pink);
-    border-color: transparent;
-    transform: rotate(90deg);
-}
-
-.modal-body-img {
-    display: block;
+.profile-photo img {
     width: 100%;
-    height: 360px;
+    height: 100%;
     object-fit: cover;
-    border-radius: 1.2rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--border);
 }
+
+.profile-photo .location-tag {
+    bottom: 16px;
+    left: 16px;
+}
+
+.profile-panel {
+    padding: 2rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 1.75rem;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: var(--shadow-lg);
+}
+
+.profile-name {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.05;
+}
+
+.profile-name span {
+    color: var(--cyan);
+    font-family: var(--font-body);
+    font-size: 0.5em;
+    font-weight: 600;
+    letter-spacing: 0;
+}
+
+.profile-location {
+    margin-top: 0.6rem;
+    color: var(--gold);
+    font-weight: 600;
+}
+
+.profile-location::before { content: "📍 "; }
+
+.profile-section {
+    margin-top: 1.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.profile-section h3 {
+    margin-bottom: 0.6rem;
+    color: var(--text-main);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.profile-section p {
+    max-width: 60ch;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    line-height: 1.65;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    padding: 0.4rem 0.95rem;
+    background: var(--grad-soft);
+    color: var(--text-main);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.profile-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+}
+
+.profile-actions .btn-view {
+    flex: 0 1 auto;
+    padding: 0.85rem 1.5rem;
+}
+
+/* Botão grande de curtir: ícone + texto */
+.btn-like-lg {
+    gap: 0.6rem;
+    padding: 0.85rem 1.6rem;
+}
+
+.btn-like-lg::after {
+    content: "Curtir perfil";
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.btn-like-lg.liked::after { content: "Perfil curtido"; }
 
 /* ---------- Acessibilidade ---------- */
 a:focus-visible,
@@ -769,7 +837,6 @@ select:focus-visible {
 
     .card-image-wrapper { height: 310px; }
 
-    .modal-body-img { height: 300px; }
 }
 
 @keyframes dockIn {
