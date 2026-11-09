@@ -160,6 +160,11 @@ function saveMyProfile() {
 }
 
 let myProfile = loadMyProfile();
+// Primeiro acesso: usa o nome da conta como nome do perfil
+const currentUser = window.Auth ? Auth.getCurrentUser() : null;
+if (!myProfile.name && currentUser && currentUser.name) {
+    myProfile.name = currentUser.name.slice(0, 40);
+}
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
 
@@ -1076,6 +1081,11 @@ function renderMyProfile() {
                 </div>
 
                 <div class="danger-zone">
+                    <p>Conectado como ${escapeHtml(currentUser ? currentUser.email : '')}.</p>
+                    <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
+                </div>
+
+                <div class="danger-zone">
                     <p>Apaga seu perfil, curtidas, mensagens e avisos deste navegador.</p>
                     <button type="button" class="btn-ghost" onclick="resetAppData()">Apagar meus dados</button>
                 </div>
@@ -1259,6 +1269,11 @@ function saveProfileForm(event) {
     }
     updateProfileSummary();
     renderProfiles(); // o Descobrir passa a mostrar só os gêneros escolhidos
+}
+
+// ----- Sair da conta -----
+function logoutUser() {
+    Auth.logout('login.html');
 }
 
 // ----- Apagar tudo -----
