@@ -2804,3 +2804,165 @@ select:focus-visible {
 
     .modal-actions { flex-direction: column-reverse; }
 }
+
+
+/* ---------- Meu Perfil: animações ---------- */
+
+/* Entrada: os blocos sobem um depois do outro */
+@keyframes meRise {
+    from { opacity: 0; transform: translateY(22px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+.me-hero,
+.me-step,
+.me-preview-col,
+.me-account {
+    animation: meRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.me-hero                      { animation-delay: 0.05s; }
+.me-step:nth-of-type(1)       { animation-delay: 0.20s; }
+.me-step:nth-of-type(2)       { animation-delay: 0.30s; }
+.me-step:nth-of-type(3)       { animation-delay: 0.40s; }
+.me-preview-col               { animation-delay: 0.35s; }
+.me-account                   { animation-delay: 0.50s; }
+.me-save-bar                  { animation: meRise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.55s backwards; }
+
+/* Os 4 contadores aparecem em sequência */
+@keyframes mePop {
+    0%   { opacity: 0; transform: translateY(14px) scale(0.9); }
+    70%  { transform: translateY(-2px) scale(1.03); }
+    100% { opacity: 1; transform: none; }
+}
+
+.me-stat { animation: mePop 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) backwards; }
+.me-stat:nth-child(1) { animation-delay: 0.30s; }
+.me-stat:nth-child(2) { animation-delay: 0.38s; }
+.me-stat:nth-child(3) { animation-delay: 0.46s; }
+.me-stat:nth-child(4) { animation-delay: 0.54s; }
+
+/* Anel de progresso se desenha do zero */
+@keyframes meRing {
+    from { stroke-dashoffset: 276.5; }
+}
+
+.me-ring .ring-fg { animation: meRing 1.4s cubic-bezier(0.3, 0.7, 0.2, 1) 0.4s backwards; }
+
+.me-ring b { animation: mePop 0.6s ease 0.9s backwards; }
+
+/* Avatar: flutua de leve e tem um brilho girando atrás */
+@keyframes meFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+
+@keyframes meSpin {
+    to { transform: rotate(360deg); }
+}
+
+.me-avatar-wrap { animation: meFloat 5s ease-in-out infinite; }
+
+.me-avatar-wrap::before {
+    content: "";
+    position: absolute;
+    inset: -0.7rem;
+    z-index: -1;
+    border-radius: 3rem;
+    background: conic-gradient(from 0deg, #2de2f5, #8b5cf6, #ff4fa3, #2de2f5);
+    filter: blur(18px);
+    opacity: 0.55;
+    animation: meSpin 8s linear infinite;
+}
+
+/* Botão da câmera dá um "tum" chamando atenção */
+@keyframes meBeat {
+    0%, 70%, 100% { transform: scale(1); }
+    80%           { transform: scale(1.18); }
+    90%           { transform: scale(0.96); }
+}
+
+.me-avatar-edit { animation: meBeat 3.2s ease-in-out 1.5s infinite; }
+.me-avatar-edit:hover { animation: none; }
+
+/* Prévia: flutua devagar, inclina ao passar o mouse */
+.me-preview {
+    animation: meFloat 7s ease-in-out 1s infinite;
+    transition: box-shadow 0.4s;
+}
+
+.me-preview:hover {
+    animation-play-state: paused;
+    box-shadow: 0 30px 60px -20px rgba(139, 92, 246, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.pv-initial { animation: mePop 0.6s ease backwards; }
+
+/* Passos do formulário reagem ao mouse */
+.me-step {
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.me-step:hover,
+.me-step:focus-within {
+    transform: translateY(-3px);
+    border-color: rgba(139, 92, 246, 0.45);
+    box-shadow: 0 24px 50px -22px rgba(139, 92, 246, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.me-step-head > i { transition: transform 0.4s; }
+.me-step:hover .me-step-head > i { transform: rotate(-8deg) scale(1.1); }
+
+/* Sugestões de interesse */
+.me-suggest button { transition: transform 0.2s, color 0.2s, border-color 0.2s, background 0.2s; }
+.me-suggest button:hover { transform: translateY(-2px); }
+.me-suggest button:active { transform: scale(0.92); }
+
+/* Botão Salvar: reflexo de luz passando */
+.btn-save {
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-save::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -70%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+    transform: skewX(-20deg);
+    animation: shine 4.5s ease-in-out 1.5s infinite;
+    pointer-events: none;
+}
+
+/* Salvou: o botão fica verde e o check "pula" */
+@keyframes meSaved {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.08); }
+    100% { transform: scale(1); }
+}
+
+@keyframes meCheck {
+    0%   { transform: scale(0) rotate(-40deg); }
+    60%  { transform: scale(1.4) rotate(8deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+.btn-save.saved {
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    box-shadow: 0 10px 28px -6px rgba(52, 245, 161, 0.75);
+    animation: meSaved 0.5s ease;
+}
+
+.btn-save.saved .ico { animation: meCheck 0.55s ease; }
+
+/* Quem prefere menos movimento não vê nada disso */
+@media (prefers-reduced-motion: reduce) {
+    .me-hero, .me-step, .me-preview-col, .me-account, .me-stat, .me-save-bar,
+    .me-ring .ring-fg, .me-ring b, .me-avatar-wrap, .me-avatar-wrap::before,
+    .me-avatar-edit, .me-preview, .pv-initial, .btn-save::after {
+        animation: none !important;
+    }
+}
