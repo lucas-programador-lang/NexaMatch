@@ -786,6 +786,251 @@ select option {
 
 .btn-like-lg.liked::after { content: "Perfil curtido"; }
 
+
+/* ---------- Meus Matches ---------- */
+.matches-section { margin-top: 2.5rem; }
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1.4rem;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+}
+
+.count {
+    min-width: 1.7rem;
+    padding: 0.1rem 0.55rem;
+    background: var(--grad-soft);
+    color: var(--cyan);
+    border: 1px solid rgba(45, 226, 245, 0.3);
+    border-radius: 999px;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+}
+
+.section-hint {
+    max-width: 52ch;
+    color: var(--text-muted);
+}
+
+/* Selo de match (foto do card e página de perfil) */
+.match-badge,
+.match-pill {
+    --heart-filled: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>");
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.8rem 0.3rem 0.65rem;
+    background: var(--grad-brand);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 6px 18px -4px rgba(139, 92, 246, 0.8);
+}
+
+.match-badge::before,
+.match-pill::before {
+    content: "";
+    width: 0.9rem;
+    height: 0.9rem;
+    background-color: currentColor;
+    -webkit-mask: var(--heart-filled) center / contain no-repeat;
+    mask: var(--heart-filled) center / contain no-repeat;
+}
+
+.card-image-wrapper .match-badge {
+    position: absolute;
+    z-index: 1;
+    top: 12px;
+    left: 12px;
+}
+
+.match-pill { margin-top: 0.9rem; }
+
+/* Lista de curtidas aguardando */
+.pending-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.pending-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1rem 0.8rem 0.8rem;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 1.2rem;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.pending-item img {
+    width: 3.6rem;
+    height: 3.6rem;
+    flex: none;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid rgba(139, 92, 246, 0.6);
+    cursor: pointer;
+}
+
+.pending-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.pending-info strong { font-size: 1rem; }
+
+.pending-info span {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* Botão discreto (desfazer / cancelar) */
+.btn-ghost {
+    padding: 0.6rem 0.9rem;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.9rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.25s, border-color 0.25s, background 0.25s;
+}
+
+.btn-ghost:hover {
+    color: #fff;
+    background: rgba(255, 79, 163, 0.18);
+    border-color: rgba(255, 79, 163, 0.6);
+}
+
+/* Botão principal (gradiente) */
+.btn-primary {
+    padding: 0.85rem 1.6rem;
+    background: var(--grad-brand);
+    color: #fff;
+    border: none;
+    border-radius: 0.9rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 26px -6px rgba(139, 92, 246, 0.8);
+    transition: transform 0.2s, box-shadow 0.25s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px -6px rgba(255, 79, 163, 0.7);
+}
+
+.btn-primary:active { transform: scale(0.96); }
+
+/* Tela vazia */
+.empty-state {
+    max-width: 30rem;
+    margin-top: 2rem;
+    padding: 2rem;
+    background: var(--card-bg);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.empty-state h2 {
+    margin-bottom: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+}
+
+.empty-state p {
+    margin-bottom: 1.4rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+/* Contador no menu */
+.nav-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    background: var(--pink);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.nav-badge:empty { display: none; }
+
+nav a.active .nav-badge {
+    background: #fff;
+    color: #6d28d9;
+}
+
+/* Aviso rápido (toast) */
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 2rem;
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: calc(100% - 2rem);
+    padding: 0.8rem 0.8rem 0.8rem 1.3rem;
+    background: rgba(18, 21, 46, 0.92);
+    color: var(--text-main);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.85), 0 0 30px rgba(139, 92, 246, 0.35);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    opacity: 0;
+    transform: translate(-50%, 20px);
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+}
+
+.toast:empty { display: none; }
+
+.toast button {
+    padding: 0.5rem 1rem;
+    background: var(--grad-brand);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
 /* ---------- Acessibilidade ---------- */
 a:focus-visible,
 button:focus-visible,
@@ -920,6 +1165,28 @@ select:focus-visible {
     .profile-actions .btn-view { flex: 1 1 100%; }
 
     .btn-back { margin-bottom: 1.1rem; }
+
+    /* Matches no celular */
+    .matches-section { margin-top: 2rem; }
+
+    .pending-list { grid-template-columns: minmax(0, 1fr); }
+
+    .pending-item { flex-wrap: wrap; }
+
+    .pending-item .btn-ghost { flex: 1 1 100%; }
+
+    /* contador vira bolinha no canto do ícone do menu */
+    .nav-badge {
+        position: absolute;
+        top: 0.3rem;
+        left: calc(50% + 0.35rem);
+        min-width: 1.1rem;
+        height: 1.1rem;
+        font-size: 0.62rem;
+    }
+
+    /* aviso fica acima do menu flutuante */
+    .toast { bottom: calc(6.8rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 @keyframes dockIn {
