@@ -514,3 +514,190 @@ body.auth-page {
     .auth-frame::before { display: none; }
     .deck::before { inset: 0 4%; }
 }
+
+/* ==========================================================
+   Acabamento (v4): fundo, movimento e detalhes
+   ========================================================== */
+
+/* ---------- Fundo ---------- */
+.auth-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+/* grade de pontos que some nas bordas */
+.auth-bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.16) 1px, transparent 1.4px);
+    background-size: 30px 30px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 15%, transparent 78%);
+    mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 15%, transparent 78%);
+    opacity: 0.55;
+}
+
+/* luzes que se movem devagar */
+.auth-bg i {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(70px);
+    opacity: 0.4;
+}
+
+.auth-bg i:nth-child(1) { width: 34rem; height: 34rem; left: -8rem; top: -10rem; background: #6d3df0; animation: drift-1 22s ease-in-out infinite alternate; }
+.auth-bg i:nth-child(2) { width: 30rem; height: 30rem; right: -8rem; bottom: -8rem; background: #e0408f; animation: drift-2 26s ease-in-out infinite alternate; }
+.auth-bg i:nth-child(3) { width: 24rem; height: 24rem; right: 18%; top: -9rem; background: #1fc7dc; opacity: 0.28; animation: drift-3 30s ease-in-out infinite alternate; }
+
+@keyframes drift-1 { to { transform: translate(8rem, 6rem) scale(1.12); } }
+@keyframes drift-2 { to { transform: translate(-7rem, -5rem) scale(1.1); } }
+@keyframes drift-3 { to { transform: translate(-9rem, 5rem) scale(0.9); } }
+
+/* corações bem discretos subindo */
+.auth-bg b {
+    position: absolute;
+    bottom: -3rem;
+    width: var(--s, 1.2rem);
+    aspect-ratio: 1;
+    opacity: 0;
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2.1 0 3.5 1.2 4.4 2.5l1.6 2 1.6-2C14.5 6.2 15.9 5 18 5c3.3 0 5.1 3.4 3.6 6.8C19.5 16.4 12 21 12 21z'/></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2.1 0 3.5 1.2 4.4 2.5l1.6 2 1.6-2C14.5 6.2 15.9 5 18 5c3.3 0 5.1 3.4 3.6 6.8C19.5 16.4 12 21 12 21z'/></svg>") center / contain no-repeat;
+    animation: heart-rise var(--d, 18s) linear var(--w, 0s) infinite;
+}
+
+.auth-bg b:nth-of-type(1) { left: 6%;  --s: 1rem;   --d: 19s; --w: 0s; }
+.auth-bg b:nth-of-type(2) { left: 18%; --s: 1.5rem; --d: 24s; --w: 6s; }
+.auth-bg b:nth-of-type(3) { left: 38%; --s: 0.9rem; --d: 21s; --w: 12s; }
+.auth-bg b:nth-of-type(4) { left: 64%; --s: 1.3rem; --d: 26s; --w: 3s; }
+.auth-bg b:nth-of-type(5) { left: 82%; --s: 1rem;   --d: 20s; --w: 9s; }
+.auth-bg b:nth-of-type(6) { left: 94%; --s: 1.6rem; --d: 25s; --w: 15s; }
+
+@keyframes heart-rise {
+    0%   { transform: translateY(0) rotate(-8deg); opacity: 0; }
+    12%  { opacity: 0.16; }
+    85%  { opacity: 0.12; }
+    100% { transform: translateY(-110vh) rotate(10deg); opacity: 0; }
+}
+
+/* ---------- Mural: ondas de sinal e movimento leve ---------- */
+.deck::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 0;
+    width: 30rem;
+    height: 30rem;
+    margin: -15rem 0 0 -15rem;
+    border-radius: 50%;
+    background: repeating-radial-gradient(circle, transparent 0 3.4rem, rgba(255, 255, 255, 0.07) 3.4rem calc(3.4rem + 1px));
+    -webkit-mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+    mask-image: radial-gradient(circle, #000 25%, transparent 68%);
+    animation: ripple 9s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes ripple {
+    0%, 100% { transform: scale(0.94); opacity: 0.7; }
+    50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes float-y { 50% { translate: 0 -7px; } }
+
+.pcard-1 { animation: fan-in 0.9s cubic-bezier(.2, .8, .2, 1) 0.1s both, float-y 7s ease-in-out 1.2s infinite; }
+.pcard-2 { animation: fan-in 0.9s cubic-bezier(.2, .8, .2, 1) 0.2s both, float-y 8s ease-in-out 1.6s infinite reverse; }
+.pcard-3 { animation: fan-in 0.9s cubic-bezier(.2, .8, .2, 1) both, float-y 6.5s ease-in-out 1.4s infinite; }
+.notice-like { animation: notice-in 0.6s cubic-bezier(.2, .8, .2, 1) 1.1s both, float-y 6s ease-in-out 2s infinite; }
+.notice-match { animation: notice-in 0.6s cubic-bezier(.2, .8, .2, 1) 1.5s both, float-y 7s ease-in-out 2.4s infinite reverse; }
+
+/* brilho de vidro nos cartões */
+.pcard-1, .pcard-2, .pcard-3 { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 26px 50px -18px rgba(0, 0, 0, 0.85), 0 0 34px var(--glow, rgba(139, 92, 246, 0.3)); }
+.pcard-1 { --glow: rgba(45, 226, 245, 0.22); }
+.pcard-2 { --glow: rgba(255, 79, 163, 0.22); }
+.pcard-3 { --glow: rgba(139, 92, 246, 0.4); }
+
+/* ---------- Formulário: entrada suave e detalhes ---------- */
+.auth-card > * { animation: rise 0.6s cubic-bezier(.2, .8, .2, 1) both; }
+.auth-card > :nth-child(2) { animation-delay: 0.06s; }
+.auth-card > :nth-child(3) { animation-delay: 0.12s; }
+.auth-card > :nth-child(4) { animation-delay: 0.18s; }
+.auth-card > :nth-child(5) { animation-delay: 0.24s; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+
+/* caixa de marcar personalizada */
+.auth-card .check input {
+    -webkit-appearance: none;
+    appearance: none;
+    display: grid;
+    place-content: center;
+    width: 1.2rem;
+    height: 1.2rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-strong);
+    border-radius: 0.4rem;
+    transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-card .check input::after {
+    content: "";
+    width: 0.62rem;
+    height: 0.34rem;
+    margin-top: -0.1rem;
+    border-left: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+    transform: rotate(-45deg) scale(0);
+    transition: transform 0.18s ease;
+}
+
+.auth-card .check input:checked {
+    background: var(--grad-brand);
+    border-color: transparent;
+    box-shadow: 0 0 14px rgba(139, 92, 246, 0.55);
+}
+
+.auth-card .check input:checked::after { transform: rotate(-45deg) scale(1); }
+.auth-card .check:hover input:not(:checked) { border-color: rgba(255, 255, 255, 0.35); }
+
+/* brilho que passa no botão */
+.auth-card .btn-primary { overflow: hidden; }
+
+.auth-card .btn-primary::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+}
+
+.auth-card .btn-primary:hover::before { transform: translateX(120%); }
+
+/* divisória do mural com gradiente */
+.auth-stage { border-right: 0; }
+
+.auth-stage::after {
+    content: "";
+    position: absolute;
+    top: 8%;
+    bottom: 8%;
+    right: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.2), transparent);
+}
+
+@media (max-width: 900px) {
+    .auth-stage::after, .deck::after { display: none; }
+    .auth-bg i { filter: blur(50px); }
+    .auth-bg b:nth-of-type(n+4) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pcard-1, .pcard-2, .pcard-3, .notice, .auth-bg i, .auth-bg b, .deck::after, .auth-card > * { animation: none !important; }
+    .auth-bg b { opacity: 0.1; bottom: 20%; }
+}
