@@ -2649,3 +2649,158 @@ select:focus-visible {
         box-shadow: none;
     }
 }
+
+
+/* ---------- Janela de confirmação ---------- */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem;
+    background: rgba(4, 5, 14, 0.62);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.modal-overlay.show { opacity: 1; }
+
+.modal {
+    --accent: var(--violet);
+    position: relative;
+    width: 100%;
+    max-width: 25rem;
+    padding: 2rem 1.6rem 1.5rem;
+    text-align: center;
+    background: linear-gradient(180deg, rgba(26, 30, 58, 0.98), rgba(12, 14, 32, 0.98));
+    border: 1px solid var(--border-strong);
+    border-radius: 1.6rem;
+    box-shadow: 0 30px 70px -10px rgba(0, 0, 0, 0.9), 0 0 60px -12px color-mix(in srgb, var(--accent) 60%, transparent);
+    transform: translateY(14px) scale(0.96);
+    transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.modal.danger { --accent: var(--pink); }
+
+.modal-overlay.show .modal { transform: none; }
+
+/* brilho em gradiente na borda de cima */
+.modal::before {
+    content: "";
+    position: absolute;
+    inset: 0 2rem auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    border-radius: 2px;
+}
+
+.modal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.6rem;
+    height: 3.6rem;
+    margin: 0 auto 1rem;
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+    border-radius: 1.1rem;
+    box-shadow: 0 0 28px -4px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+.modal-icon .ico { width: 1.6rem; height: 1.6rem; }
+
+.modal h3 {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    line-height: 1.25;
+}
+
+.modal p {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.modal-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.45rem;
+    margin-top: 1rem;
+    list-style: none;
+}
+
+.modal-list li {
+    padding: 0.3rem 0.8rem;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.78rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.7rem;
+    margin-top: 1.6rem;
+}
+
+.modal-actions button {
+    flex: 1;
+    padding: 0.85rem 1rem;
+    border-radius: 0.95rem;
+    font: inherit;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.modal-actions button:active { transform: scale(0.96); }
+
+.modal-cancel {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid var(--border-strong);
+}
+
+.modal-cancel:hover { background: rgba(255, 255, 255, 0.14); }
+
+.modal-ok {
+    color: #fff;
+    background: var(--grad-brand);
+    border: none;
+    box-shadow: 0 10px 24px -8px rgba(139, 92, 246, 0.9);
+}
+
+.modal.danger .modal-ok {
+    background: linear-gradient(135deg, #ff4fa3, #e11d48);
+    box-shadow: 0 10px 24px -8px rgba(255, 79, 163, 0.9);
+}
+
+.modal-ok:hover { transform: translateY(-2px); }
+
+.modal-actions button:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.5);
+}
+
+/* celular: a janela sobe de baixo, como uma gaveta */
+@media (max-width: 860px) {
+    .modal-overlay { align-items: flex-end; padding: 0; }
+
+    .modal {
+        max-width: none;
+        padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+        border-radius: 1.6rem 1.6rem 0 0;
+        transform: translateY(100%);
+    }
+
+    .modal-actions { flex-direction: column-reverse; }
+}
