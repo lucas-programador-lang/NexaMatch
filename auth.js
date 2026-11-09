@@ -128,6 +128,73 @@
 
   window.Auth = { register, login, logout, getCurrentUser, requireAuth };
 
+  // ---------- validação dos campos ----------
+  function fieldMessage(form, name) {
+    const v = form[name].value;
+    switch (name) {
+      case "name":
+        return v.trim().length < 2 ? "Informe seu nome." : "";
+      case "email":
+        if (!v.trim()) return "Informe seu e-mail.";
+        return isValidEmail(normalizeEmail(v)) ? "" : "Digite um e-mail válido, como voce@email.com.";
+      case "password":
+        if (!v) return "Informe a senha.";
+        if (form.id === "register-form" && v.length < 6) return "Use pelo menos 6 caracteres.";
+        return "";
+      case "confirmPassword":
+        return v !== form.password.value ? "As senhas não coincidem." : "";
+      case "age18":
+        return form.age18.checked ? "" : "Você precisa ter 18 anos ou mais.";
+      default:
+        return "";
+    }
+  }
+
+  function setFieldError(form, name, message) {
+    const input = form[name];
+    const box = input.closest(".af-field");
+    const err = document.getElementById(name + "-error");
+    if (box) box.classList.toggle("is-invalid", !!message);
+    input.setAttribute("aria-invalid", message ? "true" : "false");
+    if (err) {
+      err.textContent = message;
+      err.hidden = !message;
+      input.setAttribute("aria-describedby", err.id);
+    }
+  }
+
+  function validateForm(form, names) {
+    let first = null;
+    names.forEach(function (name) {
+      const msg = fieldMessage(form, name);
+      setFieldError(form, name, msg);
+      if (msg && !first) first = form[name];
+    });
+    if (first) first.focus();
+    return !first;
+  }
+
+  // Valida ao sair do campo e acompanha a digitação depois do primeiro erro
+  function liveValidate(form, names) {
+    names.forEach(function (name) {
+      const input = form[name];
+      const evt = input.type === "checkbox" ? "change" : "input";
+      input.addEventListener("blur", function () {
+        if (input.type !== "checkbox" && !input.value) return;
+        setFieldError(form, name, fieldMessage(form, name));
+      });
+      input.addEventListener(evt, function () {
+        const box = input.closest(".af-field");
+        if (box && box.classList.contains("is-invalid")) {
+          setFieldError(form, name, fieldMessage(form, name));
+        }
+        if (name === "password" && form.confirmPassword && form.confirmPassword.value) {
+          setFieldError(form, "confirmPassword", fieldMessage(form, "confirmPassword"));
+        }
+      });
+    });
+  }
+
   // ---------- ligação com os formulários ----------
   document.addEventListener("DOMContentLoaded", function () {
     const loginForm = document.getElementById("login-form");
@@ -139,7 +206,7 @@
       return;
     }
 
-    // Botão de mostrar/ocultar senha
+    // Mostrar/ocultar senha
     document.querySelectorAll("[data-toggle]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         const input = document.getElementById(btn.dataset.toggle);
@@ -168,8 +235,12 @@
 
     if (loginForm) {
       const msg = document.getElementById("form-message");
+      const names = ["email", "password"];
+      liveValidate(loginForm, names);
       loginForm.addEventListener("submit", async function (e) {
         e.preventDefault();
+        showMessage(msg, "");
+        if (!validateForm(loginForm, names)) return;
         const btn = loginForm.querySelector("button[type=submit]");
         btn.disabled = true;
         try {
@@ -178,7 +249,7 @@
             password: loginForm.password.value,
             remember: loginForm.remember.checked,
           });
-          showMessage(msg, "Login realizado! Redirecionando...", "success");
+          showMessage(msg, "Tudo certo! Abrindo o NexaMatch...", "success");
           setTimeout(() => (window.location.href = "index.html"), 600);
         } catch (err) {
           showMessage(msg, err.message, "error");
@@ -189,8 +260,12 @@
 
     if (registerForm) {
       const msg = document.getElementById("form-message");
+      const names = ["name", "email", "password", "confirmPassword", "age18"];
+      liveValidate(registerForm, names);
       registerForm.addEventListener("submit", async function (e) {
         e.preventDefault();
+        showMessage(msg, "");
+        if (!validateForm(registerForm, names)) return;
         const btn = registerForm.querySelector("button[type=submit]");
         btn.disabled = true;
         try {
@@ -200,7 +275,7 @@
             password: registerForm.password.value,
             confirmPassword: registerForm.confirmPassword.value,
           });
-          showMessage(msg, "Conta criada! Redirecionando para o login...", "success");
+          showMessage(msg, "Conta criada! Levando você para o login...", "success");
           setTimeout(() => (window.location.href = "login.html"), 900);
         } catch (err) {
           showMessage(msg, err.message, "error");
