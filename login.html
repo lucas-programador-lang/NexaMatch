@@ -8,50 +8,80 @@
   <link rel="stylesheet" href="auth.css">
 </head>
 <body class="auth-page">
-  <div class="auth-shell">
+  <div class="auth-frame">
 
-    <aside class="auth-stage" aria-hidden="true">
+    <aside class="auth-stage">
       <div class="logo">NEXA<span>MATCH</span></div>
-      <div class="orbs">
-        <span class="orb orb-a"></span>
-        <span class="orb orb-b"></span>
-        <span class="orb-heart"></span>
+
+      <div class="deck" aria-hidden="true">
+        <article class="pcard pcard-1" data-initial="B">
+          <img src="https://i.pravatar.cc/600?img=9" alt="" loading="eager" onerror="this.remove()">
+          <div class="pinfo"><strong>Beatriz, 22</strong><small>Curitiba, PR</small><em>Viagens</em><em>Sci-fi</em></div>
+        </article>
+        <article class="pcard pcard-2" data-initial="C">
+          <img src="https://i.pravatar.cc/600?img=11" alt="" loading="eager" onerror="this.remove()">
+          <div class="pinfo"><strong>Carlos, 28</strong><small>São Paulo, SP</small><em>Design</em><em>Música</em></div>
+        </article>
+        <article class="pcard pcard-3" data-initial="A">
+          <img src="https://i.pravatar.cc/600?img=5" alt="" loading="eager" onerror="this.remove()">
+          <div class="pinfo"><strong>Ana, 24</strong><small>Porto Velho, RO</small><em>Café</em><em>Programação</em></div>
+        </article>
+        <div class="notice notice-like"><span class="dot"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2.1 0 3.5 1.2 4.4 2.5l1.6 2 1.6-2C14.5 6.2 15.9 5 18 5c3.3 0 5.1 3.4 3.6 6.8C19.5 16.4 12 21 12 21z"/></svg></span><span>Ana curtiu você</span></div>
+        <div class="notice notice-match"><span class="dot"><svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.9 8.4 2.7 5 6 5c2.1 0 3.5 1.2 4.4 2.5l1.6 2 1.6-2C14.5 6.2 15.9 5 18 5c3.3 0 5.1 3.4 3.6 6.8C19.5 16.4 12 21 12 21z"/></svg></span><span>Deu match!<small>Vocês dois se curtiram</small></span></div>
       </div>
+
+      <div class="stage-faces" aria-hidden="true">
+        <span style="--c1:#1d6f86;--c2:#1a1d42"><b>B</b><img src="https://i.pravatar.cc/120?img=9" alt="" onerror="this.remove()"></span>
+        <span style="--c1:#8a2d6c;--c2:#1a1d42"><b>C</b><img src="https://i.pravatar.cc/120?img=11" alt="" onerror="this.remove()"></span>
+        <span style="--c1:#5b3ccc;--c2:#1a1d42"><b>A</b><img src="https://i.pravatar.cc/120?img=5" alt="" onerror="this.remove()"></span>
+      </div>
+
       <div class="stage-copy">
-        <p class="stage-title">Duas pessoas. Um match.</p>
-        <p class="stage-text">Descubra gente nova, curta perfis e converse quando o interesse for dos dois.</p>
+        <p class="stage-title">Curta. Combine. Converse.</p>
+        <p class="stage-text">Veja quem curtiu você e converse só quando o interesse for dos dois.</p>
       </div>
     </aside>
 
     <main class="auth-panel">
       <section class="auth-card">
-        <h1>Entrar</h1>
-        <p class="sub">Continue de onde você parou.</p>
+        <div class="auth-tabs" role="group" aria-label="Acesso">
+          <a class="is-active" aria-current="page">Entrar</a>
+          <a href="register.html">Criar conta</a>
+        </div>
+
+        <h1>Bem-vindo de volta</h1>
+        <p class="sub">Entre para ver seus matches e mensagens.</p>
 
         <form id="login-form" novalidate>
-          <div class="field-box">
-            <input type="email" id="email" name="email" placeholder=" " autocomplete="email" required />
+          <div class="af-field">
             <label for="email">E-mail</label>
+            <div class="af-control">
+              <svg class="af-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m22 7-10 6L2 7"/></svg>
+              <input type="email" id="email" name="email" placeholder="voce@email.com" autocomplete="email" required/>
+              
+            </div>
+            <p class="af-error" id="email-error" hidden></p>
           </div>
-
-          <div class="field-box">
-            <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" required />
+          <div class="af-field">
             <label for="password">Senha</label>
-            <button type="button" class="toggle-pass" aria-label="Mostrar senha" data-toggle="password">
-              <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-            </button>
+            <div class="af-control">
+              <svg class="af-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input type="password" id="password" name="password" placeholder="Sua senha" autocomplete="current-password" required/>
+              <button type="button" class="toggle-pass" aria-label="Mostrar senha" data-toggle="password">
+                <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+              </button>
+            </div>
+            <p class="af-error" id="password-error" hidden></p>
           </div>
 
-          <label class="remember">
+          <label class="check">
             <input type="checkbox" id="remember" name="remember" /> Manter conectado
           </label>
 
           <button type="submit" class="btn-primary">Entrar</button>
           <div id="form-message" class="message" role="alert" hidden></div>
         </form>
-
-        <p class="alt">Ainda não tem conta? <a href="register.html">Criar conta</a></p>
       </section>
     </main>
 
