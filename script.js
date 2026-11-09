@@ -590,7 +590,7 @@ function renderNotifications() {
         return;
     }
 
-    notificationsContent.innerHTML = '<div class="pending-list">' + items.map(({ n, profile }) => {
+    notificationsContent.innerHTML = '<div class="notification-list">' + items.map(({ n, profile }) => {
         const isMatchNote = n.type === 'match';
         const text = isMatchNote
             ? `Deu match com <strong>${profile.name}</strong>!`
@@ -600,14 +600,16 @@ function renderNotifications() {
             : `<button class="btn-msg" onclick="handleLike('${profile.id}')">Curtir de volta</button>`;
 
         return `
-            <div class="pending-item notification-item ${n.read ? '' : 'unread'}">
+            <div class="notification-item ${n.read ? '' : 'unread'}">
                 <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
-                <div class="pending-info">
-                    <span class="notification-text">${text}</span>
-                    <span>${profile.name}, ${profile.age} · ${profile.location} · ${formatNotificationTime(n.time)}</span>
+                <div class="notification-info">
+                    <p class="notification-title">${text}</p>
+                    <p class="notification-meta">${profile.age} anos · ${profile.location} · ${formatNotificationTime(n.time)}</p>
                 </div>
-                <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
-                ${action}
+                <div class="notification-actions">
+                    <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
+                    ${action}
+                </div>
             </div>
         `;
     }).join('') + '</div>';
