@@ -478,19 +478,35 @@ select option {
     border-color: rgba(255, 255, 255, 0.32);
 }
 
-.btn-view:active,
-.btn-like:active { transform: scale(0.95); }
-
+/* Botão de curtir: o emoji do HTML/JS é escondido (font-size: 0)
+   e no lugar entra um coração desenhado em SVG */
 .btn-like {
+    --heart-outline: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>");
+    --heart-filled: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>");
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0;
+    min-width: 3.1rem;
     background: var(--grad-soft);
     border: 1px solid rgba(45, 226, 245, 0.38);
     color: var(--cyan);
-    padding: 0.7rem 1.15rem;
+    padding: 0.7rem 1rem;
     border-radius: 0.9rem;
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: 700;
     transition: all 0.25s;
+}
+
+.btn-like::before {
+    content: "";
+    width: 1.3rem;
+    height: 1.3rem;
+    flex: none;
+    background-color: currentColor;
+    -webkit-mask: var(--heart-outline) center / contain no-repeat;
+    mask: var(--heart-outline) center / contain no-repeat;
+    transition: transform 0.25s;
 }
 
 .btn-like:hover {
@@ -501,20 +517,61 @@ select option {
     transform: translateY(-2px);
 }
 
+.btn-like:hover::before {
+    -webkit-mask-image: var(--heart-filled);
+    mask-image: var(--heart-filled);
+    transform: scale(1.15);
+}
+
+.btn-view:active,
+.btn-like:active { transform: scale(0.95); }
+
+/* Curtido: coração cheio, dourado, batendo */
 .btn-like.liked {
     background: linear-gradient(135deg, #ffc857, #ff9f43);
     border-color: transparent;
-    color: #1a1204;
+    color: #2a1804;
     box-shadow: 0 8px 22px -4px rgba(255, 200, 87, 0.6);
     cursor: not-allowed;
     transform: none;
-    animation: pop 0.4s ease;
+    animation: pop 0.45s ease;
+}
+
+.btn-like.liked::before {
+    -webkit-mask-image: var(--heart-filled);
+    mask-image: var(--heart-filled);
+    animation: heartbeat 1.6s ease-in-out 0.45s infinite;
 }
 
 @keyframes pop {
     0%   { transform: scale(0.85); }
     60%  { transform: scale(1.18); }
     100% { transform: scale(1); }
+}
+
+@keyframes heartbeat {
+    0%, 60%, 100% { transform: scale(1); }
+    20%           { transform: scale(1.22); }
+    40%           { transform: scale(1.05); }
+}
+
+/* Botão grande dentro do modal: ícone + texto */
+.modal-content .btn-like {
+    width: 100%;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    font-weight: 700;
+}
+
+.modal-content .btn-like::after {
+    content: "Curtir Perfil";
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.modal-content .btn-like.liked::after {
+    content: "Perfil Curtido";
 }
 
 /* ---------- Modal ---------- */
@@ -615,7 +672,7 @@ select:focus-visible {
 }
 
 /* ---------- Responsivo ---------- */
-/* No celular o menu flutuante vai para a parte de baixo, estilo app */
+/* No celular o menu vira uma "dock" flutuante embaixo, estilo app */
 @media (max-width: 860px) {
     header {
         justify-content: center;
@@ -624,30 +681,83 @@ select:focus-visible {
 
     nav {
         top: auto;
-        right: 0.75rem;
-        left: 0.75rem;
-        bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-        justify-content: space-around;
-        padding: 0.35rem;
-        background: rgba(14, 17, 40, 0.8);
+        right: auto;
+        left: 50%;
+        bottom: calc(0.9rem + env(safe-area-inset-bottom, 0px));
+        width: calc(100% - 1.5rem);
+        max-width: 460px;
+        justify-content: space-between;
+        gap: 0.15rem;
+        padding: 0.4rem;
+        border-radius: 1.7rem;
+        background: rgba(14, 17, 40, 0.78);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.1),
+            0 22px 50px -10px rgba(0, 0, 0, 0.9),
+            0 0 40px rgba(139, 92, 246, 0.28);
+        transform: translateX(-50%);
+        animation: dockIn 0.6s cubic-bezier(.2, .9, .3, 1.2) 0.2s backwards;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* brilho fino em gradiente na borda de cima da dock */
+    nav::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 18%;
+        right: 18%;
+        height: 2px;
+        border-radius: 2px;
+        background: var(--grad-brand);
+        opacity: 0.85;
     }
 
     nav a {
         flex: 1;
         flex-direction: column;
-        gap: 0.2rem;
-        padding: 0.55rem 0.25rem;
+        justify-content: center;
+        gap: 0.25rem;
+        min-height: 3.6rem;
+        padding: 0.5rem 0.2rem;
         font-size: 0.68rem;
+        letter-spacing: 0.2px;
         text-align: center;
+        border-radius: 1.3rem;
     }
 
     nav a::before {
-        width: 1.25rem;
-        height: 1.25rem;
+        width: 1.4rem;
+        height: 1.4rem;
+    }
+
+    nav a:hover {
+        background: transparent;
+    }
+
+    /* item ativo "sobe" e ganha o gradiente */
+    nav a.active {
+        transform: translateY(-5px);
+        box-shadow:
+            0 12px 26px -6px rgba(139, 92, 246, 0.95),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    nav a.active::before {
+        transform: scale(1.1);
+    }
+
+    nav a:active {
+        transform: scale(0.94);
+    }
+
+    nav a.active:active {
+        transform: translateY(-3px) scale(0.96);
     }
 
     main {
-        padding: 1.25rem 1rem 7rem;
+        padding: 1.25rem 1rem 8rem;
     }
 
     .controls {
@@ -660,4 +770,22 @@ select:focus-visible {
     .card-image-wrapper { height: 310px; }
 
     .modal-body-img { height: 300px; }
+}
+
+@keyframes dockIn {
+    from { opacity: 0; transform: translate(-50%, 40px) scale(0.92); }
+    to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* telas bem pequenas */
+@media (max-width: 380px) {
+    nav a {
+        font-size: 0.62rem;
+        min-height: 3.3rem;
+    }
+
+    nav a::before {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
 }
