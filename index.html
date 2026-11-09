@@ -11,7 +11,7 @@
         <div class="logo">NEXA<span>MATCH</span></div>
         <nav>
             <a href="#" class="active" onclick="changePage('descobrir', this)">Descobrir</a>
-            <a href="#" onclick="changePage('matches', this)">Meus Matches</a>
+            <a href="#" onclick="changePage('matches', this)">Meus Matches <span class="nav-badge" id="matches-badge"></span></a>
             <a href="#" onclick="changePage('mensagens', this)">Mensagens</a>
             <a href="#" onclick="changePage('perfil', this)">Meu Perfil</a>
         </nav>
@@ -34,7 +34,8 @@
         <!-- Página 2: Meus Matches (Oculta por padrão) -->
         <div id="page-matches" class="page-content" style="display: none;">
             <h1>Meus Matches</h1>
-            <p style="color: var(--text-muted); margin-top: 1rem;">Você ainda não tem matches. Continue curtindo!</p>
+            <!-- O JavaScript monta a lista aqui dentro -->
+            <div id="matches-content"></div>
         </div>
 
         <!-- Página 3: Mensagens (Oculta por padrão) -->
@@ -54,6 +55,9 @@
             <div id="profile-detail"></div>
         </div>
     </main>
+
+    <!-- Aviso rápido (ex.: "Deu match!") -->
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script src="script.js"></script>
 </body>
