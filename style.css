@@ -800,12 +800,17 @@ select:focus-visible {
         height: 1.4rem;
     }
 
+    /* No celular o "hover" fica preso depois do toque, então ele não pode
+       apagar a cor do item ativo */
     nav a:hover {
         background: transparent;
     }
 
-    /* item ativo "sobe" e ganha o gradiente */
-    nav a.active {
+    /* item ativo "sobe" e ganha o gradiente (mesmo com hover/toque) */
+    nav a.active,
+    nav a.active:hover {
+        color: #fff;
+        background: var(--grad-brand);
         transform: translateY(-5px);
         box-shadow:
             0 12px 26px -6px rgba(139, 92, 246, 0.95),
