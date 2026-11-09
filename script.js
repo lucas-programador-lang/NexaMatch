@@ -54,15 +54,49 @@ function saveLikes() {
     }
 }
 
+// ---------- Mensagens (salvas no navegador) ----------
+const MESSAGES_KEY = 'nexamatch:messages';
+
+function loadMessages() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(MESSAGES_KEY) || '{}');
+        return { threads: saved.threads || {}, unread: saved.unread || {} };
+    } catch (error) {
+        return { threads: {}, unread: {} };
+    }
+}
+
+function saveMessages() {
+    try {
+        localStorage.setItem(MESSAGES_KEY, JSON.stringify(messageStore));
+    } catch (error) {
+        // sem armazenamento disponível: segue só na memória
+    }
+}
+
 const likedProfiles = loadLikes();
+const messageStore = loadMessages();
 const grid = document.getElementById('profiles-grid');
 const detail = document.getElementById('profile-detail');
 const matchesContent = document.getElementById('matches-content');
 const matchesBadge = document.getElementById('matches-badge');
+const messagesContent = document.getElementById('messages-content');
+const messagesBadge = document.getElementById('messages-badge');
 const toast = document.getElementById('toast');
 let currentProfileId = null; // perfil aberto na página de detalhe
 let previousPage = 'descobrir'; // de onde a pessoa veio (para o botão Voltar)
 let toastTimer = null;
+let currentChatId = null; // conversa aberta em Mensagens
+let typingFor = null;     // quem está "digitando" uma resposta
+
+// Evita que texto digitado vire HTML
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 const findProfile = id => profiles.find(p => p.id === id);
 const isMatch = id => likedProfiles.has(id) && Boolean(findProfile(id)?.likesYou);
@@ -138,9 +172,10 @@ function renderMatches() {
                 <div class="card-info">
                     <h2>${profile.name} <span>${profile.age}</span></h2>
                     <p>${profile.bio}</p>
-                    <div class="actions">
+                    <div class="actions actions-wrap">
                         <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
-                        <button class="btn-ghost" onclick="removeLike('${profile.id}')">Desfazer</button>
+                        <button class="btn-msg" onclick="goToMessages('${profile.id}')">Mensagem</button>
+                        <button class="btn-ghost" onclick="removeLike('${profile.id}')">Desfazer match</button>
                     </div>
                 </div>
             </div>
@@ -181,6 +216,7 @@ function updateBadge() {
 function refreshAll() {
     renderProfiles();
     renderMatches();
+    renderMessages();
     updateBadge();
     if (currentProfileId) renderProfileDetail(currentProfileId);
 }
@@ -218,6 +254,12 @@ function handleLike(id) {
 
     likedProfiles.add(id);
     saveLikes();
+
+    // Quando dá match, a outra pessoa puxa assunto
+    if (profile.likesYou && !(messageStore.threads[id] || []).length) {
+        addMessage(id, 'them', `Oi! Vi que a gente curte ${profile.interests[0].toLowerCase()}. Como foi seu dia?`, true);
+    }
+
     refreshAll();
 
     if (profile.likesYou) {
@@ -233,6 +275,14 @@ function removeLike(id) {
     const profile = findProfile(id);
     likedProfiles.delete(id);
     saveLikes();
+
+    // Sem match, sem conversa
+    delete messageStore.threads[id];
+    delete messageStore.unread[id];
+    saveMessages();
+    if (currentChatId === id) currentChatId = null;
+    if (typingFor === id) typingFor = null;
+
     refreshAll();
     showToast(profile ? `Curtida em ${profile.name} desfeita.` : 'Curtida desfeita.');
 }
@@ -289,7 +339,10 @@ function renderProfileDetail(id) {
                     <button class="btn-like btn-like-lg ${isLiked ? 'liked' : ''}" onclick="handleLike('${profile.id}')">
                         ${isLiked ? '✔' : '❤'}
                     </button>
-                    <button class="btn-view" onclick="goBack()">${previousPage === 'matches' ? 'Voltar aos matches' : 'Ver outros perfis'}</button>
+                    ${isMatch(id)
+                        ? `<button class="btn-msg btn-msg-lg" onclick="goToMessages('${profile.id}')">Enviar mensagem</button>`
+                        : `<button class="btn-locked" onclick="showToast('Você só pode enviar mensagem depois do match.')">Mensagem bloqueada</button>`}
+                    <button class="btn-view" onclick="goBack()">${backLabel()}</button>
                 </div>
             </div>
         </div>
@@ -310,10 +363,18 @@ function viewProfile(id) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+const NAV_INDEX = { descobrir: 0, matches: 1, mensagens: 2 };
+
+function backLabel() {
+    if (previousPage === 'matches') return 'Voltar aos matches';
+    if (previousPage === 'mensagens') return 'Voltar à conversa';
+    return 'Ver outros perfis';
+}
+
 function goBack() {
     currentProfileId = null;
     showPage(previousPage);
-    setActiveNav(previousPage === 'matches' ? 1 : 0);
+    setActiveNav(NAV_INDEX[previousPage] ?? 0);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -343,6 +404,290 @@ function changePage(pageId, element) {
 
     element.classList.add('active');
     showPage(pageId);
+
+    if (pageId === 'mensagens') {
+        renderMessages();
+        scrollThreadToEnd();
+    }
+}
+
+
+// ==========================================================
+// Mensagens — só quem deu match pode conversar
+// ==========================================================
+const getThread = id => messageStore.threads[id] || [];
+const getLastMessage = id => getThread(id).slice(-1)[0] || null;
+const totalUnread = () => Object.values(messageStore.unread).reduce((sum, n) => sum + n, 0);
+
+const isMessagesPageVisible = () => {
+    const page = document.getElementById('page-mensagens');
+    return Boolean(page) && page.style.display === 'block';
+};
+
+function formatTime(timestamp) {
+    return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
+
+function addMessage(id, from, text, markUnread = false) {
+    if (!messageStore.threads[id]) messageStore.threads[id] = [];
+    messageStore.threads[id].push({ from, text, time: Date.now() });
+
+    // mensagem recebida em uma conversa que não está na tela
+    const chatOnScreen = isMessagesPageVisible() && currentChatId === id;
+    if (from === 'them' && (markUnread || !chatOnScreen)) {
+        messageStore.unread[id] = (messageStore.unread[id] || 0) + 1;
+    }
+    saveMessages();
+}
+
+function updateMessagesBadge() {
+    if (!messagesBadge) return;
+    const total = totalUnread();
+    messagesBadge.textContent = total > 0 ? total : '';
+}
+
+// Quando a pessoa responde (simulado)
+function buildReply(profile, count) {
+    const interest = profile.interests[count % profile.interests.length].toLowerCase();
+    const replies = [
+        `Que legal! Eu curto muito ${interest}. E você?`,
+        'Haha, boa! Me conta mais sobre isso.',
+        'Estou gostando de conversar com você. Que tal marcar um café?',
+        `Por aqui em ${profile.location} está tudo bem. E por aí?`
+    ];
+    return replies[count % replies.length];
+}
+
+function scheduleReply(id) {
+    if (typingFor === id) return; // já está digitando
+    const profile = findProfile(id);
+    if (!profile) return;
+
+    typingFor = id;
+    updateThread();
+
+    setTimeout(() => {
+        if (typingFor !== id) return; // conversa foi desfeita
+        typingFor = null;
+
+        if (!isMatch(id)) return;
+
+        const theirCount = getThread(id).filter(m => m.from === 'them').length;
+        addMessage(id, 'them', buildReply(profile, theirCount));
+        updateThread();
+        renderChatList();
+        updateMessagesBadge();
+
+        const chatOnScreen = isMessagesPageVisible() && currentChatId === id;
+        if (!chatOnScreen) {
+            showToast(`${profile.name} respondeu.`, 'Ver conversa', () => goToMessages(id));
+        }
+    }, 1800);
+}
+
+// Monta a tela de mensagens
+function renderMessages() {
+    if (!messagesContent) return;
+    updateMessagesBadge();
+
+    const matches = getMatches();
+
+    // Sem matches: mensagens bloqueadas
+    if (!matches.length) {
+        currentChatId = null;
+        messagesContent.innerHTML = `
+            <div class="empty-state">
+                <h2>Mensagens liberadas só após o match</h2>
+                <p>Você só pode trocar mensagens com quem curtiu você de volta. Curte perfis no Descobrir e, quando houver match, a conversa começa aqui.</p>
+                <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
+            </div>
+        `;
+        return;
+    }
+
+    // Se a conversa aberta deixou de ser um match, fecha
+    if (currentChatId && !isMatch(currentChatId)) currentChatId = null;
+
+    // Cria a estrutura uma vez só
+    if (!document.getElementById('chat-shell')) {
+        messagesContent.innerHTML = `
+            <div class="chat-shell" id="chat-shell">
+                <aside class="chat-list" id="chat-list"></aside>
+                <section class="chat-window" id="chat-window"></section>
+            </div>
+        `;
+    }
+
+    renderChatList();
+    renderChatWindow();
+}
+
+function renderChatList() {
+    const list = document.getElementById('chat-list');
+    const shell = document.getElementById('chat-shell');
+    if (!list || !shell) return;
+
+    shell.classList.toggle('chat-open', Boolean(currentChatId));
+
+    // conversas mais recentes primeiro
+    const matches = getMatches().sort((a, b) => {
+        const timeA = getLastMessage(a.id)?.time || 0;
+        const timeB = getLastMessage(b.id)?.time || 0;
+        return timeB - timeA;
+    });
+
+    const pending = getPending();
+
+    list.innerHTML = matches.map(profile => {
+        const last = getLastMessage(profile.id);
+        const unread = messageStore.unread[profile.id] || 0;
+        const preview = last
+            ? (last.from === 'me' ? 'Você: ' : '') + escapeHtml(last.text)
+            : 'Comece a conversa';
+
+        return `
+            <button class="chat-item ${currentChatId === profile.id ? 'active' : ''}" onclick="openChat('${profile.id}')">
+                <img src="${profile.photo}" alt="Foto de ${profile.name}">
+                <span class="chat-item-info">
+                    <strong>${profile.name}</strong>
+                    <span class="${unread ? 'unread' : ''}">${preview}</span>
+                </span>
+                <span class="chat-item-meta">
+                    ${last ? `<small>${formatTime(last.time)}</small>` : ''}
+                    ${unread ? `<span class="unread-badge">${unread}</span>` : ''}
+                </span>
+            </button>
+        `;
+    }).join('') + (pending.length
+        ? `<p class="chat-note">${pending.length === 1 ? '1 pessoa que você curtiu ainda não deu' : pending.length + ' pessoas que você curtiu ainda não deram'} match. As mensagens liberam quando a curtida for recíproca.</p>`
+        : '');
+}
+
+function renderChatWindow() {
+    const win = document.getElementById('chat-window');
+    if (!win) return;
+
+    // guarda o que a pessoa já estava digitando
+    const typed = document.getElementById('chat-input')?.value || '';
+
+    const profile = currentChatId ? findProfile(currentChatId) : null;
+
+    if (!profile) {
+        win.innerHTML = `
+            <div class="chat-placeholder">
+                <h2>Suas conversas</h2>
+                <p>Escolha um match na lista para começar a conversar.</p>
+            </div>
+        `;
+        return;
+    }
+
+    win.innerHTML = `
+        <div class="chat-header">
+            <button class="chat-back" onclick="closeChat()" aria-label="Voltar para as conversas"></button>
+            <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+            <div class="chat-header-info">
+                <strong>${profile.name}</strong>
+                <span>${profile.location}</span>
+            </div>
+            <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
+        </div>
+
+        <div class="chat-thread" id="chat-thread"></div>
+
+        <form class="chat-form" onsubmit="sendMessage(event)">
+            <input id="chat-input" type="text" placeholder="Escreva uma mensagem para ${profile.name}" autocomplete="off" maxlength="500">
+            <button type="submit" class="chat-send" aria-label="Enviar mensagem"></button>
+        </form>
+    `;
+
+    document.getElementById('chat-input').value = typed;
+    updateThread();
+}
+
+// Redesenha só as mensagens (não mexe no campo de texto)
+function updateThread() {
+    const thread = document.getElementById('chat-thread');
+    if (!thread || !currentChatId) return;
+
+    const profile = findProfile(currentChatId);
+    const messages = getThread(currentChatId);
+
+    let html = messages.length
+        ? ''
+        : `<p class="thread-empty">Você e ${profile.name} deram match. Mande a primeira mensagem.</p>`;
+
+    html += messages.map(m => `
+        <div class="bubble ${m.from === 'me' ? 'me' : 'them'}">
+            <span>${escapeHtml(m.text)}</span>
+            <small>${formatTime(m.time)}</small>
+        </div>
+    `).join('');
+
+    if (typingFor === currentChatId) {
+        html += '<div class="bubble them typing" aria-label="Digitando"><i></i><i></i><i></i></div>';
+    }
+
+    thread.innerHTML = html;
+    thread.scrollTop = thread.scrollHeight;
+}
+
+function scrollThreadToEnd() {
+    const thread = document.getElementById('chat-thread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
+}
+
+function openChat(id) {
+    // Regra principal: só conversa quem deu match
+    if (!isMatch(id)) {
+        showToast('Você só pode enviar mensagem depois do match.');
+        return;
+    }
+
+    currentChatId = id;
+    delete messageStore.unread[id];
+    saveMessages();
+    renderMessages();
+    scrollThreadToEnd();
+
+    // no computador, deixa o cursor pronto para digitar
+    if (window.matchMedia('(min-width: 861px)').matches) {
+        document.getElementById('chat-input')?.focus();
+    }
+}
+
+function closeChat() {
+    currentChatId = null;
+    renderMessages();
+}
+
+function sendMessage(event) {
+    event.preventDefault();
+
+    const input = document.getElementById('chat-input');
+    const text = input ? input.value.trim() : '';
+    if (!text || !currentChatId || !isMatch(currentChatId)) return;
+
+    addMessage(currentChatId, 'me', text);
+    input.value = '';
+    updateThread();
+    renderChatList();
+    scheduleReply(currentChatId);
+}
+
+// Abre a conversa com alguém (botões "Mensagem")
+function goToMessages(id) {
+    if (!isMatch(id)) {
+        showToast('Você só pode enviar mensagem depois do match.');
+        return;
+    }
+
+    currentProfileId = null;
+    previousPage = 'mensagens';
+    showPage('mensagens');
+    setActiveNav(2);
+    openChat(id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // Inicia a aplicação
