@@ -1,0 +1,204 @@
+:root {
+    --bg-color: #030712;
+    --card-bg: #111827;
+    --text-main: #f3f4f6;
+    --text-muted: #9ca3af;
+    --cyan: #22d3ee;
+    --gold: #fbbf24;
+    --border: #1f2937;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+}
+
+/* Header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background-color: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(34, 211, 238, 0.4);
+    letter-spacing: -0.5px;
+}
+
+.logo span {
+    color: var(--text-main);
+    text-shadow: none;
+}
+
+nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.3s;
+}
+
+nav a:hover, nav a.active {
+    color: var(--cyan);
+}
+
+/* Main Content & Controls */
+main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+select {
+    background: var(--card-bg);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    outline: none;
+}
+
+select:focus {
+    border-color: var(--cyan);
+}
+
+/* Grid & Cards */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.15);
+}
+
+.card-image-wrapper {
+    position: relative;
+    height: 250px;
+}
+
+.card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.location-tag {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--gold);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.card-info {
+    padding: 1.25rem;
+}
+
+.card-info h2 {
+    font-size: 1.25rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.card-info h2 span {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+.card-info p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    margin-bottom: 1.25rem;
+    height: 2.5rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Buttons */
+.actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-view {
+    flex: 1;
+    background: #1f2937;
+    color: white;
+    border: 1px solid var(--border);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.btn-view:hover {
+    background: #374151;
+}
+
+.btn-like {
+    background: transparent;
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    color: var(--cyan);
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.btn-like:hover {
+    background: var(--cyan);
+    color: var(--bg-color);
+}
+
+.btn-like.liked {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg-color);
+    box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+    cursor: not-allowed;
+}
