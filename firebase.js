@@ -31,6 +31,7 @@ export const {
     signInWithEmailAndPassword,
     signOut,
     updateProfile,
+    sendEmailVerification,
     deleteUser,
     setPersistence,
     browserLocalPersistence,
