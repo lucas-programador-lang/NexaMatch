@@ -9,7 +9,7 @@
 // Esses valores NÃO são segredos: eles ficam visíveis no navegador de qualquer
 // forma. Quem protege seus dados são as regras do Firestore (firestore.rules).
 // ==========================================================
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDf-vEYONU6Cv91ZIl_qNWU-A4WuP9OUMg",
   authDomain: "nexamatch-d7fce.firebaseapp.com",
   databaseURL: "https://nexamatch-d7fce-default-rtdb.firebaseio.com",
