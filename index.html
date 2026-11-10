@@ -5,11 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexaMatch</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Só entra quem estiver logado; senão vai para o login -->
-    <script src="auth.js"></script>
-    <script>Auth.requireAuth("login.html");</script>
+    <!-- Só entra quem estiver logado: o script.js confere o login no Firebase e, se
+         não houver, manda para o login. Até lá a página fica escondida (se algo falhar,
+         ela aparece depois de 6 segundos para você ver o que está acontecendo). -->
+    <style>
+        body.auth-pending { visibility: hidden; animation: auth-reveal 0s 6s forwards; }
+        @keyframes auth-reveal { to { visibility: visible; } }
+    </style>
 </head>
-<body>
+<body class="auth-pending">
     <header>
         <div class="logo">NEXA<span>MATCH</span></div>
         <nav>
@@ -73,6 +77,6 @@
     <!-- Aviso rápido (ex.: "Deu match!") -->
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
