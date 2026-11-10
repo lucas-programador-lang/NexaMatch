@@ -69,6 +69,18 @@ function normalizeInterestedIn(list) {
 let myGender = 'outro';
 let notifSeenAt = 0; // até quando os avisos já foram vistos
 let matchesSeenAt = 0; // até quando os matches já foram vistos (zera o contador do menu)
+let hiddenLikes = {};  // id da pessoa -> quando você desfez o match (esconde o aviso "curtiu você" antigo)
+
+const readHiddenLikes = raw => {
+    const out = {};
+    if (raw && typeof raw === 'object') {
+        Object.entries(raw).forEach(([id, value]) => {
+            const time = Number(value);
+            if (time > 0) out[id] = time;
+        });
+    }
+    return out;
+};
 let myProfile = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
 
 try {
@@ -79,6 +91,7 @@ try {
     myGender = ALL_GENDER_IDS.includes(publicData.gender) ? publicData.gender : 'outro';
     notifSeenAt = toMillis(privateData.notifSeenAt);
     matchesSeenAt = toMillis(privateData.matchesSeenAt);
+    hiddenLikes = readHiddenLikes(privateData.hiddenLikes);
     myProfile = {
         name: String(publicData.name || currentUser.name || '').slice(0, 40),
         age: publicData.age ? Number(publicData.age) : '',
@@ -460,6 +473,9 @@ function startRealtime() {
         const data = snapshot.data({ serverTimestamps: 'estimate' });
         notifSeenAt = Math.max(notifSeenAt, toMillis(data.notifSeenAt));
         matchesSeenAt = Math.max(matchesSeenAt, toMillis(data.matchesSeenAt));
+        Object.entries(readHiddenLikes(data.hiddenLikes)).forEach(([id, time]) => {
+            hiddenLikes[id] = Math.max(hiddenLikes[id] || 0, time);
+        });
         myProfile.interestedIn = normalizeInterestedIn(data.interestedIn);
         scheduleRefresh();
     }, onListenError));
@@ -743,11 +759,45 @@ async function deleteConversationData(col, id) {
 
 const deleteMatchData = matchId => deleteConversationData('matches', matchId);
 
+// Nomes já vêm escapados para HTML; a janela de confirmação escapa de novo, então desfaz aqui
+const decodeHtml = html => {
+    const box = document.createElement('textarea');
+    box.innerHTML = html;
+    return box.value;
+};
+
+// Depois de desfazer o match, a curtida antiga da pessoa não volta como aviso
+function hideIncomingLike(id) {
+    hiddenLikes[id] = Date.now();
+    setDoc(accountRef, { hiddenLikes: { [id]: hiddenLikes[id] } }, { merge: true }).catch(error => console.warn(error));
+    scheduleRefresh();
+}
+
+const removingNow = new Set();
+
 async function removeLike(id) {
-    if (!likedProfiles.has(id)) return;
+    if (!likedProfiles.has(id) || removingNow.has(id)) return;
 
     const profile = findProfile(id);
+
+    // Desfazer um match apaga a conversa dos dois lados, então pede confirmação antes
+    if (matchByUser.has(id)) {
+        const name = profile ? decodeHtml(profile.name) : 'essa pessoa';
+        const ok = await askConfirm({
+            title: `Desfazer match com ${name}?`,
+            message: `Todas as mensagens e fotos dessa conversa serão apagadas para você e para ${name}. Não dá para desfazer.`,
+            confirmText: 'Desfazer match',
+            cancelText: 'Manter match',
+            danger: true
+        });
+        if (!ok) return;
+    }
+
+    // enquanto a janela estava aberta, algo pode ter mudado
+    if (!likedProfiles.has(id) || removingNow.has(id)) return;
+
     const match = matchByUser.get(id);
+    const hadIncomingLike = incomingLikes.has(id);
 
     // Sem match, sem conversa
     if (currentChatId === id) {
@@ -755,6 +805,7 @@ async function removeLike(id) {
         currentChatId = null;
     }
 
+    removingNow.add(id);
     try {
         // Primeiro a curtida (assim o match não pode ser recriado), depois a conversa
         await deleteDoc(doc(db, 'likes', `${myId}_${id}`));
@@ -763,9 +814,16 @@ async function removeLike(id) {
         console.error(error);
         showToast('Não consegui desfazer agora. Tente de novo.');
         return;
+    } finally {
+        removingNow.delete(id);
     }
 
-    showToast(profile ? `Curtida em ${profile.name} desfeita.` : 'Curtida desfeita.');
+    if (hadIncomingLike) hideIncomingLike(id);
+
+    const who = profile ? profile.name : '';
+    showToast(match
+        ? (who ? `Match com ${who} desfeito.` : 'Match desfeito.')
+        : (who ? `Curtida em ${who} desfeita.` : 'Curtida desfeita.'));
 }
 
 
@@ -925,7 +983,10 @@ function buildNotifications() {
 
     incomingLikes.forEach((time, profileId) => {
         // some o aviso de "curtiu você" quando você já curtiu de volta
-        if (!likedProfiles.has(profileId)) items.push({ type: 'like', profileId, time });
+        // ou quando você desfez o match depois dessa curtida
+        if (likedProfiles.has(profileId)) return;
+        if ((hiddenLikes[profileId] || 0) >= time) return;
+        items.push({ type: 'like', profileId, time });
     });
 
     matchByUser.forEach((match, profileId) => {
