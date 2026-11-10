@@ -188,13 +188,28 @@ const safePhoto = url =>
         ? url
         : '';
 
-// Sem foto: um fundo colorido com a inicial do nome
+// Sem foto: fundo em gradiente (cor muda conforme o nome) com a inicial num círculo
+const PLACEHOLDER_COLORS = [
+    ['#1d6f86', '#5b3ccc'],
+    ['#5b3ccc', '#b0388f'],
+    ['#0f7f9c', '#2b4dc4'],
+    ['#6d3ad1', '#d1457f']
+];
+
 function placeholderPhoto(name) {
-    const initial = escapeHtml((String(name).trim()[0] || '?').toUpperCase());
+    const text = String(name).trim();
+    const initial = escapeHtml((text[0] || '?').toUpperCase());
+    const hash = [...text].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const [from, to] = PLACEHOLDER_COLORS[hash % PLACEHOLDER_COLORS.length];
+
     const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">'
-        + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d6f86"/><stop offset="1" stop-color="#5b3ccc"/></linearGradient></defs>'
+        + `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient>`
+        + '<radialGradient id="l" cx="0.2" cy="0.1" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity="0.28"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
         + '<rect width="400" height="400" fill="url(#g)"/>'
-        + `<text x="200" y="250" font-size="170" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff" text-anchor="middle">${initial}</text>`
+        + '<rect width="400" height="400" fill="url(#l)"/>'
+        + '<circle cx="350" cy="380" r="170" fill="#fff" fill-opacity="0.06"/>'
+        + '<circle cx="200" cy="165" r="88" fill="#fff" fill-opacity="0.14" stroke="#fff" stroke-opacity="0.4" stroke-width="3"/>'
+        + `<text x="200" y="204" font-size="108" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff" text-anchor="middle">${initial}</text>`
         + '</svg>';
     return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
@@ -539,13 +554,15 @@ function renderProfiles() {
             <div class="card-image-wrapper" onclick="viewProfile('${profile.id}')">
                 <img src="${profile.photo}" alt="Foto de ${profile.name}">
                 ${isMatch(profile.id) ? '<div class="match-badge">Match</div>' : ''}
-                <div class="location-tag">${profile.location}</div>
+                <div class="card-head">
+                    <h2>${profile.name} <span>${profile.age}</span></h2>
+                    <div class="location-tag">${profile.location}</div>
+                </div>
             </div>
             <div class="card-info">
-                <h2>${profile.name} <span>${profile.age}</span></h2>
                 <p>${profile.bio}</p>
                 <div class="actions">
-                    <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver Perfil</button>
+                    <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
                     <button class="btn-like ${isLiked ? 'liked' : ''}" onclick="handleLike('${profile.id}')" aria-label="Curtir ${profile.name}">
                         ${isLiked ? '✔' : '❤'}
                     </button>
