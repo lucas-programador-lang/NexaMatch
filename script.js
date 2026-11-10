@@ -1,40 +1,22 @@
 // ==========================================================
-// NexaMatch — dados simulados
-// "likesYou" indica se a pessoa também curte você.
-// Quando você curte alguém que também curte você, dá MATCH.
+// NexaMatch — app principal (Firebase + tempo real)
+//
+// Tudo que aparece na tela vem do Firestore e se atualiza sozinho
+// (onSnapshot): novos perfis, curtidas, matches, mensagens e avisos
+// chegam sem precisar apertar F5.
+//
+//   users/{uid}                perfil público
+//   accounts/{uid}             dados privados (filtro, último aviso lido)
+//   likes/{de}_{para}          curtidas
+//   matches/{uidA}_{uidB}      matches (+ subcoleção messages)
 // ==========================================================
-const profiles = [
-    {
-        id: '1', gender: 'mulher', name: 'Ana', age: 24, location: 'Porto Velho, RO',
-        bio: 'Dev e apaixonada por tecnologia e café.',
-        interests: ['Tecnologia', 'Café', 'Programação', 'Séries'],
-        photo: 'https://i.pravatar.cc/800?img=5',
-        likesYou: true
-    },
-    {
-        id: '2', gender: 'homem', name: 'Carlos', age: 28, location: 'São Paulo, SP',
-        bio: 'Designer UX em busca de novas conexões.',
-        interests: ['Design', 'Fotografia', 'Música', 'Viagens'],
-        photo: 'https://i.pravatar.cc/800?img=11',
-        likesYou: false,
-        likesBackAfter: 8000   // simulação: curte você de volta 8s depois que você curtir
-    },
-    {
-        id: '3', gender: 'mulher', name: 'Beatriz', age: 22, location: 'Curitiba, PR',
-        bio: 'Amo viajar, ler livros de sci-fi e codar.',
-        interests: ['Viagens', 'Sci-fi', 'Leitura', 'Programação'],
-        photo: 'https://i.pravatar.cc/800?img=9',
-        likesYou: true
-    },
-    {
-        id: '4', gender: 'homem', name: 'Marcos', age: 26, location: 'Rio de Janeiro, RJ',
-        bio: 'Focado em cloud computing e esportes radicais.',
-        interests: ['Cloud', 'Esportes radicais', 'Trilhas', 'Tecnologia'],
-        photo: 'https://i.pravatar.cc/800?img=12',
-        likesYou: false,
-        likesBackAfter: 15000  // simulação: curte você de volta 15s depois que você curtir
-    }
-];
+import { Auth } from './auth.js';
+import {
+    auth, db,
+    doc, collection, query, where, orderBy, limitToLast,
+    getDoc, getDocs, setDoc, updateDoc, deleteDoc, onSnapshot,
+    writeBatch, runTransaction, serverTimestamp, increment, deleteUser
+} from './firebase.js';
 
 // Gêneros disponíveis (para o filtro do Descobrir)
 const GENDERS = [
@@ -44,140 +26,81 @@ const GENDERS = [
 ];
 const ALL_GENDER_IDS = GENDERS.map(g => g.id);
 
-// ---------- Curtidas (salvas no navegador) ----------
-const STORAGE_KEY = 'nexamatch:likes';
+// ---------- Quem está logado ----------
+// Sem login, vai para a tela de entrada e o resto do arquivo nem chega a rodar
+const currentUser = await Auth.requireAuth('login.html');
+const myId = currentUser.uid;
+const userRef = doc(db, 'users', myId);
+const accountRef = doc(db, 'accounts', myId);
 
-function loadLikes() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        return new Set(saved.filter(id => profiles.some(p => p.id === id)));
-    } catch (error) {
-        return new Set();
+// Escapa texto para que o que as pessoas digitam nunca vire HTML
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Timestamp do Firestore (ou número) em milissegundos
+function toMillis(value) {
+    if (!value) return 0;
+    if (typeof value === 'number') return value;
+    return typeof value.toMillis === 'function' ? value.toMillis() : 0;
+}
+
+function normalizeInterestedIn(list) {
+    const valid = Array.isArray(list) ? list.filter(g => ALL_GENDER_IDS.includes(g)) : [];
+    // sem escolha salva: mostra todos os gêneros
+    return valid.length ? valid : [...ALL_GENDER_IDS];
+}
+
+// ---------- Meu perfil (carregado do Firestore) ----------
+let myGender = 'outro';
+let notifSeenAt = 0; // até quando os avisos já foram vistos
+let myProfile = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
+
+try {
+    const [userSnap, accountSnap] = await Promise.all([getDoc(userRef), getDoc(accountRef)]);
+    const publicData = userSnap.exists() ? userSnap.data() : {};
+    const privateData = accountSnap.exists() ? accountSnap.data() : {};
+
+    myGender = ALL_GENDER_IDS.includes(publicData.gender) ? publicData.gender : 'outro';
+    notifSeenAt = toMillis(privateData.notifSeenAt);
+    myProfile = {
+        name: String(publicData.name || currentUser.name || '').slice(0, 40),
+        age: publicData.age ? Number(publicData.age) : '',
+        location: String(publicData.location || ''),
+        bio: String(publicData.bio || ''),
+        interests: Array.isArray(publicData.interests) ? publicData.interests.map(String).slice(0, 8) : [],
+        photo: String(publicData.photo || ''),
+        interestedIn: normalizeInterestedIn(privateData.interestedIn)
+    };
+
+    // Idade vem da data de nascimento informada no cadastro
+    if (!myProfile.age && privateData.birthDate) {
+        const accountAge = Auth.ageFromBirthDate(privateData.birthDate);
+        if (accountAge >= 18 && accountAge <= 99) myProfile.age = accountAge;
     }
+} catch (error) {
+    console.error('Não consegui carregar seu perfil:', error);
+    myProfile.name = String(currentUser.name || '').slice(0, 40);
 }
 
-function saveLikes() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([...likedProfiles]));
-    } catch (error) {
-        // sem armazenamento disponível: segue só na memória
-    }
-}
-
-// ---------- Mensagens (salvas no navegador) ----------
-const MESSAGES_KEY = 'nexamatch:messages';
-
-function loadMessages() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(MESSAGES_KEY) || '{}');
-        return { threads: saved.threads || {}, unread: saved.unread || {} };
-    } catch (error) {
-        return { threads: {}, unread: {} };
-    }
-}
-
-function saveMessages() {
-    try {
-        localStorage.setItem(MESSAGES_KEY, JSON.stringify(messageStore));
-    } catch (error) {
-        // sem armazenamento disponível: segue só na memória
-    }
-}
-
-// ---------- Quem curtiu de volta (salvo no navegador) ----------
-const RECIPROCATED_KEY = 'nexamatch:reciprocated';
-
-function loadReciprocated() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(RECIPROCATED_KEY) || '[]');
-        return new Set(saved.filter(id => profiles.some(p => p.id === id)));
-    } catch (error) {
-        return new Set();
-    }
-}
-
-function saveReciprocated() {
-    try {
-        localStorage.setItem(RECIPROCATED_KEY, JSON.stringify([...reciprocated]));
-    } catch (error) {
-        // sem armazenamento disponível: segue só na memória
-    }
-}
-
-// ---------- Notificações (salvas no navegador) ----------
-// type: 'like'  = alguém curtiu você
-//       'match' = deu match (você sabe exatamente quem foi)
-const NOTIFICATIONS_KEY = 'nexamatch:notifications';
-
-function loadNotifications() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(NOTIFICATIONS_KEY) || '[]');
-        return Array.isArray(saved) ? saved.filter(n => profiles.some(p => p.id === n.profileId)) : [];
-    } catch (error) {
-        return [];
-    }
-}
-
-function saveNotifications() {
-    try {
-        localStorage.setItem(NOTIFICATIONS_KEY, JSON.stringify(notifications));
-    } catch (error) {
-        // sem armazenamento disponível: segue só na memória
-    }
-}
-
-// ---------- Meu perfil (salvo no navegador) ----------
-const PROFILE_KEY = 'nexamatch:myprofile';
-
-function loadMyProfile() {
-    const empty = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
-    try {
-        const saved = JSON.parse(localStorage.getItem(PROFILE_KEY) || '{}');
-        return {
-            name: String(saved.name || ''),
-            age: saved.age ? Number(saved.age) : '',
-            location: String(saved.location || ''),
-            bio: String(saved.bio || ''),
-            interests: Array.isArray(saved.interests) ? saved.interests.map(String).slice(0, 8) : [],
-            photo: String(saved.photo || ''),
-            // sem escolha salva: mostra todos os gêneros
-            interestedIn: Array.isArray(saved.interestedIn) && saved.interestedIn.some(g => ALL_GENDER_IDS.includes(g))
-                ? saved.interestedIn.filter(g => ALL_GENDER_IDS.includes(g))
-                : [...ALL_GENDER_IDS]
-        };
-    } catch (error) {
-        return empty;
-    }
-}
-
-function saveMyProfile() {
-    try {
-        localStorage.setItem(PROFILE_KEY, JSON.stringify(myProfile));
-        return true;
-    } catch (error) {
-        return false; // sem armazenamento (ou foto grande demais)
-    }
-}
-
-let myProfile = loadMyProfile();
-// Primeiro acesso: usa o nome da conta como nome do perfil
-const currentUser = window.Auth ? Auth.getCurrentUser() : null;
-if (!myProfile.name && currentUser && currentUser.name) {
-    myProfile.name = currentUser.name.slice(0, 40);
-}
-// Idade vem da data de nascimento informada no cadastro
-if (!myProfile.age && currentUser && currentUser.birthDate && window.Auth) {
-    const accountAge = Auth.ageFromBirthDate(currentUser.birthDate);
-    if (accountAge >= 18 && accountAge <= 99) myProfile.age = accountAge;
-}
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
 
-const likedProfiles = loadLikes();
-const reciprocated = loadReciprocated();
-let notifications = loadNotifications();
-const likeBackTimers = {};
-const messageStore = loadMessages();
+// ---------- Estado em tempo real ----------
+let profiles = [];                  // outras pessoas cadastradas
+const likedProfiles = new Set();    // quem você curtiu
+const incomingLikes = new Map();    // quem curtiu você -> quando
+let matchByUser = new Map();        // id da pessoa -> { id, createdAt, lastMessage, unread }
+let currentThread = [];             // mensagens da conversa aberta
+let threadUnsub = null;
+let notifBaseline = null;           // destaca o que é novo enquanto a tela de avisos está aberta
+const unsubscribers = [];
+const loaded = { users: false, likes: false, incoming: false, matches: false };
+
 const grid = document.getElementById('profiles-grid');
 const detail = document.getElementById('profile-detail');
 const matchesContent = document.getElementById('matches-content');
@@ -191,23 +114,225 @@ let currentProfileId = null; // perfil aberto na página de detalhe
 let previousPage = 'descobrir'; // de onde a pessoa veio (para o botão Voltar)
 let toastTimer = null;
 let currentChatId = null; // conversa aberta em Mensagens
-let typingFor = null;     // quem está "digitando" uma resposta
-
-// Evita que texto digitado vire HTML
-function escapeHtml(text) {
-    return String(text)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
 
 const findProfile = id => profiles.find(p => p.id === id);
-// A pessoa curte você desde o início ou curtiu de volta depois
-const likesYouNow = profile => Boolean(profile && (profile.likesYou || reciprocated.has(profile.id)));
-const isMatch = id => likedProfiles.has(id) && likesYouNow(findProfile(id));
-const getMatches = () => [...likedProfiles].map(findProfile).filter(p => p && likesYouNow(p));
-const getPending = () => [...likedProfiles].map(findProfile).filter(p => p && !likesYouNow(p));
+// A pessoa curte você
+const likesYouNow = profile => Boolean(profile && incomingLikes.has(profile.id));
+// Match = as duas curtidas existem e o documento do match já foi criado
+const isMatch = id => likedProfiles.has(id) && incomingLikes.has(id) && matchByUser.has(id);
+const getMatches = () => [...matchByUser.keys()].filter(isMatch).map(findProfile).filter(Boolean);
+const getPending = () => [...likedProfiles].filter(id => !incomingLikes.has(id)).map(findProfile).filter(Boolean);
+
+// ---------- Perfis das outras pessoas ----------
+// Foto: só aceita imagem embutida ou link https
+const safePhoto = url =>
+    /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url) || /^https:\/\/[^\s"'<>]+$/.test(url)
+        ? url
+        : '';
+
+// Sem foto: um fundo colorido com a inicial do nome
+function placeholderPhoto(name) {
+    const initial = escapeHtml((String(name).trim()[0] || '?').toUpperCase());
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">'
+        + '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d6f86"/><stop offset="1" stop-color="#5b3ccc"/></linearGradient></defs>'
+        + '<rect width="400" height="400" fill="url(#g)"/>'
+        + `<text x="200" y="250" font-size="170" font-family="Arial, sans-serif" font-weight="700" fill="#ffffff" text-anchor="middle">${initial}</text>`
+        + '</svg>';
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+// Tudo que vem de outras pessoas é escapado aqui, uma vez só,
+// para poder entrar com segurança nos modelos de HTML da tela.
+function normalizeProfile(id, data) {
+    const name = String(data.name || 'Sem nome').slice(0, 40);
+    return {
+        id,
+        gender: ALL_GENDER_IDS.includes(data.gender) ? data.gender : 'outro',
+        name: escapeHtml(name),
+        age: Number(data.age) || '',
+        location: escapeHtml(String(data.location || '').slice(0, 60) || 'Local não informado'),
+        bio: escapeHtml(String(data.bio || '').slice(0, 200) || 'Ainda sem bio.'),
+        interests: Array.isArray(data.interests)
+            ? data.interests.slice(0, 8).map(item => escapeHtml(String(item).slice(0, 20)))
+            : [],
+        photo: escapeHtml(safePhoto(String(data.photo || '')) || placeholderPhoto(name))
+    };
+}
+
+// ==========================================================
+// Tempo real — escuta o Firestore e atualiza a tela sozinha
+// ==========================================================
+let refreshQueued = false;
+
+// Junta várias mudanças seguidas em uma única atualização da tela
+function scheduleRefresh() {
+    if (refreshQueued) return;
+    refreshQueued = true;
+    setTimeout(() => {
+        refreshQueued = false;
+        refreshAll();
+    }, 30);
+}
+
+let listenErrorShown = false;
+
+function onListenError(error) {
+    console.error('Firebase:', error);
+    if (listenErrorShown) return;
+    listenErrorShown = true;
+    showToast(error && error.code === 'permission-denied'
+        ? 'O Firebase recusou a leitura. Publique as regras do arquivo firestore.rules.'
+        : 'Perdi a conexão com o Firebase. Confira a internet.');
+}
+
+const pairId = (a, b) => [a, b].sort().join('_');
+const creatingMatch = new Set();
+
+// Quando as duas pessoas se curtiram, cria o documento do match (uma vez só, mesmo
+// que os dois aparelhos tentem ao mesmo tempo)
+async function createMatch(otherId) {
+    if (creatingMatch.has(otherId)) return;
+    creatingMatch.add(otherId);
+
+    const matchRef = doc(db, 'matches', pairId(myId, otherId));
+    try {
+        await runTransaction(db, async transaction => {
+            const snapshot = await transaction.get(matchRef);
+            if (snapshot.exists()) return;
+            transaction.set(matchRef, {
+                users: [myId, otherId].sort(),
+                createdAt: serverTimestamp(),
+                lastMessage: null,
+                unread: { [myId]: 0, [otherId]: 0 }
+            });
+        });
+    } catch (error) {
+        console.warn('Não consegui criar o match agora:', error && error.code);
+    } finally {
+        creatingMatch.delete(otherId);
+    }
+}
+
+function ensureMatches() {
+    if (!loaded.likes || !loaded.incoming || !loaded.matches) return;
+    likedProfiles.forEach(id => {
+        if (incomingLikes.has(id) && !matchByUser.has(id)) createMatch(id);
+    });
+}
+
+// Avisos rápidos para o que aconteceu enquanto você usava o app
+function announceMatchChanges(previous, next) {
+    next.forEach((match, otherId) => {
+        const profile = findProfile(otherId);
+        if (!profile) return;
+
+        if (!previous.has(otherId)) {
+            showToast(`Deu match com ${profile.name}!`, 'Ver matches', goToMatches);
+            return;
+        }
+
+        const before = previous.get(otherId).lastMessage;
+        const last = match.lastMessage;
+        const isNew = last && last.from === 'them' && (!before || before.time !== last.time);
+        if (isNew && !isChatOnScreen(otherId)) {
+            showToast(`${profile.name} enviou uma mensagem.`, 'Ver conversa', () => goToMessages(otherId));
+        }
+    });
+}
+
+let chatReadBlocked = false;
+
+// Conversa aberta na tela: tudo que chega já conta como lido
+function markCurrentChatRead() {
+    if (chatReadBlocked || !currentChatId || !isChatOnScreen(currentChatId)) return;
+    const match = matchByUser.get(currentChatId);
+    if (!match || !match.unread) return;
+
+    updateDoc(doc(db, 'matches', match.id), { [`unread.${myId}`]: 0 }).catch(error => {
+        chatReadBlocked = true; // evita insistir em loop se o Firebase recusar
+        console.warn('Não consegui marcar como lida:', error && error.code);
+    });
+}
+
+function startRealtime() {
+    // 1) Pessoas cadastradas (mural Descobrir)
+    unsubscribers.push(onSnapshot(collection(db, 'users'), snapshot => {
+        profiles = snapshot.docs
+            .filter(d => d.id !== myId)
+            .map(d => normalizeProfile(d.id, d.data({ serverTimestamps: 'estimate' })));
+        loaded.users = true;
+        scheduleRefresh();
+    }, onListenError));
+
+    // 2) Curtidas que eu enviei
+    unsubscribers.push(onSnapshot(query(collection(db, 'likes'), where('from', '==', myId)), snapshot => {
+        likedProfiles.clear();
+        snapshot.docs.forEach(d => likedProfiles.add(d.data().to));
+        loaded.likes = true;
+        ensureMatches();
+        scheduleRefresh();
+    }, onListenError));
+
+    // 3) Curtidas que eu recebi
+    unsubscribers.push(onSnapshot(query(collection(db, 'likes'), where('to', '==', myId)), snapshot => {
+        const next = new Map();
+        snapshot.docs.forEach(d => {
+            const data = d.data({ serverTimestamps: 'estimate' });
+            next.set(data.from, toMillis(data.createdAt) || Date.now());
+        });
+
+        if (loaded.incoming) {
+            next.forEach((time, id) => {
+                if (incomingLikes.has(id) || likedProfiles.has(id)) return;
+                const profile = findProfile(id);
+                if (profile) showToast(`${profile.name} curtiu você.`, 'Ver aviso', goToNotifications);
+            });
+        }
+
+        incomingLikes.clear();
+        next.forEach((time, id) => incomingLikes.set(id, time));
+        loaded.incoming = true;
+        ensureMatches();
+        scheduleRefresh();
+    }, onListenError));
+
+    // 4) Meus matches (com última mensagem e não lidas)
+    unsubscribers.push(onSnapshot(query(collection(db, 'matches'), where('users', 'array-contains', myId)), snapshot => {
+        const next = new Map();
+        snapshot.docs.forEach(d => {
+            const data = d.data({ serverTimestamps: 'estimate' });
+            const otherId = (data.users || []).find(uid => uid !== myId);
+            if (!otherId) return;
+
+            const last = data.lastMessage;
+            next.set(otherId, {
+                id: d.id,
+                createdAt: toMillis(data.createdAt) || Date.now(),
+                lastMessage: last
+                    ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), time: toMillis(last.time) || Date.now() }
+                    : null,
+                unread: Number(data.unread && data.unread[myId]) || 0
+            });
+        });
+
+        if (loaded.matches) announceMatchChanges(matchByUser, next);
+        matchByUser = next;
+        loaded.matches = true;
+        ensureMatches();
+        markCurrentChatRead();
+        scheduleRefresh();
+    }, onListenError));
+
+    // 5) Dados privados (filtro de gênero e avisos já vistos, também entre aparelhos)
+    unsubscribers.push(onSnapshot(accountRef, snapshot => {
+        if (!snapshot.exists()) return;
+        const data = snapshot.data({ serverTimestamps: 'estimate' });
+        notifSeenAt = Math.max(notifSeenAt, toMillis(data.notifSeenAt));
+        myProfile.interestedIn = normalizeInterestedIn(data.interestedIn);
+        scheduleRefresh();
+    }, onListenError));
+}
+
 
 // ---------- Mural (Descobrir) ----------
 // Só aparecem os gêneros marcados em "Tenho interesse em" (Meu Perfil)
@@ -244,14 +369,35 @@ function selectAllGenders() {
 
 function setGenderFilter(list) {
     myProfile.interestedIn = list;
-    saveMyProfile();
     renderProfiles();
+    // o filtro é privado e vale em todos os seus aparelhos
+    setDoc(accountRef, { interestedIn: list }, { merge: true }).catch(error => console.error(error));
 }
 
 function renderProfiles() {
     if (!grid) return;
     grid.innerHTML = '';
     updateDiscoverFilter();
+
+    if (!loaded.users) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <h2>Carregando...</h2>
+                <p>Buscando pessoas para você.</p>
+            </div>
+        `;
+        return;
+    }
+
+    if (!profiles.length) {
+        grid.innerHTML = `
+            <div class="empty-state">
+                <h2>Ainda não tem mais ninguém por aqui</h2>
+                <p>Quando outras pessoas criarem conta, elas aparecem aqui sozinhas, sem precisar atualizar a página.</p>
+            </div>
+        `;
+        return;
+    }
 
     const visible = visibleProfiles();
 
@@ -380,6 +526,7 @@ function refreshAll() {
     updateNotificationsBadge();
     updateProfileStats();
     if (currentProfileId) renderProfileDetail(currentProfileId);
+    if (isPageVisible('notificacoes')) markAllNotificationsRead();
 }
 
 // ---------- Aviso rápido ----------
@@ -407,88 +554,73 @@ function hideToast() {
 }
 
 // ---------- Curtir / desfazer ----------
-function handleLike(id) {
-    if (likedProfiles.has(id)) return;
+const likingNow = new Set();
+
+async function handleLike(id) {
+    if (likedProfiles.has(id) || likingNow.has(id)) return;
 
     const profile = findProfile(id);
     if (!profile) return;
 
-    likedProfiles.add(id);
-    saveLikes();
-
-    const matched = likesYouNow(profile);
-
-    if (matched) {
-        // a pessoa já curtia você: dá match na hora
-        startMatch(profile, true);
-    } else {
-        // simulação: algumas pessoas curtem de volta depois de um tempo
-        scheduleLikeBack(profile);
+    likingNow.add(id);
+    try {
+        await setDoc(doc(db, 'likes', `${myId}_${id}`), { from: myId, to: id, createdAt: serverTimestamp() });
+    } catch (error) {
+        console.error(error);
+        showToast('Não consegui curtir agora. Tente de novo.');
+        return;
+    } finally {
+        likingNow.delete(id);
     }
 
-    refreshAll();
-
-    if (matched) {
-        showToast(`Deu match com ${profile.name}!`, 'Ver matches', goToMatches);
-    } else {
+    // Se a pessoa já curtia você, o match nasce sozinho (ensureMatches) e o aviso aparece junto.
+    if (!incomingLikes.has(id)) {
         showToast(`Você curtiu ${profile.name}. Agora é esperar a resposta.`);
     }
 }
 
-// Registra o match: aviso com o nome da pessoa e conversa liberada
-function startMatch(profile, readNow) {
-    if (!(messageStore.threads[profile.id] || []).length) {
-        addMessage(profile.id, 'them', `Oi! Vi que a gente curte ${profile.interests[0].toLowerCase()}. Como foi seu dia?`, true);
+// Apaga as mensagens e depois o próprio match
+async function deleteMatchData(matchId) {
+    const messages = await getDocs(collection(db, 'matches', matchId, 'messages'));
+
+    for (let i = 0; i < messages.docs.length; i += 400) {
+        const batch = writeBatch(db);
+        messages.docs.slice(i, i + 400).forEach(d => batch.delete(d.ref));
+        await batch.commit();
     }
-    addNotification('match', profile.id, readNow);
-    markNotificationRead('like', profile.id);
+
+    await deleteDoc(doc(db, 'matches', matchId));
 }
 
-// Simulação: a pessoa curte você de volta depois de alguns segundos
-function scheduleLikeBack(profile) {
-    if (!profile.likesBackAfter || likesYouNow(profile) || likeBackTimers[profile.id]) return;
-
-    likeBackTimers[profile.id] = setTimeout(() => {
-        delete likeBackTimers[profile.id];
-        if (!likedProfiles.has(profile.id)) return; // você cancelou a curtida
-
-        reciprocated.add(profile.id);
-        saveReciprocated();
-        startMatch(profile, false);
-        refreshAll();
-
-        showToast(`${profile.name} curtiu você de volta. Deu match!`, 'Ver aviso', goToNotifications);
-    }, profile.likesBackAfter);
-}
-
-function removeLike(id) {
+async function removeLike(id) {
     if (!likedProfiles.has(id)) return;
 
     const profile = findProfile(id);
-    likedProfiles.delete(id);
-    saveLikes();
-
-    clearTimeout(likeBackTimers[id]);
-    delete likeBackTimers[id];
+    const match = matchByUser.get(id);
 
     // Sem match, sem conversa
-    delete messageStore.threads[id];
-    delete messageStore.unread[id];
-    saveMessages();
-    if (currentChatId === id) currentChatId = null;
-    if (typingFor === id) typingFor = null;
+    if (currentChatId === id) {
+        stopThread();
+        currentChatId = null;
+    }
 
-    // o aviso de match some; se a pessoa ainda curte você, volta o aviso de curtida
-    notifications = notifications.filter(n => !(n.type === 'match' && n.profileId === id));
-    saveNotifications();
-    syncIncomingLikes();
+    try {
+        // Primeiro a curtida (assim o match não pode ser recriado), depois a conversa
+        await deleteDoc(doc(db, 'likes', `${myId}_${id}`));
+        if (match) await deleteMatchData(match.id);
+    } catch (error) {
+        console.error(error);
+        showToast('Não consegui desfazer agora. Tente de novo.');
+        return;
+    }
 
-    refreshAll();
     showToast(profile ? `Curtida em ${profile.name} desfeita.` : 'Curtida desfeita.');
 }
 
+
 // ---------- Páginas ----------
 function showPage(pageId) {
+    if (pageId !== 'notificacoes') notifBaseline = null;
     document.querySelectorAll('.page-content').forEach(page => {
         page.style.display = 'none';
     });
@@ -630,28 +762,45 @@ function changePage(pageId, element) {
 
 // ==========================================================
 // Notificações — quem curtiu você e quem deu match
+// Montadas na hora a partir das curtidas e dos matches (sempre em tempo real).
+// type: 'like'  = alguém curtiu você
+//       'match' = deu match (você sabe exatamente quem foi)
 // ==========================================================
-const unreadNotifications = () => notifications.filter(n => !n.read).length;
+function buildNotifications() {
+    const items = [];
 
-// Cria o aviso (sem repetir o mesmo aviso para a mesma pessoa)
-function addNotification(type, profileId, read = false) {
-    if (notifications.some(n => n.type === type && n.profileId === profileId)) return false;
-    notifications.unshift({ type, profileId, time: Date.now(), read });
-    saveNotifications();
-    return true;
-}
-
-function markNotificationRead(type, profileId) {
-    notifications.forEach(n => {
-        if (n.type === type && n.profileId === profileId) n.read = true;
+    incomingLikes.forEach((time, profileId) => {
+        // some o aviso de "curtiu você" quando você já curtiu de volta
+        if (!likedProfiles.has(profileId)) items.push({ type: 'like', profileId, time });
     });
-    saveNotifications();
+
+    matchByUser.forEach((match, profileId) => {
+        if (isMatch(profileId)) items.push({ type: 'match', profileId, time: match.createdAt });
+    });
+
+    return items;
 }
 
+// Com a tela de avisos aberta, o que chegou depois da última visita fica em destaque
+function currentNotifications() {
+    const seenAt = notifBaseline === null ? notifSeenAt : notifBaseline;
+    return buildNotifications().map(n => ({ ...n, read: n.time <= seenAt }));
+}
+
+const unreadNotifications = () => buildNotifications().filter(n => n.time > notifSeenAt).length;
+
+const isPageVisible = pageId => {
+    const page = document.getElementById('page-' + pageId);
+    return Boolean(page) && page.style.display === 'block';
+};
+
+// Marca tudo como visto (e guarda no Firebase, para valer em todos os aparelhos)
 function markAllNotificationsRead() {
     if (!unreadNotifications()) return;
-    notifications.forEach(n => { n.read = true; });
-    saveNotifications();
+    if (notifBaseline === null) notifBaseline = notifSeenAt;
+
+    notifSeenAt = Math.max(notifSeenAt, ...buildNotifications().map(n => n.time));
+    setDoc(accountRef, { notifSeenAt }, { merge: true }).catch(error => console.warn(error));
     updateNotificationsBadge();
 }
 
@@ -661,14 +810,6 @@ function updateNotificationsBadge() {
     notificationsBadge.textContent = total > 0 ? total : '';
 }
 
-// Quem já curte você aparece nos avisos, mesmo antes de você curtir de volta
-function syncIncomingLikes() {
-    profiles.forEach(profile => {
-        if (profile.likesYou && !likedProfiles.has(profile.id)) {
-            addNotification('like', profile.id, false);
-        }
-    });
-}
 
 function formatNotificationTime(timestamp) {
     const date = new Date(timestamp);
@@ -682,7 +823,7 @@ function renderNotifications() {
     if (!notificationsContent) return;
 
     // some o aviso de "curtiu você" quando você já curtiu de volta
-    const items = notifications
+    const items = currentNotifications()
         .map(n => ({ n, profile: findProfile(n.profileId) }))
         .filter(({ n, profile }) => profile && !(n.type === 'like' && likedProfiles.has(n.profileId)))
         .sort((a, b) => b.n.time - a.n.time);
@@ -725,31 +866,17 @@ function renderNotifications() {
 
 
 // ==========================================================
-// Mensagens — só quem deu match pode conversar
+// Mensagens — só quem deu match pode conversar (tempo real)
 // ==========================================================
-const getThread = id => messageStore.threads[id] || [];
-const getLastMessage = id => getThread(id).slice(-1)[0] || null;
-const totalUnread = () => Object.values(messageStore.unread).reduce((sum, n) => sum + n, 0);
+const getLastMessage = id => (matchByUser.get(id) || {}).lastMessage || null;
+const unreadFor = id => (matchByUser.get(id) || {}).unread || 0;
+const totalUnread = () => [...matchByUser.keys()].filter(isMatch).reduce((sum, id) => sum + unreadFor(id), 0);
 
-const isMessagesPageVisible = () => {
-    const page = document.getElementById('page-mensagens');
-    return Boolean(page) && page.style.display === 'block';
-};
+const isMessagesPageVisible = () => isPageVisible('mensagens');
+const isChatOnScreen = id => isMessagesPageVisible() && currentChatId === id;
 
 function formatTime(timestamp) {
     return new Date(timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-}
-
-function addMessage(id, from, text, markUnread = false) {
-    if (!messageStore.threads[id]) messageStore.threads[id] = [];
-    messageStore.threads[id].push({ from, text, time: Date.now() });
-
-    // mensagem recebida em uma conversa que não está na tela
-    const chatOnScreen = isMessagesPageVisible() && currentChatId === id;
-    if (from === 'them' && (markUnread || !chatOnScreen)) {
-        messageStore.unread[id] = (messageStore.unread[id] || 0) + 1;
-    }
-    saveMessages();
 }
 
 function updateMessagesBadge() {
@@ -758,44 +885,42 @@ function updateMessagesBadge() {
     messagesBadge.textContent = total > 0 ? total : '';
 }
 
-// Quando a pessoa responde (simulado)
-function buildReply(profile, count) {
-    const interest = profile.interests[count % profile.interests.length].toLowerCase();
-    const replies = [
-        `Que legal! Eu curto muito ${interest}. E você?`,
-        'Haha, boa! Me conta mais sobre isso.',
-        'Estou gostando de conversar com você. Que tal marcar um café?',
-        `Por aqui em ${profile.location} está tudo bem. E por aí?`
-    ];
-    return replies[count % replies.length];
+// Escuta as mensagens da conversa aberta: chegam sozinhas, sem recarregar
+function startThread(otherId) {
+    stopThread();
+
+    const match = matchByUser.get(otherId);
+    if (!match) return;
+
+    threadUnsub = onSnapshot(
+        query(collection(db, 'matches', match.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(300)),
+        snapshot => {
+            if (currentChatId !== otherId) return;
+
+            currentThread = snapshot.docs.map(d => {
+                const data = d.data({ serverTimestamps: 'estimate' });
+                return {
+                    from: data.from === myId ? 'me' : 'them',
+                    text: String(data.text || ''),
+                    time: toMillis(data.createdAt) || Date.now()
+                };
+            });
+
+            updateThread();
+            renderChatList();
+        },
+        // o match pode ter sido desfeito pela outra pessoa: não é um erro para mostrar
+        error => console.warn('Conversa indisponível:', error && error.code)
+    );
 }
 
-function scheduleReply(id) {
-    if (typingFor === id) return; // já está digitando
-    const profile = findProfile(id);
-    if (!profile) return;
-
-    typingFor = id;
-    updateThread();
-
-    setTimeout(() => {
-        if (typingFor !== id) return; // conversa foi desfeita
-        typingFor = null;
-
-        if (!isMatch(id)) return;
-
-        const theirCount = getThread(id).filter(m => m.from === 'them').length;
-        addMessage(id, 'them', buildReply(profile, theirCount));
-        updateThread();
-        renderChatList();
-        updateMessagesBadge();
-
-        const chatOnScreen = isMessagesPageVisible() && currentChatId === id;
-        if (!chatOnScreen) {
-            showToast(`${profile.name} respondeu.`, 'Ver conversa', () => goToMessages(id));
-        }
-    }, 1800);
+function stopThread() {
+    if (threadUnsub) threadUnsub();
+    threadUnsub = null;
+    currentThread = [];
 }
+
+let renderedChatId = null; // conversa que está desenhada na janela de chat
 
 // Monta a tela de mensagens
 function renderMessages() {
@@ -806,6 +931,7 @@ function renderMessages() {
 
     // Sem matches: mensagens bloqueadas
     if (!matches.length) {
+        stopThread();
         currentChatId = null;
         messagesContent.innerHTML = `
             <div class="empty-state">
@@ -818,9 +944,13 @@ function renderMessages() {
     }
 
     // Se a conversa aberta deixou de ser um match, fecha
-    if (currentChatId && !isMatch(currentChatId)) currentChatId = null;
+    if (currentChatId && !isMatch(currentChatId)) {
+        stopThread();
+        currentChatId = null;
+    }
 
     // Cria a estrutura uma vez só
+    let rebuilt = false;
     if (!document.getElementById('chat-shell')) {
         messagesContent.innerHTML = `
             <div class="chat-shell" id="chat-shell">
@@ -828,10 +958,15 @@ function renderMessages() {
                 <section class="chat-window" id="chat-window"></section>
             </div>
         `;
+        rebuilt = true;
     }
 
     renderChatList();
-    renderChatWindow();
+
+    // Atualização em tempo real: se a mesma conversa continua aberta, redesenha só as
+    // mensagens (assim o campo de texto não perde o foco enquanto você digita)
+    if (rebuilt || renderedChatId !== currentChatId) renderChatWindow();
+    else updateThread();
 }
 
 function renderChatList() {
@@ -843,8 +978,8 @@ function renderChatList() {
 
     // conversas mais recentes primeiro
     const matches = getMatches().sort((a, b) => {
-        const timeA = getLastMessage(a.id)?.time || 0;
-        const timeB = getLastMessage(b.id)?.time || 0;
+        const timeA = getLastMessage(a.id)?.time || matchByUser.get(a.id).createdAt;
+        const timeB = getLastMessage(b.id)?.time || matchByUser.get(b.id).createdAt;
         return timeB - timeA;
     });
 
@@ -852,7 +987,7 @@ function renderChatList() {
 
     list.innerHTML = matches.map(profile => {
         const last = getLastMessage(profile.id);
-        const unread = messageStore.unread[profile.id] || 0;
+        const unread = unreadFor(profile.id);
         const preview = last
             ? (last.from === 'me' ? 'Você: ' : '') + escapeHtml(last.text)
             : 'Comece a conversa';
@@ -883,6 +1018,7 @@ function renderChatWindow() {
     const typed = document.getElementById('chat-input')?.value || '';
 
     const profile = currentChatId ? findProfile(currentChatId) : null;
+    renderedChatId = currentChatId;
 
     if (!profile) {
         win.innerHTML = `
@@ -923,22 +1059,18 @@ function updateThread() {
     if (!thread || !currentChatId) return;
 
     const profile = findProfile(currentChatId);
-    const messages = getThread(currentChatId);
+    if (!profile) return;
 
-    let html = messages.length
+    let html = currentThread.length
         ? ''
         : `<p class="thread-empty">Você e ${profile.name} deram match. Mande a primeira mensagem.</p>`;
 
-    html += messages.map(m => `
+    html += currentThread.map(m => `
         <div class="bubble ${m.from === 'me' ? 'me' : 'them'}">
             <span>${escapeHtml(m.text)}</span>
             <small>${formatTime(m.time)}</small>
         </div>
     `).join('');
-
-    if (typingFor === currentChatId) {
-        html += '<div class="bubble them typing" aria-label="Digitando"><i></i><i></i><i></i></div>';
-    }
 
     thread.innerHTML = html;
     thread.scrollTop = thread.scrollHeight;
@@ -956,9 +1088,11 @@ function openChat(id) {
         return;
     }
 
+    chatReadBlocked = false;
     currentChatId = id;
-    delete messageStore.unread[id];
-    saveMessages();
+    currentThread = [];
+    startThread(id);
+    markCurrentChatRead();
     renderMessages();
     scrollThreadToEnd();
 
@@ -969,22 +1103,41 @@ function openChat(id) {
 }
 
 function closeChat() {
+    stopThread();
     currentChatId = null;
     renderMessages();
 }
 
-function sendMessage(event) {
+async function sendMessage(event) {
     event.preventDefault();
 
     const input = document.getElementById('chat-input');
     const text = input ? input.value.trim() : '';
-    if (!text || !currentChatId || !isMatch(currentChatId)) return;
+    const otherId = currentChatId;
+    const match = otherId ? matchByUser.get(otherId) : null;
+    if (!text || !match || !isMatch(otherId)) return;
 
-    addMessage(currentChatId, 'me', text);
     input.value = '';
-    updateThread();
-    renderChatList();
-    scheduleReply(currentChatId);
+
+    try {
+        // a mensagem e o resumo da conversa (última mensagem + não lidas) entram juntos
+        const batch = writeBatch(db);
+        batch.set(doc(collection(db, 'matches', match.id, 'messages')), {
+            from: myId,
+            text,
+            createdAt: serverTimestamp()
+        });
+        batch.update(doc(db, 'matches', match.id), {
+            lastMessage: { from: myId, text, time: serverTimestamp() },
+            [`unread.${otherId}`]: increment(1)
+        });
+        await batch.commit();
+    } catch (error) {
+        console.error(error);
+        const field = document.getElementById('chat-input');
+        if (field && !field.value) field.value = text; // devolve o texto para tentar de novo
+        showToast('Mensagem não enviada. Tente de novo.');
+    }
 }
 
 // Abre a conversa com alguém (botões "Mensagem")
@@ -1001,6 +1154,7 @@ function goToMessages(id) {
     openChat(id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
 // ==========================================================
 // Meu Perfil — dados da sua conta
@@ -1189,9 +1343,9 @@ function renderMyProfile() {
                             <div class="me-account-icon">${meIcon('trash')}</div>
                             <div class="me-account-text">
                                 <strong>Zona de perigo</strong>
-                                <p>Apaga seu perfil, curtidas, mensagens e avisos deste navegador.</p>
+                                <p>Apaga sua conta, perfil, curtidas, matches e mensagens. Não dá para desfazer.</p>
                             </div>
-                            <button type="button" class="btn-ghost btn-danger" onclick="resetAppData()">Apagar meus dados</button>
+                            <button type="button" class="btn-ghost btn-danger" onclick="deleteMyAccount()">Apagar minha conta</button>
                         </div>
                     </section>
                 </div>
@@ -1400,7 +1554,7 @@ function flashSaved() {
     setTimeout(() => button.classList.remove('saved'), 1600);
 }
 
-function saveProfileForm(event) {
+async function saveProfileForm(event) {
     event.preventDefault();
 
     const name = document.getElementById('me-name-input').value.trim();
@@ -1420,25 +1574,31 @@ function saveProfileForm(event) {
         return;
     }
 
-    myProfile = {
-        name, age, location, bio,
-        interests: [...draftInterests],
-        photo: draftPhoto,
-        interestedIn: [...myProfile.interestedIn]
-    };
-
-    if (saveMyProfile()) {
-        showToast('Perfil salvo!');
-        flashSaved();
-    } else {
-        showToast('Não deu para salvar neste navegador (a foto pode estar grande demais).');
+    if (draftPhoto.length > 700000) {
+        showToast('A foto ficou grande demais. Escolha outra imagem.');
+        return;
     }
+
+    const next = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
+
+    try {
+        await setDoc(userRef, { ...next, gender: myGender, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (error) {
+        console.error(error);
+        showToast('Não deu para salvar agora. Confira a internet e tente de novo.');
+        return;
+    }
+
+    myProfile = { ...next, interestedIn: [...myProfile.interestedIn] };
+    showToast('Perfil salvo!');
+    flashSaved();
     updateProfileSummary();
-    renderProfiles(); // o Descobrir passa a mostrar só os gêneros escolhidos
 }
 
 // ----- Sair da conta -----
 function logoutUser() {
+    unsubscribers.forEach(unsubscribe => unsubscribe());
+    unsubscribers.length = 0;
     Auth.logout('login.html');
 }
 
@@ -1489,29 +1649,69 @@ function askConfirm({ title, message, items = [], confirmText = 'Confirmar', can
     });
 }
 
-async function resetAppData() {
+// ----- Apagar a conta -----
+async function deleteMyAccount() {
     const ok = await askConfirm({
-        title: 'Apagar todos os seus dados?',
-        message: 'Isso não pode ser desfeito. Vai sumir tudo que está salvo neste navegador:',
-        items: ['Seu perfil e sua foto', 'Curtidas e matches', 'Mensagens', 'Avisos'],
-        confirmText: 'Sim, apagar tudo',
+        title: 'Apagar sua conta?',
+        message: 'Isso não pode ser desfeito. Vai sumir tudo que está salvo no NexaMatch:',
+        items: ['Seu perfil e sua foto', 'Curtidas e matches', 'Mensagens'],
+        confirmText: 'Sim, apagar conta',
         cancelText: 'Cancelar',
         danger: true
     });
     if (!ok) return;
 
-    try {
-        [PROFILE_KEY, STORAGE_KEY, MESSAGES_KEY, RECIPROCATED_KEY, NOTIFICATIONS_KEY]
-            .forEach(key => localStorage.removeItem(key));
-    } catch (error) {
-        // sem armazenamento: só recarrega
+    // O Firebase só apaga a conta de quem entrou há pouco. Confere antes de apagar qualquer dado.
+    const signedInAt = Date.parse((auth.currentUser && auth.currentUser.metadata.lastSignInTime) || '') || 0;
+    if (Date.now() - signedInAt > 4 * 60 * 1000) {
+        showToast('Por segurança, saia da conta, entre de novo e peça para apagar logo em seguida.');
+        return;
     }
-    location.reload();
+
+    try {
+        stopThread();
+        const matchIds = [...matchByUser.values()].map(match => match.id);
+
+        // 1º as curtidas (enviadas e recebidas), para nenhum match ser recriado no meio do caminho
+        const [sent, received] = await Promise.all([
+            getDocs(query(collection(db, 'likes'), where('from', '==', myId))),
+            getDocs(query(collection(db, 'likes'), where('to', '==', myId)))
+        ]);
+        const likeRefs = [...sent.docs, ...received.docs].map(d => d.ref);
+        for (let i = 0; i < likeRefs.length; i += 400) {
+            const batch = writeBatch(db);
+            likeRefs.slice(i, i + 400).forEach(ref => batch.delete(ref));
+            await batch.commit();
+        }
+
+        // 2º matches e mensagens, 3º perfil e dados privados
+        for (const matchId of matchIds) await deleteMatchData(matchId);
+        await deleteDoc(userRef);
+        await deleteDoc(accountRef);
+
+        // 4º a conta de login
+        unsubscribers.forEach(unsubscribe => unsubscribe());
+        unsubscribers.length = 0;
+        await deleteUser(auth.currentUser);
+        window.location.replace('login.html');
+    } catch (error) {
+        console.error(error);
+        showToast('Não consegui apagar tudo. Entre de novo e tente outra vez.');
+    }
 }
 
 
 // Inicia a aplicação
+// Este arquivo é um módulo: as funções chamadas pelos botões do HTML (onclick="...")
+// precisam ser publicadas no window.
+Object.assign(window, {
+    addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages,
+    handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
+    removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
+    showToast, toggleDiscoverGender, updateMePreview, viewProfile
+});
+
 renderMyProfile();
-syncIncomingLikes();
-getPending().forEach(scheduleLikeBack); // curtidas que ainda aguardam resposta
 refreshAll();
+startRealtime(); // a partir daqui tudo se atualiza sozinho
+document.body.classList.remove('auth-pending');
