@@ -12,6 +12,7 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  sendEmailVerification,
   deleteUser,
   setPersistence,
   browserLocalPersistence,
@@ -61,6 +62,8 @@ function friendlyError(err) {
       return "Muitas tentativas. Aguarde um pouco e tente de novo.";
     case "auth/network-request-failed":
       return "Sem conexão com a internet. Tente de novo.";
+    case "nexa/email-not-verified":
+      return "Confirme seu e-mail para entrar. Enviamos um link quando você se cadastrou (veja também o spam).";
     case "auth/user-disabled":
       return "Esta conta foi desativada.";
     case "auth/operation-not-allowed":
@@ -107,6 +110,7 @@ function toSessionUser(user) {
     uid: user.uid,
     name: user.displayName || "",
     email: user.email || "",
+    emailVerified: !!user.emailVerified,
   };
 }
 
@@ -159,7 +163,17 @@ async function register({ name, email, password, confirmPassword, gender, birthD
     throw err;
   }
 
-  return toSessionUser(user);
+  // confirmação de e-mail: manda o link e só libera o app depois que a pessoa clicar nele
+  let verificationSent = true;
+  try {
+    auth.languageCode = "pt-BR";
+    await sendEmailVerification(user);
+  } catch (e) {
+    verificationSent = false; // a conta existe; a pessoa pode pedir o reenvio na tela de login
+  }
+  await signOut(auth);
+
+  return { email, verificationSent };
 }
 
 async function login({ email, password, remember }) {
@@ -171,14 +185,40 @@ async function login({ email, password, remember }) {
   // "Manter conectado" marcado: continua logado depois de fechar o navegador
   await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
   const credential = await signInWithEmailAndPassword(auth, email, password);
+  if (!credential.user.emailVerified) {
+    await signOut(auth);
+    const err = new Error("E-mail não confirmado.");
+    err.code = "nexa/email-not-verified";
+    throw err;
+  }
   return toSessionUser(credential.user);
+}
+
+// Reenvia o link de confirmação (entra, envia e sai de novo)
+async function resendVerification({ email, password }) {
+  email = normalizeEmail(email);
+  if (!isValidEmail(email)) throw new Error("Informe o e-mail para reenviar o link.");
+  if (!password) throw new Error("Informe a senha para reenviar o link.");
+  if (!isConfigured) throw new Error(NOT_CONFIGURED);
+
+  const credential = await signInWithEmailAndPassword(auth, email, password);
+  try {
+    if (credential.user.emailVerified) return { alreadyVerified: true };
+    auth.languageCode = "pt-BR";
+    await sendEmailVerification(credential.user);
+    return { alreadyVerified: false };
+  } finally {
+    await signOut(auth);
+  }
 }
 
 // Depois que o Firebase terminou de verificar a sessão, devolve a pessoa logada (ou null)
 async function getCurrentUser() {
   if (!auth) return null;
   await auth.authStateReady();
-  return toSessionUser(auth.currentUser);
+  const u = auth.currentUser;
+  if (u && !u.emailVerified) return null; // sem e-mail confirmado = não está logado para o app
+  return toSessionUser(u);
 }
 
 async function logout(redirectTo) {
@@ -194,6 +234,9 @@ async function logout(redirectTo) {
 async function requireAuth(loginPage) {
   const user = await getCurrentUser();
   if (!user) {
+    if (auth && auth.currentUser && !auth.currentUser.emailVerified) {
+      try { await signOut(auth); } catch (e) { /* segue para o login */ }
+    }
     window.location.replace(loginPage || "login.html");
     return new Promise(() => {});
   }
@@ -203,6 +246,7 @@ async function requireAuth(loginPage) {
 export const Auth = {
   register,
   login,
+  resendVerification,
   logout,
   getCurrentUser,
   requireAuth,
@@ -339,6 +383,13 @@ async function wirePage() {
 
   const msg = document.getElementById("form-message");
 
+  if (registerForm) fillBirthSelects(registerForm);
+
+  // Aviso vindo do cadastro
+  if (loginForm && new URLSearchParams(window.location.search).get("verificar") === "1") {
+    showMessage(msg, "Conta criada! Enviamos um link de confirmação para o seu e-mail. Clique nele e depois entre aqui.", "success");
+  }
+
   // Sem configuração do Firebase: avisa logo, em vez de falhar só no envio
   if (!isConfigured) showMessage(msg, NOT_CONFIGURED, "error");
 
@@ -377,10 +428,25 @@ async function wirePage() {
 
   if (loginForm) {
     const names = ["email", "password"];
+    const resendBtn = document.getElementById("resend-btn");
     liveValidate(loginForm, names);
+    if (resendBtn) {
+      resendBtn.addEventListener("click", async function () {
+        resendBtn.disabled = true;
+        try {
+          const r = await resendVerification({ email: loginForm.email.value, password: loginForm.password.value });
+          showMessage(msg, r.alreadyVerified ? "Seu e-mail já está confirmado. Pode entrar." : "Link reenviado! Confira sua caixa de entrada e o spam.", "success");
+          resendBtn.hidden = true;
+        } catch (err) {
+          showMessage(msg, friendlyError(err), "error");
+        }
+        resendBtn.disabled = false;
+      });
+    }
     loginForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       showMessage(msg, "");
+      if (resendBtn) resendBtn.hidden = true;
       if (!validateForm(loginForm, names)) return;
       const btn = loginForm.querySelector("button[type=submit]");
       btn.disabled = true;
@@ -394,6 +460,7 @@ async function wirePage() {
         setTimeout(() => (window.location.href = "index.html"), 600);
       } catch (err) {
         showMessage(msg, friendlyError(err), "error");
+        if (resendBtn && err && err.code === "nexa/email-not-verified") resendBtn.hidden = false;
         btn.disabled = false;
       }
     });
@@ -401,7 +468,6 @@ async function wirePage() {
 
   if (registerForm) {
     const names = ["name", "email", "birth", "gender", "password", "confirmPassword"];
-    fillBirthSelects(registerForm);
     liveValidate(registerForm, names);
     registerForm.addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -410,7 +476,7 @@ async function wirePage() {
       const btn = registerForm.querySelector("button[type=submit]");
       btn.disabled = true;
       try {
-        await register({
+        const result = await register({
           name: registerForm.name.value,
           email: registerForm.email.value,
           password: registerForm.password.value,
@@ -420,9 +486,12 @@ async function wirePage() {
           birthMonth: registerForm.birthMonth.value,
           birthYear: registerForm.birthYear.value,
         });
-        // o Firebase já deixa a pessoa logada depois do cadastro
-        showMessage(msg, "Conta criada! Abrindo o NexaMatch...", "success");
-        setTimeout(() => (window.location.href = "index.html"), 700);
+        if (result.verificationSent) {
+          showMessage(msg, "Conta criada! Enviamos um link de confirmação para " + result.email + ". Abra o e-mail (veja também o spam) e clique no link para entrar.", "success");
+        } else {
+          showMessage(msg, "Conta criada, mas não conseguimos enviar o e-mail agora. Na tela de login você pode pedir o reenvio.", "error");
+        }
+        setTimeout(() => (window.location.href = "login.html" + (result.verificationSent ? "?verificar=1" : "")), 4000);
       } catch (err) {
         showMessage(msg, friendlyError(err), "error");
         btn.disabled = false;
