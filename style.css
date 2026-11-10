@@ -3149,3 +3149,169 @@ select:focus-visible {
     .chat-banner { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
     .bubble-img { max-width: 100%; }
 }
+
+
+
+
+/* ==========================================================
+   Menu do celular (dock) — v3
+   Indicador em "pílula" que desliza entre as abas, borda em
+   gradiente e rótulos maiores. Fica no fim do arquivo para
+   sobrescrever a dock anterior (bolha que saía da barra).
+   ========================================================== */
+@media (max-width: 860px) {
+    nav {
+        bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+        width: calc(100% - 1.25rem);
+        max-width: 520px;
+        justify-content: stretch;
+        gap: 0;
+        padding: 0.4rem;
+        border-radius: 1.75rem;
+        border: 1px solid transparent;
+        background: rgba(10, 12, 30, 0.82);
+        backdrop-filter: blur(22px) saturate(180%);
+        -webkit-backdrop-filter: blur(22px) saturate(180%);
+        box-shadow:
+            0 20px 44px -12px rgba(0, 0, 0, 0.9),
+            0 0 36px -6px rgba(139, 92, 246, 0.35);
+    }
+
+    /* borda fina em gradiente (ciano -> violeta -> rosa) */
+    nav::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: auto;
+        padding: 1px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(45, 226, 245, 0.6), rgba(139, 92, 246, 0.16) 45%, rgba(255, 79, 163, 0.6));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+        opacity: 1;
+        pointer-events: none;
+    }
+
+    /* ----- Itens ----- */
+    nav a {
+        position: relative;
+        z-index: 1;
+        flex: 1 1 0;
+        min-width: 0;
+        min-height: 3.6rem;
+        flex-direction: column;
+        justify-content: center;
+        gap: 0.25rem;
+        padding: 0.55rem 0.1rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1px;
+        color: rgba(176, 184, 216, 0.85);
+        border-radius: 1.3rem;
+        transition: color 0.25s, background 0.25s;
+    }
+
+    nav a::before {
+        width: 1.45rem;
+        height: 1.45rem;
+        transform: none;
+        transition: transform 0.3s cubic-bezier(.2, .9, .3, 1.3), filter 0.3s;
+    }
+
+    nav a:hover { background: transparent; color: rgba(176, 184, 216, 0.85); }
+
+    nav a:focus-visible {
+        outline: 2px solid var(--cyan);
+        outline-offset: -2px;
+    }
+
+    nav a:active::before { transform: scale(0.86); }
+
+    /* item ativo: sem bolha saindo da barra */
+    nav a.active,
+    nav a.active:hover {
+        color: #fff;
+        font-weight: 700;
+        background: linear-gradient(180deg, rgba(139, 92, 246, 0.34), rgba(45, 226, 245, 0.14));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    }
+
+    nav a.active::after {
+        content: none;
+        animation: none;
+    }
+
+    nav a.active::before,
+    nav a.active:hover::before {
+        transform: translateY(-1px) scale(1.1);
+        filter: drop-shadow(0 0 8px rgba(45, 226, 245, 0.7));
+    }
+
+    nav a.active:active::before { transform: scale(0.92); }
+
+    /* ----- Contador: bolinha no canto do ícone ----- */
+    nav a .nav-badge,
+    nav a.active .nav-badge {
+        top: 0.32rem;
+        left: calc(50% + 0.45rem);
+        min-width: 0.95rem;
+        height: 0.95rem;
+        padding: 0 0.2rem;
+        background: var(--pink);
+        color: #fff;
+        font-size: 0.62rem;
+        border: 2px solid rgb(10, 12, 30);
+        box-sizing: content-box;
+        box-shadow: 0 2px 8px rgba(255, 79, 163, 0.6);
+    }
+}
+
+/* Com suporte a :has(), a pílula de fundo desliza entre as abas */
+@supports selector(:has(*)) {
+    @media (max-width: 860px) {
+        nav::after {
+            content: "";
+            position: absolute;
+            z-index: 0;
+            top: 0.4rem;
+            bottom: 0.4rem;
+            left: 0.4rem;
+            width: calc((100% - 0.8rem) / 5);
+            border-radius: 1.3rem;
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.38), rgba(45, 226, 245, 0.14));
+            box-shadow:
+                inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+                0 8px 22px -8px rgba(139, 92, 246, 0.9);
+            transition: transform 0.45s cubic-bezier(.3, 1.25, .4, 1), opacity 0.2s;
+            pointer-events: none;
+        }
+
+        nav:not(:has(a.active))::after { opacity: 0; }
+        nav:has(a:nth-child(2).active)::after { transform: translateX(100%); }
+        nav:has(a:nth-child(3).active)::after { transform: translateX(200%); }
+        nav:has(a:nth-child(4).active)::after { transform: translateX(300%); }
+        nav:has(a:nth-child(5).active)::after { transform: translateX(400%); }
+
+        /* a pílula que desliza assume o fundo do item ativo */
+        nav a.active,
+        nav a.active:hover {
+            background: transparent;
+            box-shadow: none;
+        }
+    }
+}
+
+/* telas bem pequenas */
+@media (max-width: 360px) {
+    nav a { font-size: 0.66rem; min-height: 3.4rem; }
+    nav a::before { width: 1.3rem; height: 1.3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    nav::after { transition: none; }
+}
+
