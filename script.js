@@ -8,7 +8,9 @@
 //   users/{uid}                perfil público
 //   accounts/{uid}             dados privados (filtro, último aviso lido)
 //   likes/{de}_{para}          curtidas
-//   matches/{uidA}_{uidB}      matches (+ subcoleção messages)
+//   matches/{uidA}_{uidB}      matches (+ subcoleção messages) — conversa grátis
+//   chats/{uidA}_{uidB}        conversa sem match, homem ↔ mulher (+ messages)
+//   wallets/{uid}              saldo do homem para mensagens pagas
 // ==========================================================
 import { Auth } from './auth.js';
 import {
@@ -25,6 +27,14 @@ const GENDERS = [
     { id: 'outro', label: 'Não-binário e outros' }
 ];
 const ALL_GENDER_IDS = GENDERS.map(g => g.id);
+
+// ---------- Mensagem paga ----------
+// Homem → mulher que ainda NÃO o curtiu: ele paga por mensagem (texto ou foto) e o valor vai para ela.
+// Se ela curtiu ele, ou se houve match, a conversa é grátis.
+const MESSAGE_PRICE_CENTS = 200;          // R$ 2,00 por mensagem (mude aqui)
+const TOPUP_OPTIONS = [1000, 2000, 5000]; // valores de recarga
+const PAYMENTS_TEST_MODE = true;          // true = saldo de mentira, sem dinheiro real
+const formatMoney = cents => (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 // ---------- Quem está logado ----------
 // Sem login, vai para a tela de entrada e o resto do arquivo nem chega a rodar
@@ -95,11 +105,15 @@ let profiles = [];                  // outras pessoas cadastradas
 const likedProfiles = new Set();    // quem você curtiu
 const incomingLikes = new Map();    // quem curtiu você -> quando
 let matchByUser = new Map();        // id da pessoa -> { id, createdAt, lastMessage, unread }
+let chatByUser = new Map();         // conversas sem match (chats/): mesmo formato
+let walletCents = 0;                // meu saldo (homem)
+let earnedCents = 0;                // quanto ganhei com mensagens pagas (mulher)
+let paidMessages = 0;               // quantas mensagens pagas recebi
 let currentThread = [];             // mensagens da conversa aberta
 let threadUnsub = null;
 let notifBaseline = null;           // destaca o que é novo enquanto a tela de avisos está aberta
 const unsubscribers = [];
-const loaded = { users: false, likes: false, incoming: false, matches: false };
+const loaded = { users: false, likes: false, incoming: false, matches: false, chats: false, wallet: false };
 
 const grid = document.getElementById('profiles-grid');
 const detail = document.getElementById('profile-detail');
@@ -122,6 +136,48 @@ const likesYouNow = profile => Boolean(profile && incomingLikes.has(profile.id))
 const isMatch = id => likedProfiles.has(id) && incomingLikes.has(id) && matchByUser.has(id);
 const getMatches = () => [...matchByUser.keys()].filter(isMatch).map(findProfile).filter(Boolean);
 const getPending = () => [...likedProfiles].filter(id => !incomingLikes.has(id)).map(findProfile).filter(Boolean);
+
+// ---------- Quem pode conversar e quem paga ----------
+// Só existe regra de pagamento entre um homem e uma mulher
+function chatPair(otherId) {
+    const other = findProfile(otherId);
+    if (!other) return null;
+    if (myGender === 'homem' && other.gender === 'mulher') return { manId: myId, womanId: otherId };
+    if (myGender === 'mulher' && other.gender === 'homem') return { manId: otherId, womanId: myId };
+    return null;
+}
+
+// O homem paga quando NÃO há match e a mulher ainda não o curtiu
+function manPays(otherId) {
+    if (!chatPair(otherId) || isMatch(otherId)) return false;
+    return myGender === 'homem' ? !incomingLikes.has(otherId) : !likedProfiles.has(otherId);
+}
+
+// Quanto eu pago para falar com essa pessoa agora (só o homem paga)
+const priceFor = otherId => (myGender === 'homem' && manPays(otherId) ? MESSAGE_PRICE_CENTS : 0);
+
+// Onde a conversa está: matches/ (grátis) ou chats/
+function conversationFor(otherId) {
+    if (isMatch(otherId)) return { ...matchByUser.get(otherId), col: 'matches' };
+    const chat = chatByUser.get(otherId);
+    return chat ? { ...chat, col: 'chats' } : null;
+}
+
+function canChat(otherId) {
+    if (isMatch(otherId)) return true;
+    if (!chatPair(otherId)) return false;
+    if (chatByUser.has(otherId)) return true;
+    // homem pode puxar conversa (paga ou grátis); mulher só com quem ela curtiu
+    return myGender === 'homem' || likedProfiles.has(otherId);
+}
+
+// Conversas da lista: matches + conversas sem match (+ a que está aberta e ainda não tem mensagem)
+function getConversations() {
+    const ids = new Set(getMatches().map(profile => profile.id));
+    chatByUser.forEach((chat, id) => { if (findProfile(id) && canChat(id)) ids.add(id); });
+    if (currentChatId && findProfile(currentChatId) && canChat(currentChatId)) ids.add(currentChatId);
+    return [...ids].map(findProfile).filter(Boolean);
+}
 
 // ---------- Perfis das outras pessoas ----------
 // Foto: só aceita imagem embutida ou link https
@@ -240,15 +296,30 @@ function announceMatchChanges(previous, next) {
     });
 }
 
+// Mesmo aviso para as conversas sem match
+function announceChatChanges(previous, next) {
+    next.forEach((chat, otherId) => {
+        const profile = findProfile(otherId);
+        if (!profile || isMatch(otherId)) return;
+
+        const before = previous.has(otherId) ? previous.get(otherId).lastMessage : null;
+        const last = chat.lastMessage;
+        const isNew = last && last.from === 'them' && (!before || before.time !== last.time);
+        if (isNew && !isChatOnScreen(otherId)) {
+            showToast(`${profile.name} enviou uma mensagem.`, 'Ver conversa', () => goToMessages(otherId));
+        }
+    });
+}
+
 let chatReadBlocked = false;
 
 // Conversa aberta na tela: tudo que chega já conta como lido
 function markCurrentChatRead() {
     if (chatReadBlocked || !currentChatId || !isChatOnScreen(currentChatId)) return;
-    const match = matchByUser.get(currentChatId);
-    if (!match || !match.unread) return;
+    const conv = conversationFor(currentChatId);
+    if (!conv || !conv.unread) return;
 
-    updateDoc(doc(db, 'matches', match.id), { [`unread.${myId}`]: 0 }).catch(error => {
+    updateDoc(doc(db, conv.col, conv.id), { [`unread.${myId}`]: 0 }).catch(error => {
         chatReadBlocked = true; // evita insistir em loop se o Firebase recusar
         console.warn('Não consegui marcar como lida:', error && error.code);
     });
@@ -309,7 +380,7 @@ function startRealtime() {
                 id: d.id,
                 createdAt: toMillis(data.createdAt) || Date.now(),
                 lastMessage: last
-                    ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), time: toMillis(last.time) || Date.now() }
+                    ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), image: Boolean(last.image), time: toMillis(last.time) || Date.now() }
                     : null,
                 unread: Number(data.unread && data.unread[myId]) || 0
             });
@@ -320,6 +391,49 @@ function startRealtime() {
         loaded.matches = true;
         ensureMatches();
         markCurrentChatRead();
+        scheduleRefresh();
+    }, onListenError));
+
+    // 4b) Conversas sem match (homem ↔ mulher) e ganhos com mensagens pagas
+    unsubscribers.push(onSnapshot(query(collection(db, 'chats'), where('users', 'array-contains', myId)), snapshot => {
+        const next = new Map();
+        let earned = 0;
+        let paid = 0;
+
+        snapshot.docs.forEach(d => {
+            const data = d.data({ serverTimestamps: 'estimate' });
+            const otherId = (data.users || []).find(uid => uid !== myId);
+            if (!otherId) return;
+
+            if (data.womanId === myId) {
+                earned += Number(data.earnedCents) || 0;
+                paid += Number(data.paidCount) || 0;
+            }
+
+            const last = data.lastMessage;
+            next.set(otherId, {
+                id: d.id,
+                createdAt: toMillis(data.createdAt) || Date.now(),
+                lastMessage: last
+                    ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), image: Boolean(last.image), time: toMillis(last.time) || Date.now() }
+                    : null,
+                unread: Number(data.unread && data.unread[myId]) || 0
+            });
+        });
+
+        if (loaded.chats) announceChatChanges(chatByUser, next);
+        chatByUser = next;
+        earnedCents = earned;
+        paidMessages = paid;
+        loaded.chats = true;
+        markCurrentChatRead();
+        scheduleRefresh();
+    }, onListenError));
+
+    // 4c) Meu saldo
+    unsubscribers.push(onSnapshot(doc(db, 'wallets', myId), snapshot => {
+        walletCents = snapshot.exists() ? Math.max(0, Number(snapshot.data().balanceCents) || 0) : 0;
+        loaded.wallet = true;
         scheduleRefresh();
     }, onListenError));
 
@@ -579,9 +693,9 @@ async function handleLike(id) {
     }
 }
 
-// Apaga as mensagens e depois o próprio match
-async function deleteMatchData(matchId) {
-    const messages = await getDocs(collection(db, 'matches', matchId, 'messages'));
+// Apaga as mensagens e depois a própria conversa (match ou conversa paga)
+async function deleteConversationData(col, id) {
+    const messages = await getDocs(collection(db, col, id, 'messages'));
 
     for (let i = 0; i < messages.docs.length; i += 400) {
         const batch = writeBatch(db);
@@ -589,8 +703,10 @@ async function deleteMatchData(matchId) {
         await batch.commit();
     }
 
-    await deleteDoc(doc(db, 'matches', matchId));
+    await deleteDoc(doc(db, col, id));
 }
+
+const deleteMatchData = matchId => deleteConversationData('matches', matchId);
 
 async function removeLike(id) {
     if (!likedProfiles.has(id)) return;
@@ -671,8 +787,8 @@ function renderProfileDetail(id) {
                     <button class="btn-like btn-like-lg ${isLiked ? 'liked' : ''}" onclick="handleLike('${profile.id}')">
                         ${isLiked ? '✔' : '❤'}
                     </button>
-                    ${isMatch(id)
-                        ? `<button class="btn-msg btn-msg-lg" onclick="goToMessages('${profile.id}')">Enviar mensagem</button>`
+                    ${canChat(id)
+                        ? `<button class="btn-msg btn-msg-lg" onclick="goToMessages('${profile.id}')">Enviar mensagem${priceFor(id) ? ` · ${formatMoney(priceFor(id))}` : (chatPair(id) && !isMatch(id) ? ' · grátis' : '')}</button>`
                         : `<button class="btn-locked" onclick="showToast('Você só pode enviar mensagem depois do match.')">Mensagem bloqueada</button>`}
                     <button class="btn-view" onclick="goBack()">${backLabel()}</button>
                 </div>
@@ -866,11 +982,19 @@ function renderNotifications() {
 
 
 // ==========================================================
-// Mensagens — só quem deu match pode conversar (tempo real)
+// Mensagens — match (grátis) e conversa paga homem → mulher
+//
+//   • Match (as duas curtidas): conversa grátis, em matches/.
+//   • Sem match, entre um homem e uma mulher, a conversa fica em chats/:
+//       - se ELA curtiu ELE: grátis;
+//       - se ela NÃO curtiu: ele paga MESSAGE_PRICE_CENTS por mensagem
+//         (texto ou foto) e o valor vai para ela. Ela responde de graça.
+//   • Fotos podem ser enviadas em qualquer conversa.
 // ==========================================================
-const getLastMessage = id => (matchByUser.get(id) || {}).lastMessage || null;
-const unreadFor = id => (matchByUser.get(id) || {}).unread || 0;
-const totalUnread = () => [...matchByUser.keys()].filter(isMatch).reduce((sum, id) => sum + unreadFor(id), 0);
+const getLastMessage = id => { const conv = conversationFor(id); return conv ? conv.lastMessage : null; };
+const unreadFor = id => { const conv = conversationFor(id); return conv ? conv.unread : 0; };
+const totalUnread = () => getConversations().reduce((sum, profile) => sum + unreadFor(profile.id), 0);
+const previewOf = last => (last ? (last.text || (last.image ? '📷 Foto' : '')) : '');
 
 const isMessagesPageVisible = () => isPageVisible('mensagens');
 const isChatOnScreen = id => isMessagesPageVisible() && currentChatId === id;
@@ -885,15 +1009,22 @@ function updateMessagesBadge() {
     messagesBadge.textContent = total > 0 ? total : '';
 }
 
+// Só aceita foto de conversa no formato que o próprio app gera
+const safeChatImage = value =>
+    typeof value === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(value) ? value : '';
+
+let threadKey = null; // de onde a conversa aberta está sendo lida (matches/ID ou chats/ID)
+
 // Escuta as mensagens da conversa aberta: chegam sozinhas, sem recarregar
 function startThread(otherId) {
     stopThread();
 
-    const match = matchByUser.get(otherId);
-    if (!match) return;
+    const conv = conversationFor(otherId);
+    if (!conv) return;
+    threadKey = `${conv.col}/${conv.id}`;
 
     threadUnsub = onSnapshot(
-        query(collection(db, 'matches', match.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(300)),
+        query(collection(db, conv.col, conv.id, 'messages'), orderBy('createdAt', 'asc'), limitToLast(300)),
         snapshot => {
             if (currentChatId !== otherId) return;
 
@@ -902,6 +1033,8 @@ function startThread(otherId) {
                 return {
                     from: data.from === myId ? 'me' : 'them',
                     text: String(data.text || ''),
+                    image: safeChatImage(data.image),
+                    price: Number(data.priceCents) || 0,
                     time: toMillis(data.createdAt) || Date.now()
                 };
             });
@@ -909,7 +1042,7 @@ function startThread(otherId) {
             updateThread();
             renderChatList();
         },
-        // o match pode ter sido desfeito pela outra pessoa: não é um erro para mostrar
+        // a conversa pode ter sido desfeita pela outra pessoa: não é um erro para mostrar
         error => console.warn('Conversa indisponível:', error && error.code)
     );
 }
@@ -917,34 +1050,57 @@ function startThread(otherId) {
 function stopThread() {
     if (threadUnsub) threadUnsub();
     threadUnsub = null;
+    threadKey = null;
     currentThread = [];
 }
 
 let renderedChatId = null; // conversa que está desenhada na janela de chat
+
+// Carteira (homem) ou ganhos (mulher), no topo da lista de conversas
+function walletBarHtml() {
+    if (myGender === 'homem') {
+        return `
+            <div class="wallet-bar">
+                <div><small>Seu saldo</small><strong>${formatMoney(walletCents)}</strong></div>
+                <button type="button" onclick="openTopUp()">Adicionar saldo</button>
+            </div>`;
+    }
+    if (myGender === 'mulher' && (earnedCents > 0 || paidMessages > 0)) {
+        return `
+            <div class="wallet-bar earn">
+                <div><small>Ganhos com mensagens</small><strong>${formatMoney(earnedCents)}</strong></div>
+                <span>${paidMessages} ${paidMessages === 1 ? 'mensagem paga' : 'mensagens pagas'}</span>
+            </div>`;
+    }
+    return '';
+}
 
 // Monta a tela de mensagens
 function renderMessages() {
     if (!messagesContent) return;
     updateMessagesBadge();
 
-    const matches = getMatches();
+    const conversations = getConversations();
 
-    // Sem matches: mensagens bloqueadas
-    if (!matches.length) {
+    // Nenhuma conversa possível ainda
+    if (!conversations.length) {
         stopThread();
         currentChatId = null;
+        const extra = myGender === 'homem'
+            ? ` Você também pode mandar mensagem paga (${formatMoney(MESSAGE_PRICE_CENTS)} cada) para mulheres que ainda não curtiram você: abra o perfil dela e toque em Enviar mensagem.`
+            : '';
         messagesContent.innerHTML = `
             <div class="empty-state">
-                <h2>Mensagens liberadas só após o match</h2>
-                <p>Você só pode trocar mensagens com quem curtiu você de volta. Curte perfis no Descobrir e, quando houver match, a conversa começa aqui.</p>
+                <h2>Nenhuma conversa por aqui</h2>
+                <p>Quando houver match, a conversa começa aqui.${extra}</p>
                 <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
             </div>
         `;
         return;
     }
 
-    // Se a conversa aberta deixou de ser um match, fecha
-    if (currentChatId && !isMatch(currentChatId)) {
+    // Se a conversa aberta deixou de ser permitida, fecha
+    if (currentChatId && !canChat(currentChatId)) {
         stopThread();
         currentChatId = null;
     }
@@ -959,6 +1115,16 @@ function renderMessages() {
             </div>
         `;
         rebuilt = true;
+    }
+
+    // A conversa passou de paga para match (ou nasceu agora): lê da coleção certa
+    if (currentChatId) {
+        const conv = conversationFor(currentChatId);
+        const key = conv ? `${conv.col}/${conv.id}` : null;
+        if (key !== threadKey) {
+            if (key) startThread(currentChatId);
+            else stopThread();
+        }
     }
 
     renderChatList();
@@ -977,26 +1143,31 @@ function renderChatList() {
     shell.classList.toggle('chat-open', Boolean(currentChatId));
 
     // conversas mais recentes primeiro
-    const matches = getMatches().sort((a, b) => {
-        const timeA = getLastMessage(a.id)?.time || matchByUser.get(a.id).createdAt;
-        const timeB = getLastMessage(b.id)?.time || matchByUser.get(b.id).createdAt;
+    const conversations = getConversations().sort((a, b) => {
+        const convA = conversationFor(a.id);
+        const convB = conversationFor(b.id);
+        const timeA = (convA && (convA.lastMessage?.time || convA.createdAt)) || Date.now();
+        const timeB = (convB && (convB.lastMessage?.time || convB.createdAt)) || Date.now();
         return timeB - timeA;
     });
 
     const pending = getPending();
 
-    list.innerHTML = matches.map(profile => {
+    list.innerHTML = walletBarHtml() + conversations.map(profile => {
         const last = getLastMessage(profile.id);
         const unread = unreadFor(profile.id);
         const preview = last
-            ? (last.from === 'me' ? 'Você: ' : '') + escapeHtml(last.text)
+            ? (last.from === 'me' ? 'Você: ' : '') + escapeHtml(previewOf(last))
             : 'Comece a conversa';
+        const tag = manPays(profile.id)
+            ? `<em class="chat-tag">${myGender === 'homem' ? 'Paga' : 'Você recebe'}</em>`
+            : '';
 
         return `
             <button class="chat-item ${currentChatId === profile.id ? 'active' : ''}" onclick="openChat('${profile.id}')">
                 <img src="${profile.photo}" alt="Foto de ${profile.name}">
                 <span class="chat-item-info">
-                    <strong>${profile.name}</strong>
+                    <strong>${profile.name} ${tag}</strong>
                     <span class="${unread ? 'unread' : ''}">${preview}</span>
                 </span>
                 <span class="chat-item-meta">
@@ -1006,8 +1177,36 @@ function renderChatList() {
             </button>
         `;
     }).join('') + (pending.length
-        ? `<p class="chat-note">${pending.length === 1 ? '1 pessoa que você curtiu ainda não deu' : pending.length + ' pessoas que você curtiu ainda não deram'} match. As mensagens liberam quando a curtida for recíproca.</p>`
+        ? `<p class="chat-note">${pending.length === 1 ? '1 pessoa que você curtiu ainda não deu' : pending.length + ' pessoas que você curtiu ainda não deram'} match. ${myGender === 'homem' ? 'Para falar antes do match, abra o perfil e use a mensagem paga.' : 'As mensagens liberam quando a curtida for recíproca.'}</p>`
         : '');
+}
+
+// Faixa com a regra da conversa (quem paga, quanto custa, saldo)
+function chatBannerHtml(profile) {
+    if (!profile || !chatPair(profile.id) || isMatch(profile.id)) return '';
+
+    if (manPays(profile.id)) {
+        if (myGender === 'homem') {
+            return `
+                <div class="chat-banner pay">
+                    <span>${profile.name} ainda não curtiu você. Cada mensagem ou foto custa <b>${formatMoney(MESSAGE_PRICE_CENTS)}</b> e vai para ela.
+                    Saldo: <b>${formatMoney(walletCents)}</b></span>
+                    <button type="button" onclick="openTopUp()">Adicionar saldo</button>
+                </div>`;
+        }
+        return `
+            <div class="chat-banner earn">
+                <span>${profile.name} paga <b>${formatMoney(MESSAGE_PRICE_CENTS)}</b> por cada mensagem ou foto enviada para você. Responder é grátis.</span>
+            </div>`;
+    }
+
+    return `<div class="chat-banner free"><span>${myGender === 'homem' ? `${profile.name} curtiu você: conversar é grátis.` : 'Conversa grátis para os dois.'}</span></div>`;
+}
+
+function updateChatBanner() {
+    const box = document.getElementById('chat-banner');
+    if (!box || !currentChatId) return;
+    box.innerHTML = chatBannerHtml(findProfile(currentChatId));
 }
 
 function renderChatWindow() {
@@ -1024,12 +1223,13 @@ function renderChatWindow() {
         win.innerHTML = `
             <div class="chat-placeholder">
                 <h2>Suas conversas</h2>
-                <p>Escolha um match na lista para começar a conversar.</p>
+                <p>Escolha uma conversa na lista para começar.</p>
             </div>
         `;
         return;
     }
 
+    const price = priceFor(profile.id);
     win.innerHTML = `
         <div class="chat-header">
             <button class="chat-back" onclick="closeChat()" aria-label="Voltar para as conversas"></button>
@@ -1041,10 +1241,16 @@ function renderChatWindow() {
             <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
         </div>
 
+        <div id="chat-banner">${chatBannerHtml(profile)}</div>
+
         <div class="chat-thread" id="chat-thread"></div>
 
         <form class="chat-form" onsubmit="sendMessage(event)">
-            <input id="chat-input" type="text" placeholder="Escreva uma mensagem para ${profile.name}" autocomplete="off" maxlength="500">
+            <label class="chat-attach" title="Enviar foto" aria-label="Enviar foto">
+                ${meIcon('image')}
+                <input type="file" accept="image/*" hidden onchange="sendChatPhoto(event)">
+            </label>
+            <input id="chat-input" type="text" placeholder="${price ? `Mensagem · ${formatMoney(price)}` : `Escreva uma mensagem para ${profile.name}`}" autocomplete="off" maxlength="500">
             <button type="submit" class="chat-send" aria-label="Enviar mensagem"></button>
         </form>
     `;
@@ -1061,16 +1267,31 @@ function updateThread() {
     const profile = findProfile(currentChatId);
     if (!profile) return;
 
-    let html = currentThread.length
-        ? ''
-        : `<p class="thread-empty">Você e ${profile.name} deram match. Mande a primeira mensagem.</p>`;
+    updateChatBanner();
 
-    html += currentThread.map(m => `
-        <div class="bubble ${m.from === 'me' ? 'me' : 'them'}">
-            <span>${escapeHtml(m.text)}</span>
-            <small>${formatTime(m.time)}</small>
-        </div>
-    `).join('');
+    let empty = '';
+    if (!currentThread.length) {
+        const price = priceFor(profile.id);
+        empty = isMatch(profile.id)
+            ? `Você e ${profile.name} deram match. Mande a primeira mensagem.`
+            : price
+                ? `Sua primeira mensagem para ${profile.name} custa ${formatMoney(price)}.`
+                : `Mande a primeira mensagem para ${profile.name}.`;
+    }
+
+    let html = empty ? `<p class="thread-empty">${empty}</p>` : '';
+
+    html += currentThread.map(m => {
+        const note = m.price
+            ? `<em class="bubble-price">${m.from === 'me' ? '−' : '+'}${formatMoney(m.price)}</em>`
+            : '';
+        return `
+        <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''}">
+            ${m.image ? `<img class="bubble-img" src="${m.image}" alt="Foto enviada" onclick="openPhoto(this.src)">` : ''}
+            ${m.text ? `<span>${escapeHtml(m.text)}</span>` : ''}
+            <small>${note}${formatTime(m.time)}</small>
+        </div>`;
+    }).join('');
 
     thread.innerHTML = html;
     thread.scrollTop = thread.scrollHeight;
@@ -1082,8 +1303,7 @@ function scrollThreadToEnd() {
 }
 
 function openChat(id) {
-    // Regra principal: só conversa quem deu match
-    if (!isMatch(id)) {
+    if (!canChat(id)) {
         showToast('Você só pode enviar mensagem depois do match.');
         return;
     }
@@ -1108,41 +1328,277 @@ function closeChat() {
     renderMessages();
 }
 
+// ---------- Enviar mensagem ou foto ----------
+let sendingNow = false;
+
+// Devolve true quando a mensagem foi enviada
+async function deliverMessage(otherId, { text = '', image = '' }) {
+    if (sendingNow) return false;
+    if (!text && !image) return false;
+    if (!canChat(otherId)) {
+        showToast('Você só pode enviar mensagem depois do match.');
+        return false;
+    }
+
+    const price = priceFor(otherId);
+    if (price > 0 && walletCents < price) {
+        showToast(`Saldo insuficiente. Cada mensagem custa ${formatMoney(price)}.`, 'Adicionar saldo', openTopUp);
+        return false;
+    }
+
+    sendingNow = true;
+    try {
+        const conv = conversationFor(otherId);
+
+        if (conv && conv.col === 'matches') {
+            // match: grátis. A mensagem e o resumo da conversa (última mensagem + não lidas) entram juntos
+            const batch = writeBatch(db);
+            batch.set(doc(collection(db, 'matches', conv.id, 'messages')), {
+                from: myId,
+                text,
+                ...(image ? { image } : {}),
+                createdAt: serverTimestamp()
+            });
+            batch.update(doc(db, 'matches', conv.id), {
+                lastMessage: { from: myId, text, ...(image ? { image: true } : {}), time: serverTimestamp() },
+                [`unread.${otherId}`]: increment(1)
+            });
+            await batch.commit();
+        } else {
+            // sem match (homem ↔ mulher): tudo na mesma transação — a mensagem, o resumo,
+            // o desconto do saldo dele e o ganho dela
+            const pair = chatPair(otherId);
+            const chatId = pairId(myId, otherId);
+            const chatRef = doc(db, 'chats', chatId);
+            const walletRef = doc(db, 'wallets', myId);
+            const messageRef = doc(collection(db, 'chats', chatId, 'messages'));
+            const lastMessage = { from: myId, text, ...(image ? { image: true } : {}), time: serverTimestamp() };
+
+            await runTransaction(db, async transaction => {
+                const chatSnap = await transaction.get(chatRef);
+
+                if (price > 0) {
+                    const walletSnap = await transaction.get(walletRef);
+                    const balance = walletSnap.exists() ? Number(walletSnap.data().balanceCents) || 0 : 0;
+                    if (balance < price) throw Object.assign(new Error('saldo'), { code: 'no-balance' });
+                    transaction.update(walletRef, { balanceCents: increment(-price) });
+                }
+
+                if (chatSnap.exists()) {
+                    transaction.update(chatRef, {
+                        lastMessage,
+                        [`unread.${otherId}`]: increment(1),
+                        earnedCents: increment(price),
+                        paidCount: increment(price > 0 ? 1 : 0)
+                    });
+                } else {
+                    transaction.set(chatRef, {
+                        users: [myId, otherId].sort(),
+                        manId: pair.manId,
+                        womanId: pair.womanId,
+                        createdAt: serverTimestamp(),
+                        lastMessage,
+                        unread: { [myId]: 0, [otherId]: 1 },
+                        earnedCents: price,
+                        paidCount: price > 0 ? 1 : 0
+                    });
+                }
+
+                transaction.set(messageRef, {
+                    from: myId,
+                    to: otherId,
+                    text,
+                    ...(image ? { image } : {}),
+                    priceCents: price,
+                    createdAt: serverTimestamp()
+                });
+            });
+        }
+        return true;
+    } catch (error) {
+        console.error(error);
+        if (error && error.code === 'no-balance') {
+            showToast(`Saldo insuficiente. Cada mensagem custa ${formatMoney(price)}.`, 'Adicionar saldo', openTopUp);
+        } else if (error && error.code === 'permission-denied') {
+            showToast('O Firebase recusou o envio. Publique as regras do arquivo firestore.rules.pagamentos.');
+        } else {
+            showToast('Mensagem não enviada. Tente de novo.');
+        }
+        return false;
+    } finally {
+        sendingNow = false;
+    }
+}
+
 async function sendMessage(event) {
     event.preventDefault();
 
     const input = document.getElementById('chat-input');
     const text = input ? input.value.trim() : '';
     const otherId = currentChatId;
-    const match = otherId ? matchByUser.get(otherId) : null;
-    if (!text || !match || !isMatch(otherId)) return;
+    if (!text || !otherId) return;
 
     input.value = '';
-
-    try {
-        // a mensagem e o resumo da conversa (última mensagem + não lidas) entram juntos
-        const batch = writeBatch(db);
-        batch.set(doc(collection(db, 'matches', match.id, 'messages')), {
-            from: myId,
-            text,
-            createdAt: serverTimestamp()
-        });
-        batch.update(doc(db, 'matches', match.id), {
-            lastMessage: { from: myId, text, time: serverTimestamp() },
-            [`unread.${otherId}`]: increment(1)
-        });
-        await batch.commit();
-    } catch (error) {
-        console.error(error);
+    const ok = await deliverMessage(otherId, { text });
+    if (!ok) {
         const field = document.getElementById('chat-input');
         if (field && !field.value) field.value = text; // devolve o texto para tentar de novo
-        showToast('Mensagem não enviada. Tente de novo.');
+    }
+}
+
+// Lê a foto escolhida, reduz e converte para JPEG (cabe no limite de 1 MB do Firestore)
+function readChatPhoto(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('read'));
+        reader.onload = () => {
+            const image = new Image();
+            image.onerror = () => reject(new Error('open'));
+            image.onload = () => {
+                const scale = Math.min(1, 1000 / Math.max(image.width, image.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.width * scale));
+                canvas.height = Math.max(1, Math.round(image.height * scale));
+                const context = canvas.getContext('2d');
+                context.fillStyle = '#ffffff';
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+                let quality = 0.8;
+                let url = canvas.toDataURL('image/jpeg', quality);
+                while (url.length > 420000 && quality > 0.4) {
+                    quality -= 0.1;
+                    url = canvas.toDataURL('image/jpeg', quality);
+                }
+                url.length > 420000 ? reject(new Error('big')) : resolve(url);
+            };
+            image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+async function sendChatPhoto(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    const otherId = currentChatId;
+    if (!file || !otherId) return;
+
+    if (!file.type.startsWith('image/')) {
+        showToast('Escolha um arquivo de imagem.');
+        return;
+    }
+
+    let image;
+    try {
+        image = await readChatPhoto(file);
+    } catch (error) {
+        showToast(error && error.message === 'big' ? 'Essa foto é pesada demais. Escolha outra.' : 'Não consegui abrir essa imagem.');
+        return;
+    }
+
+    const profile = findProfile(otherId);
+    const price = priceFor(otherId);
+    const ok = await askConfirm({
+        title: 'Enviar esta foto?',
+        message: price
+            ? `Vai para ${profile ? profile.name.replace(/&amp;|&lt;|&gt;|&quot;/g, '') : 'a conversa'} e custa ${formatMoney(price)}.`
+            : `Vai para ${profile ? profile.name.replace(/&amp;|&lt;|&gt;|&quot;/g, '') : 'a conversa'}.`,
+        image,
+        confirmText: price ? `Enviar por ${formatMoney(price)}` : 'Enviar foto',
+        cancelText: 'Cancelar'
+    });
+    if (!ok || currentChatId !== otherId) return;
+
+    await deliverMessage(otherId, { image });
+}
+
+// Foto em tamanho grande
+function openPhoto(src) {
+    if (!safeChatImage(src)) return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay photo-viewer';
+    overlay.innerHTML = `<img src="${src}" alt="Foto da conversa"><button type="button" aria-label="Fechar">×</button>`;
+
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        overlay.classList.remove('show');
+        setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 180);
+    };
+    const onKey = event => { if (event.key === 'Escape') close(); };
+
+    overlay.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => overlay.classList.add('show'));
+}
+
+// ---------- Saldo ----------
+// MODO DE TESTE: o saldo é de mentira (nenhum dinheiro real). Para cobrar de verdade,
+// troque addCredits() por um pagamento (Pix, cartão...) confirmado pelo servidor.
+function openTopUp() {
+    if (myGender !== 'homem') return;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="topup-title">
+            <div class="modal-icon">${meIcon('plus')}</div>
+            <h3 id="topup-title">Adicionar saldo</h3>
+            <p>Cada mensagem para quem ainda não curtiu você custa ${formatMoney(MESSAGE_PRICE_CENTS)} e vai para ela.</p>
+            <div class="topup-options">
+                ${TOPUP_OPTIONS.map(cents => `<button type="button" data-cents="${cents}">${formatMoney(cents)}</button>`).join('')}
+            </div>
+            ${PAYMENTS_TEST_MODE ? '<p class="topup-note">Modo de teste: o saldo é de mentira e nenhum dinheiro real é cobrado.</p>' : ''}
+            <div class="modal-actions"><button type="button" class="modal-cancel">Fechar</button></div>
+        </div>`;
+
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        overlay.classList.remove('show');
+        setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 180);
+    };
+    const onKey = event => { if (event.key === 'Escape') close(); };
+
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    overlay.querySelector('.modal-cancel').addEventListener('click', close);
+    overlay.querySelectorAll('[data-cents]').forEach(button => {
+        button.addEventListener('click', async () => {
+            close();
+            await addCredits(Number(button.dataset.cents));
+        });
+    });
+    document.addEventListener('keydown', onKey);
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => overlay.classList.add('show'));
+}
+
+async function addCredits(cents) {
+    if (!TOPUP_OPTIONS.includes(cents)) return;
+
+    if (!PAYMENTS_TEST_MODE) {
+        showToast('O pagamento ainda não está conectado.');
+        return;
+    }
+
+    try {
+        await setDoc(doc(db, 'wallets', myId), { balanceCents: increment(cents), updatedAt: serverTimestamp() }, { merge: true });
+        showToast(`${formatMoney(cents)} de saldo de teste adicionados.`);
+    } catch (error) {
+        console.error(error);
+        showToast(error && error.code === 'permission-denied'
+            ? 'O Firebase recusou. Publique as regras do arquivo firestore.rules.pagamentos.'
+            : 'Não consegui adicionar saldo agora.');
     }
 }
 
 // Abre a conversa com alguém (botões "Mensagem")
 function goToMessages(id) {
-    if (!isMatch(id)) {
+    if (!canChat(id)) {
         showToast('Você só pode enviar mensagem depois do match.');
         return;
     }
@@ -1606,7 +2062,7 @@ function logoutUser() {
 
 // ----- Apagar tudo -----
 // ----- Janela de confirmação (substitui o confirm() do navegador) -----
-function askConfirm({ title, message, items = [], confirmText = 'Confirmar', cancelText = 'Cancelar', danger = false }) {
+function askConfirm({ title, message, items = [], image = '', confirmText = 'Confirmar', cancelText = 'Cancelar', danger = false }) {
     return new Promise(resolve => {
         const previousFocus = document.activeElement;
 
@@ -1614,7 +2070,9 @@ function askConfirm({ title, message, items = [], confirmText = 'Confirmar', can
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
             <div class="modal ${danger ? 'danger' : ''}" role="alertdialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-text">
-                <div class="modal-icon">${meIcon(danger ? 'trash' : 'check')}</div>
+                ${image && safeChatImage(image)
+                    ? `<img class="modal-photo" src="${image}" alt="Prévia da foto">`
+                    : `<div class="modal-icon">${meIcon(danger ? 'trash' : 'check')}</div>`}
                 <h3 id="modal-title">${escapeHtml(title)}</h3>
                 <p id="modal-text">${escapeHtml(message)}</p>
                 ${items.length ? `<ul class="modal-list">${items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : ''}
@@ -1656,7 +2114,7 @@ async function deleteMyAccount() {
     const ok = await askConfirm({
         title: 'Apagar sua conta?',
         message: 'Isso não pode ser desfeito. Vai sumir tudo que está salvo no NexaMatch:',
-        items: ['Seu perfil e sua foto', 'Curtidas e matches', 'Mensagens'],
+        items: ['Seu perfil e sua foto', 'Curtidas e matches', 'Mensagens e fotos', 'Saldo e conversas pagas'],
         confirmText: 'Sim, apagar conta',
         cancelText: 'Cancelar',
         danger: true
@@ -1673,6 +2131,7 @@ async function deleteMyAccount() {
     try {
         stopThread();
         const matchIds = [...matchByUser.values()].map(match => match.id);
+        const chatIds = [...chatByUser.values()].map(chat => chat.id);
 
         // 1º as curtidas (enviadas e recebidas), para nenhum match ser recriado no meio do caminho
         const [sent, received] = await Promise.all([
@@ -1688,6 +2147,8 @@ async function deleteMyAccount() {
 
         // 2º matches e mensagens, 3º perfil e dados privados
         for (const matchId of matchIds) await deleteMatchData(matchId);
+        for (const chatId of chatIds) await deleteConversationData('chats', chatId);
+        await deleteDoc(doc(db, 'wallets', myId)).catch(() => {}); // pode nem existir
         await deleteDoc(userRef);
         await deleteDoc(accountRef);
 
@@ -1760,7 +2221,7 @@ async function fillLocation() {
 // Este arquivo é um módulo: as funções chamadas pelos botões do HTML (onclick="...")
 // precisam ser publicadas no window.
 Object.assign(window, {
-    addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages,
+    addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
     fillLocation, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, updateMePreview, viewProfile
