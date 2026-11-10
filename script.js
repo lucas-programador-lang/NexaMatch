@@ -68,6 +68,7 @@ function normalizeInterestedIn(list) {
 // ---------- Meu perfil (carregado do Firestore) ----------
 let myGender = 'outro';
 let notifSeenAt = 0; // até quando os avisos já foram vistos
+let matchesSeenAt = 0; // até quando os matches já foram vistos (zera o contador do menu)
 let myProfile = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
 
 try {
@@ -77,6 +78,7 @@ try {
 
     myGender = ALL_GENDER_IDS.includes(publicData.gender) ? publicData.gender : 'outro';
     notifSeenAt = toMillis(privateData.notifSeenAt);
+    matchesSeenAt = toMillis(privateData.matchesSeenAt);
     myProfile = {
         name: String(publicData.name || currentUser.name || '').slice(0, 40),
         age: publicData.age ? Number(publicData.age) : '',
@@ -442,6 +444,7 @@ function startRealtime() {
         if (!snapshot.exists()) return;
         const data = snapshot.data({ serverTimestamps: 'estimate' });
         notifSeenAt = Math.max(notifSeenAt, toMillis(data.notifSeenAt));
+        matchesSeenAt = Math.max(matchesSeenAt, toMillis(data.matchesSeenAt));
         myProfile.interestedIn = normalizeInterestedIn(data.interestedIn);
         scheduleRefresh();
     }, onListenError));
@@ -623,11 +626,25 @@ function renderMatches() {
     matchesContent.innerHTML = html;
 }
 
-// Contador no menu
+// Matches que você ainda não viu (chegaram depois da última visita à aba Matches)
+const matchTime = profile => (matchByUser.get(profile.id) || {}).createdAt || 0;
+const unseenMatches = () => getMatches().filter(profile => matchTime(profile) > matchesSeenAt);
+
+// Contador no menu: só mostra o que é novo, e some ao abrir a aba Matches
 function updateBadge() {
     if (!matchesBadge) return;
-    const total = getMatches().length;
+    const total = unseenMatches().length;
     matchesBadge.textContent = total > 0 ? total : '';
+}
+
+// Marca todos os matches atuais como vistos (também entre aparelhos)
+function markMatchesSeen() {
+    const unseen = unseenMatches();
+    if (!unseen.length) return;
+
+    matchesSeenAt = Math.max(matchesSeenAt, ...unseen.map(matchTime));
+    setDoc(accountRef, { matchesSeenAt }, { merge: true }).catch(error => console.warn(error));
+    updateBadge();
 }
 
 // Atualiza tudo que depende das curtidas
@@ -641,6 +658,7 @@ function refreshAll() {
     updateProfileStats();
     if (currentProfileId) renderProfileDetail(currentProfileId);
     if (isPageVisible('notificacoes')) markAllNotificationsRead();
+    if (isPageVisible('matches')) markMatchesSeen();
 }
 
 // ---------- Aviso rápido ----------
@@ -840,6 +858,7 @@ function goToMatches() {
     currentProfileId = null;
     showPage('matches');
     setActiveNav(1);
+    markMatchesSeen();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -862,6 +881,8 @@ function changePage(pageId, element) {
 
     element.classList.add('active');
     showPage(pageId);
+
+    if (pageId === 'matches') markMatchesSeen();
 
     if (pageId === 'mensagens') {
         renderMessages();
