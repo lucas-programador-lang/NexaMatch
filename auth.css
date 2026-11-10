@@ -801,3 +801,8 @@ body.auth-page {
     .af-row { grid-template-columns: 0.8fr 1.3fr 1fr; gap: 0.35rem; }
     .af-row select { padding-left: 0.6rem; font-size: 0.88rem; }
 }
+
+/* reenviar e-mail de confirmação */
+.auth-card .btn-link { margin-top: 0.75rem; background: none; border: 0; padding: 0; color: #b4f4fb; font: inherit; font-size: 0.92rem; text-decoration: underline; cursor: pointer; }
+.auth-card .btn-link[hidden] { display: none; }
+.auth-card .btn-link:disabled { opacity: 0.6; cursor: wait; }
