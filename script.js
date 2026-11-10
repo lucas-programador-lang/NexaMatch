@@ -1286,6 +1286,8 @@ function renderMyProfile() {
                                            placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
                                 </div>
                             </label>
+                            <button type="button" class="btn-ghost" id="me-location-btn" onclick="fillLocation()">Usar minha localização</button>
+                            <p class="section-hint" id="me-location-status" aria-live="polite"></p>
                         </section>
 
                         <section class="me-step">
@@ -1701,12 +1703,65 @@ async function deleteMyAccount() {
 }
 
 
+// ---------- Preencher a cidade com a localização ----------
+// Só roda quando a pessoa toca no botão (o navegador pede a permissão nessa hora).
+// Salvamos apenas "Cidade, UF" no campo; as coordenadas não ficam guardadas.
+async function fillLocation() {
+    const input = document.getElementById('me-location-input');
+    const btn = document.getElementById('me-location-btn');
+    const status = document.getElementById('me-location-status');
+    if (!input || !btn) return;
+    const say = text => { if (status) status.textContent = text; };
+
+    if (!('geolocation' in navigator)) {
+        say('Seu navegador não informa a localização. Digite a cidade.');
+        return;
+    }
+
+    btn.disabled = true;
+    say('Procurando sua cidade...');
+    try {
+        const position = await new Promise((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: false,
+                timeout: 10000,
+                maximumAge: 10 * 60 * 1000
+            })
+        );
+
+        const { latitude, longitude } = position.coords;
+        const url = 'https://api.bigdatacloud.net/data/reverse-geocode-client'
+            + `?latitude=${latitude}&longitude=${longitude}&localityLanguage=pt`;
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!response.ok) throw new Error('geocode');
+
+        const data = await response.json();
+        const city = String(data.city || data.locality || '').trim();
+        if (!city) throw new Error('geocode');
+        const uf = String(data.principalSubdivisionCode || '').split('-')[1]
+            || String(data.principalSubdivision || '').trim();
+
+        input.value = [city, uf].filter(Boolean).join(', ').slice(0, 60);
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        say('Cidade preenchida. Confira e salve o perfil.');
+    } catch (error) {
+        if (error && error.code === 1) say('Permissão negada. Libere a localização no navegador ou digite a cidade.');
+        else if (error && error.code === 3) say('Demorou demais. Tente de novo ou digite a cidade.');
+        else say('Não consegui descobrir sua cidade agora. Digite manualmente.');
+    } finally {
+        btn.disabled = false;
+    }
+}
+
 // Inicia a aplicação
 // Este arquivo é um módulo: as funções chamadas pelos botões do HTML (onclick="...")
 // precisam ser publicadas no window.
 Object.assign(window, {
     addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages,
-    handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
+    fillLocation, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, updateMePreview, viewProfile
 });
