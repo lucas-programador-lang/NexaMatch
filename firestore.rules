@@ -1,0 +1,215 @@
+rules_version = '2';
+
+// ==========================================================
+// Regras de segurança do NexaMatch (Firestore)
+//
+//   users/{uid}                  perfil público (qualquer pessoa logada lê; só o dono escreve)
+//   accounts/{uid}               dados privados (data de nascimento, filtro, último aviso lido)
+//   likes/{fromUid}_{toUid}      curtida de uma pessoa em outra
+//   matches/{uidA}_{uidB}        match (só existe se as duas curtidas existem)
+//   matches/{id}/messages/{id}   mensagens (só as duas pessoas do match) — texto e/ou foto
+//   chats/{uidA}_{uidB}          conversa sem match, homem <-> mulher (mensagem paga ou grátis)
+//   chats/{id}/messages/{id}     mensagens dessa conversa (preço de cada uma em priceCents)
+//   wallets/{uid}                saldo do homem (SALDO DE TESTE enquanto não houver pagamento real)
+// ==========================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function likePath(a, b) {
+      return /databases/$(database)/documents/likes/$(a + '_' + b);
+    }
+
+    // foto da conversa: texto base64 de até ~700 mil caracteres
+    function hasImage(data) {
+      return 'image' in data && data.image is string && data.image.size() > 0 && data.image.size() < 700000;
+    }
+
+    function matchPath(matchId) {
+      return /databases/$(database)/documents/matches/$(matchId);
+    }
+
+    // ---------- Perfil público ----------
+    match /users/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isOwner(uid)
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 40
+        && request.resource.data.age is number
+        && request.resource.data.age >= 18
+        && request.resource.data.age <= 99
+        && request.resource.data.location.size() <= 60
+        && request.resource.data.bio.size() <= 200
+        && request.resource.data.photo.size() <= 700000
+        && request.resource.data.interests.size() <= 8
+        && request.resource.data.gender in ['mulher', 'homem', 'outro'];
+      allow delete: if isOwner(uid);
+    }
+
+    // ---------- Dados privados ----------
+    match /accounts/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ---------- Curtidas ----------
+    match /likes/{likeId} {
+      // cada pessoa só enxerga as curtidas que enviou ou recebeu
+      allow read: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+
+      // só dá para criar a própria curtida, com o id "meuUid_uidDaOutraPessoa"
+      allow create: if signedIn()
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.to is string
+        && request.resource.data.to != request.auth.uid
+        && likeId == request.auth.uid + '_' + request.resource.data.to;
+
+      // desfazer: quem enviou (ou quem recebeu, ao apagar a conta)
+      allow delete: if signedIn()
+        && (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+    }
+
+    // ---------- Matches ----------
+    match /matches/{matchId} {
+      // CORREÇÃO: o app faz transaction.get() no match ANTES de criá-lo. Nesse momento o
+      // documento ainda não existe (resource == null) e "resource.data.users" dá erro, o que
+      // fazia o Firestore negar a leitura e o match nunca ser criado.
+      // Agora, se o documento não existe, só libera quando o id do match contém o seu uid.
+      allow read: if signedIn()
+        && (
+          (resource != null && request.auth.uid in resource.data.users)
+          || (resource == null && matchId.matches('.*' + request.auth.uid + '.*'))
+        );
+
+      // o match só nasce quando as duas curtidas existem
+      allow create: if signedIn()
+        && request.resource.data.users.size() == 2
+        && request.auth.uid in request.resource.data.users
+        && exists(likePath(request.resource.data.users[0], request.resource.data.users[1]))
+        && exists(likePath(request.resource.data.users[1], request.resource.data.users[0]));
+
+      // dá para atualizar última mensagem e não lidas, mas nunca trocar quem está no match
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.users
+        && request.resource.data.users == resource.data.users;
+
+      allow delete: if signedIn() && request.auth.uid in resource.data.users;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(matchPath(matchId)).data.users;
+
+        allow create: if signedIn()
+          && request.auth.uid in get(matchPath(matchId)).data.users
+          && request.resource.data.from == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 500
+          // precisa ter texto OU foto
+          && (request.resource.data.text.size() > 0 || hasImage(request.resource.data))
+          && (!('image' in request.resource.data) || hasImage(request.resource.data))
+          && request.resource.data.createdAt == request.time;
+
+        // mensagens não são editadas; só apagadas junto com o match
+        allow delete: if signedIn()
+          && request.auth.uid in get(matchPath(matchId)).data.users;
+      }
+    }
+
+    // ---------- Saldo do homem ----------
+    match /wallets/{uid} {
+      allow read: if isOwner(uid);
+
+      // só o dono mexe, com saldo inteiro e nunca negativo
+      allow create, update: if isOwner(uid)
+        && request.resource.data.balanceCents is int
+        && request.resource.data.balanceCents >= 0
+        && (
+          // gastar com mensagens: o saldo só diminui
+          (resource != null && request.resource.data.balanceCents <= resource.data.balanceCents)
+          // >>> SALDO DE TESTE (até R$ 50 por vez). APAGUE as 2 linhas abaixo ao ligar o pagamento
+          // real e passe a creditar o saldo só pelo servidor (Cloud Function). <<<
+          || (resource == null && request.resource.data.balanceCents <= 5000)
+          || (resource != null && request.resource.data.balanceCents - resource.data.balanceCents <= 5000)
+        );
+
+      allow delete: if isOwner(uid);
+    }
+
+    // ---------- Conversas sem match (homem <-> mulher) ----------
+    match /chats/{chatId} {
+      // o app lê a conversa ANTES de criá-la (na primeira mensagem): se ela ainda não existe,
+      // só libera quando o id contém o seu uid (mesma ideia do match)
+      allow read: if signedIn()
+        && (
+          (resource != null && request.auth.uid in resource.data.users)
+          || (resource == null && chatId.matches('.*' + request.auth.uid + '.*'))
+        );
+
+      // nasce na primeira mensagem, entre um homem e uma mulher
+      allow create: if signedIn()
+        && request.resource.data.users.size() == 2
+        && request.auth.uid in request.resource.data.users
+        && chatId == request.resource.data.users[0] + '_' + request.resource.data.users[1]
+        && request.resource.data.manId in request.resource.data.users
+        && request.resource.data.womanId in request.resource.data.users
+        && request.resource.data.manId != request.resource.data.womanId
+        && get(/databases/$(database)/documents/users/$(request.resource.data.manId)).data.gender == 'homem'
+        && get(/databases/$(database)/documents/users/$(request.resource.data.womanId)).data.gender == 'mulher'
+        // a mulher só abre conversa com quem ela curtiu
+        && (request.auth.uid == request.resource.data.manId
+            || exists(likePath(request.auth.uid, request.resource.data.manId)))
+        // ganho inicial: zero, ou o preço de UMA mensagem paga pelo homem (saldo dele desce o mesmo)
+        && (request.resource.data.earnedCents == 0
+            || (request.resource.data.earnedCents == 200
+                && request.auth.uid == request.resource.data.manId
+                && getAfter(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.balanceCents
+                   == get(/databases/$(database)/documents/wallets/$(request.auth.uid)).data.balanceCents - 200));
+
+      // os dois mexem em "não lidas" e "última mensagem"; os ganhos só sobem pelo preço de UMA
+      // mensagem e só quando o saldo do homem desce o mesmo
+      allow update: if signedIn()
+        && request.auth.uid in resource.data.users
+        && request.resource.data.users == resource.data.users
+        && request.resource.data.manId == resource.data.manId
+        && request.resource.data.womanId == resource.data.womanId
+        && (request.resource.data.earnedCents == resource.data.earnedCents
+            || (request.auth.uid == resource.data.manId
+                && request.resource.data.earnedCents == resource.data.earnedCents + 200
+                && getAfter(/databases/$(database)/documents/wallets/$(resource.data.manId)).data.balanceCents
+                   == get(/databases/$(database)/documents/wallets/$(resource.data.manId)).data.balanceCents - 200));
+
+      allow delete: if signedIn() && request.auth.uid in resource.data.users;
+
+      match /messages/{messageId} {
+        allow read: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users;
+
+        // getAfter: a conversa pode ser criada na mesma transação da primeira mensagem
+        allow create: if signedIn()
+          && request.resource.data.from == request.auth.uid
+          && request.auth.uid in getAfter(/databases/$(database)/documents/chats/$(chatId)).data.users
+          && request.resource.data.text is string
+          && request.resource.data.text.size() <= 500
+          && (request.resource.data.text.size() > 0 || hasImage(request.resource.data))
+          && (!('image' in request.resource.data) || hasImage(request.resource.data))
+          && request.resource.data.createdAt == request.time
+          // preço: só o homem paga, e só se ela ainda não o curtiu
+          && request.resource.data.priceCents == (
+              (request.auth.uid == getAfter(/databases/$(database)/documents/chats/$(chatId)).data.manId
+               && !exists(likePath(getAfter(/databases/$(database)/documents/chats/$(chatId)).data.womanId, request.auth.uid)))
+              ? 200 : 0);
+
+        allow delete: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.users;
+      }
+    }
+  }
+}
