@@ -1846,8 +1846,9 @@ function renderMyProfile() {
 
                         <section class="me-step" id="me-step-1">
                             <div class="me-step-head">
-                                <i>1</i>
+                                <i>${meIcon('user')}</i>
                                 <div><h3>Informações básicas</h3><p>Quem você é e de onde fala.</p></div>
+                                <span class="me-step-state" aria-hidden="true">${meIcon('check')}</span>
                             </div>
 
                             <div class="field-row">
@@ -1862,9 +1863,10 @@ function renderMyProfile() {
                                 </label>
                                 <label class="field field-small">
                                     <span>Idade</span>
-                                    <div class="input-wrap no-icon" id="me-age-wrap">
+                                    <div class="input-wrap no-icon has-suffix" id="me-age-wrap">
                                         <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
                                                placeholder="18+" value="${escapeHtml(myProfile.age)}">
+                                        <em class="input-suffix" aria-hidden="true">anos</em>
                                     </div>
                                 </label>
                             </div>
@@ -1884,8 +1886,9 @@ function renderMyProfile() {
 
                         <section class="me-step" id="me-step-2">
                             <div class="me-step-head">
-                                <i>2</i>
+                                <i>${meIcon('edit')}</i>
                                 <div><h3>Sobre você</h3><p>Uma frase boa vale mais que um texto longo.</p></div>
+                                <span class="me-step-state" aria-hidden="true">${meIcon('check')}</span>
                             </div>
 
                             <label class="field">
@@ -1894,13 +1897,16 @@ function renderMyProfile() {
                                           placeholder="Conte um pouco sobre você"
                                           oninput="updateBioCount(this)">${escapeHtml(myProfile.bio)}</textarea>
                             </label>
+                            <div class="bio-meter" aria-hidden="true"><i id="me-bio-bar" style="width:${Math.min(100, myProfile.bio.length / 2)}%"></i></div>
+                            <p class="field-hint">Dica: fale do que você curte fazer e o que procura. Duas frases bastam.</p>
                         </section>
 
                         <section class="me-step" id="me-step-3">
                             <div class="me-step-head">
-                                <i>3</i>
+                                <i>${meIcon('sparkle')}</i>
                                 <div><h3>Interesses</h3><p>Escolha até 8 para combinar com quem pensa parecido.</p></div>
                                 <small class="me-count" id="me-int-count">${draftInterests.length}/8</small>
+                                <span class="me-step-state" aria-hidden="true">${meIcon('check')}</span>
                             </div>
 
                             <div class="interest-add">
@@ -1945,6 +1951,11 @@ function renderMyProfile() {
                 <aside class="me-preview-col">
                     <p class="me-preview-label"><span class="live-dot"></span>Prévia ao vivo<small>Como as outras pessoas veem você</small></p>
                     <article class="me-preview" id="me-preview"></article>
+
+                    <section class="me-tips" aria-label="Checklist do perfil">
+                        <h4>Deixe seu perfil mais forte</h4>
+                        <ul id="me-tips"></ul>
+                    </section>
                 </aside>
             </div>
         </div>
@@ -1980,12 +1991,18 @@ function updateMePreview() {
             </div>
         </div>
         <div class="pv-body">
-            <p class="pv-bio ${bio ? '' : 'empty'}">${bio ? escapeHtml(bio) : 'Sua bio aparece aqui.'}</p>
-            <div class="chips">
-                ${draftInterests.length
-                    ? draftInterests.map(item => `<span class="chip">${escapeHtml(item)}</span>`).join('')
-                    : '<span class="pv-empty">Seus interesses aparecem aqui</span>'}
-            </div>
+            <section>
+                <h5 class="pv-label">Sobre</h5>
+                <p class="pv-bio ${bio ? '' : 'empty'}">${bio ? escapeHtml(bio) : 'Sua bio aparece aqui.'}</p>
+            </section>
+            <section>
+                <h5 class="pv-label">Interesses</h5>
+                <div class="chips">
+                    ${draftInterests.length
+                        ? draftInterests.map(item => `<span class="chip">${escapeHtml(item)}</span>`).join('')
+                        : '<span class="pv-empty">Seus interesses aparecem aqui</span>'}
+                </div>
+            </section>
         </div>`;
 
     // Formulário: idade inválida, passos completos e "alterações não salvas"
@@ -2003,6 +2020,20 @@ function updateMePreview() {
     };
     Object.entries(done).forEach(([id, ok]) => document.getElementById(id)?.classList.toggle('done', ok));
 
+    // Checklist ao vivo: mostra o que ainda falta para o perfil ficar completo
+    const tips = document.getElementById('me-tips');
+    if (tips) {
+        const items = [
+            [Boolean(draftPhoto), 'Adicione uma foto sua'],
+            [done['me-step-1'], 'Preencha nome, idade e cidade'],
+            [done['me-step-2'], 'Escreva uma bio curta'],
+            [done['me-step-3'], 'Escolha pelo menos 3 interesses']
+        ];
+        tips.innerHTML = items
+            .map(([ok, text]) => `<li class="${ok ? 'ok' : ''}"><i>${meIcon('check')}</i>${text}</li>`)
+            .join('');
+    }
+
     updateSaveState();
 }
 
@@ -2014,6 +2045,12 @@ function updateBioCount(textarea) {
     count.textContent = size + '/200';
     count.classList.toggle('warn', size >= 170 && size < 200);
     count.classList.toggle('full', size >= 200);
+
+    const bar = document.getElementById('me-bio-bar');
+    if (bar) {
+        bar.style.width = Math.min(100, size / 2) + '%';
+        bar.className = size >= 200 ? 'full' : size >= 170 ? 'warn' : '';
+    }
 }
 
 // Compara o que está na tela com o que está salvo
@@ -2104,7 +2141,20 @@ function renderInterestChips() {
     if (!box) return;
 
     const counter = document.getElementById('me-int-count');
-    if (counter) counter.textContent = draftInterests.length + '/8';
+    if (counter) {
+        counter.textContent = draftInterests.length + '/8';
+        counter.classList.toggle('full', draftInterests.length >= 8);
+    }
+
+    // Limite atingido: o campo fica desativado e explica o motivo
+    const input = document.getElementById('me-interest-input');
+    const addBtn = document.querySelector('.btn-add');
+    const atLimit = draftInterests.length >= 8;
+    if (input) {
+        input.disabled = atLimit;
+        input.placeholder = atLimit ? 'Limite de 8 interesses atingido' : 'Digite e aperte Enter';
+    }
+    if (addBtn) addBtn.disabled = atLimit;
 
     box.innerHTML = draftInterests.length
         ? draftInterests.map((item, index) => `

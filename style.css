@@ -3902,3 +3902,420 @@ select:focus-visible {
     border: 1px solid var(--border);
     border-radius: 999px;
 }
+
+
+/* ==========================================================
+   Meu Perfil — acabamento profissional (v3)
+   Mesma estrutura e IDs. Menos movimento, mais clareza:
+   ícones por seção, campos consistentes, prévia realista,
+   checklist ao vivo e zona de perigo bem separada.
+   ========================================================== */
+
+/* ----- Calma: nada fica se mexendo sozinho ----- */
+.me-avatar-wrap,
+.me-preview,
+.me-avatar-edit,
+.btn-save::after { animation: none; }
+
+.me-avatar-wrap::before { animation: none; opacity: 0.35; filter: blur(22px); }
+.me-avatar-edit:hover { transform: scale(1.08); }
+
+.me-page .me-hero,
+.me-page .me-step,
+.me-page .me-account,
+.me-page .me-preview,
+.me-page .me-tips {
+    background: linear-gradient(180deg, rgba(24, 28, 54, 0.72), rgba(14, 17, 36, 0.72));
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+}
+
+/* ----- Topo ----- */
+.me-avatar {
+    border-radius: 2rem;
+    border-width: 4px;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.55), 0 16px 34px -12px rgba(139, 92, 246, 0.7);
+}
+
+.me-name { letter-spacing: -0.5px; }
+
+.me-sub::before {
+    content: "";
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    background: #34f5a1;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(52, 245, 161, 0.7);
+}
+
+.me-stat {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.me-stat:hover { transform: none; }
+.me-stat strong { font-size: 1.6rem; letter-spacing: -0.3px; }
+
+/* ----- Seções do formulário ----- */
+.me-page .me-step { gap: 1.25rem; }
+
+.me-page .me-step:hover,
+.me-page .me-step:focus-within { transform: none; }
+
+.me-page .me-step:focus-within {
+    border-color: rgba(139, 92, 246, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 3px rgba(139, 92, 246, 0.12), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+}
+
+.me-page .me-step-head {
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.me-page .me-step-head > i,
+.me-page .me-step.done .me-step-head > i {
+    width: 2.6rem;
+    height: 2.6rem;
+    font-size: inherit;
+    color: var(--cyan);
+    background: rgba(45, 226, 245, 0.1);
+    border: 1px solid rgba(45, 226, 245, 0.28);
+    border-radius: 0.9rem;
+    box-shadow: none;
+    transform: none;
+}
+
+.me-page .me-step:nth-of-type(2) .me-step-head > i { color: #b79cff; background: rgba(139, 92, 246, 0.14); border-color: rgba(139, 92, 246, 0.38); }
+.me-page .me-step:nth-of-type(3) .me-step-head > i { color: #ff8cc3; background: rgba(255, 79, 163, 0.12); border-color: rgba(255, 79, 163, 0.34); }
+
+.me-page .me-step.done .me-step-head > i::after { content: none; }
+.me-page .me-step:hover .me-step-head > i { transform: none; }
+.me-page .me-step-head .ico { width: 1.2rem; height: 1.2rem; }
+
+/* selo "completo" no canto da seção */
+.me-step-state {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 1.6rem;
+    height: 1.6rem;
+    color: #06261c;
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    border-radius: 50%;
+    box-shadow: 0 0 14px rgba(52, 245, 161, 0.45);
+}
+
+.me-step-state .ico { width: 0.9rem; height: 0.9rem; stroke-width: 3; }
+.me-step.done .me-step-state { display: inline-flex; animation: pop 0.35s ease; }
+
+.me-count.full {
+    color: var(--gold);
+    background: rgba(255, 200, 87, 0.1);
+    border-color: rgba(255, 200, 87, 0.4);
+}
+
+/* ----- Campos ----- */
+.me-page .field > span {
+    color: rgba(241, 242, 255, 0.92);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.me-page .input-wrap input,
+.me-page .field textarea {
+    min-height: 3.1rem;
+    padding: 0.8rem 1rem;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 0.9rem;
+    font-size: 0.97rem;
+}
+
+.me-page .input-wrap:not(.no-icon) input { padding-left: 2.85rem; }
+
+.me-page .input-wrap input:hover,
+.me-page .field textarea:hover {
+    background: rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.22);
+}
+
+.me-page .input-wrap input:focus,
+.me-page .field textarea:focus,
+.me-page .input-wrap input:focus-visible,
+.me-page .field textarea:focus-visible {
+    background: rgba(10, 12, 30, 0.85);
+    border-color: var(--violet);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.22);
+}
+
+.me-page .input-wrap input:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+/* "anos" dentro do campo de idade, sem setinhas do navegador */
+.has-suffix input { padding-right: 3.3rem; }
+.has-suffix input::-webkit-outer-spin-button,
+.has-suffix input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.has-suffix input { -moz-appearance: textfield; appearance: textfield; }
+
+.input-suffix {
+    position: absolute;
+    right: 1rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: normal;
+    pointer-events: none;
+}
+
+.me-page .field-row .field-small { flex: 0 0 8rem; }
+
+/* barra de progresso da bio */
+.bio-meter {
+    height: 4px;
+    margin-top: -0.55rem;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+}
+
+.bio-meter i {
+    display: block;
+    height: 100%;
+    background: var(--grad-brand);
+    border-radius: inherit;
+    transition: width 0.25s ease, background 0.25s;
+}
+
+.bio-meter i.warn { background: var(--gold); }
+.bio-meter i.full { background: var(--pink); }
+
+.me-page .field-hint { font-size: 0.8rem; line-height: 1.45; }
+
+/* botão "usar minha localização" */
+.me-page .me-geo {
+    padding: 0.55rem 1rem;
+    border-radius: 0.8rem;
+}
+
+.me-page .section-hint {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+}
+
+/* ----- Interesses ----- */
+.me-page .interest-add { gap: 0.6rem; }
+
+.me-page .btn-add {
+    width: 3.1rem;
+    min-height: 3.1rem;
+    border-radius: 0.9rem;
+}
+
+.me-page .btn-add:disabled {
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: none;
+    opacity: 0.6;
+    transform: none;
+}
+
+.me-page .chip-edit {
+    padding: 0.4rem 0.45rem 0.4rem 0.9rem;
+    background: rgba(139, 92, 246, 0.14);
+    border: 1px solid rgba(139, 92, 246, 0.4);
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+
+.me-page .chip-edit button { background: rgba(255, 255, 255, 0.14); }
+
+.me-page .chip-edit button:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+.me-page .me-suggest {
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.me-page .me-suggest::before {
+    content: "Sugestões";
+    flex: 1 0 100%;
+    margin-bottom: 0.1rem;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+/* ----- Barra de salvar ----- */
+.me-page .me-save-bar {
+    padding: 0.7rem 0.7rem 0.7rem 1.3rem;
+    background: rgba(10, 12, 30, 0.9);
+    border-color: rgba(255, 255, 255, 0.12);
+    border-radius: 1.1rem;
+}
+
+.me-page .btn-save {
+    padding: 0.8rem 1.5rem;
+    border-radius: 0.85rem;
+    font-size: 0.95rem;
+}
+
+.me-page .btn-save::after { display: none; }
+
+/* ----- Prévia (cartão como aparece para os outros) ----- */
+.me-preview-col { display: flex; flex-direction: column; gap: 1.1rem; }
+.me-preview-col .me-preview-label { margin-bottom: 0; }
+
+.me-page .me-preview { border-radius: 1.5rem; }
+.me-page .me-preview:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 50px -22px rgba(139, 92, 246, 0.55); }
+
+.pv-photo { aspect-ratio: 4 / 4.3; }
+
+.pv-photo:not(:has(img))::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(60% 50% at 20% 15%, rgba(255, 255, 255, 0.22), transparent 70%),
+        radial-gradient(50% 50% at 85% 90%, rgba(255, 79, 163, 0.35), transparent 70%);
+}
+
+.pv-initial {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 6.4rem;
+    height: 6.4rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    font-size: 3rem;
+}
+
+.pv-title h4 { font-size: 1.45rem; letter-spacing: -0.3px; }
+
+.pv-body { gap: 1rem; padding: 1.2rem; }
+
+.pv-body > section { display: flex; flex-direction: column; gap: 0.45rem; }
+
+.pv-label {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.pv-body .chip { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+
+/* ----- Checklist do perfil ----- */
+.me-tips {
+    padding: 1.1rem 1.2rem;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    border-radius: 1.2rem;
+}
+
+.me-tips h4 {
+    margin-bottom: 0.8rem;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+}
+
+.me-tips ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    list-style: none;
+}
+
+.me-tips li {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    transition: color 0.2s;
+}
+
+.me-tips li i {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 1.35rem;
+    height: 1.35rem;
+    color: transparent;
+    border: 1.5px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.me-tips li i .ico { width: 0.75rem; height: 0.75rem; stroke-width: 3.2; }
+
+.me-tips li.ok { color: rgba(241, 242, 255, 0.55); text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.25); }
+
+.me-tips li.ok i {
+    color: #06261c;
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    border: 1.5px solid transparent;
+}
+
+/* ----- Conta e zona de perigo ----- */
+.me-page .me-account { padding: 0.3rem 1.4rem 0.3rem; }
+
+.me-page .me-account-row.danger {
+    margin: 0.4rem -0.8rem 0.8rem;
+    padding: 1rem 0.8rem;
+    background: rgba(255, 79, 163, 0.06);
+    border: 1px solid rgba(255, 79, 163, 0.22);
+    border-radius: 1rem;
+}
+
+.me-page .me-account-row + .me-account-row { border-top: none; }
+
+.me-page .me-account-row .btn-ghost {
+    padding: 0.6rem 1rem;
+    border-radius: 0.8rem;
+}
+
+.me-page .btn-danger:hover {
+    color: #fff;
+    background: rgba(255, 79, 163, 0.28);
+    border-color: var(--pink);
+}
+
+/* ----- Foco visível para teclado ----- */
+.me-page button:focus-visible,
+.me-page .me-avatar-edit:focus-within {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+/* ----- Celular ----- */
+@media (max-width: 960px) {
+    .me-preview-col { order: -1; }
+    .me-page .pv-photo { aspect-ratio: 16 / 9; }
+    .me-tips { display: none; }
+}
+
+@media (max-width: 860px) {
+    .me-page .me-step-head { padding-bottom: 0.9rem; }
+    .me-page .field-row .field-small { flex: 1; }
+    .me-page .me-account-row.danger { margin: 0.4rem 0 0.8rem; }
+    .me-page .me-account-row.danger .btn-ghost { width: 100%; }
+}
