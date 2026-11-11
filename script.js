@@ -1800,153 +1800,139 @@ function renderMyProfile() {
     root.innerHTML = `
         <div class="me-page">
 
-            <!-- ===== Topo (capa + avatar + progresso + números) ===== -->
-            <section class="me-hero">
-                <div class="me-banner" aria-hidden="true"></div>
-
-                <div class="me-hero-body">
-                    <div class="me-avatar-wrap">
+            <!-- ===== Cartão: como você aparece + seus números ===== -->
+            <aside class="me-side">
+                <article class="me-card">
+                    <div class="me-photo">
                         <div class="me-avatar" id="me-avatar"></div>
-                        <label class="me-avatar-edit" title="Trocar foto">
-                            ${meIcon('camera')}
-                            <input type="file" accept="image/*" hidden onchange="handlePhotoUpload(event)">
+
+                        <div class="me-photo-actions">
+                            <label class="me-photo-btn">
+                                ${meIcon('camera')}Trocar foto
+                                <input type="file" accept="image/*" hidden onchange="handlePhotoUpload(event)">
+                            </label>
+                            <button type="button" class="me-photo-btn is-remove" id="me-photo-remove" onclick="removeMyPhoto()" hidden>Remover</button>
+                        </div>
+
+                        <div class="me-photo-title" id="me-photo-title"></div>
+                    </div>
+
+                    <div class="me-card-body" id="me-preview"></div>
+
+                    <div class="me-progress">
+                        <div class="me-progress-top">
+                            <span id="me-progress-label"></span>
+                            <b id="me-percent">0%</b>
+                        </div>
+                        <div class="me-bar"><i id="me-bar-fg"></i></div>
+                    </div>
+
+                    <div class="me-stats" id="me-stats"></div>
+                </article>
+            </aside>
+
+            <!-- ===== Edição ===== -->
+            <div class="me-main">
+                <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview()">
+                    <div class="me-form-head">
+                        <h2>Editar perfil</h2>
+                        <p>O cartão mostra como você aparece para as outras pessoas.</p>
+                    </div>
+
+                    <div class="me-block">
+                        <div class="me-block-head">
+                            <div><h3>Básico</h3></div>
+                        </div>
+
+                        <div class="field-row">
+                            <label class="field">
+                                <span>Nome</span>
+                                <div class="input-wrap">
+                                    ${meIcon('user')}
+                                    <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
+                                           placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
+                                           oninput="renderMyAvatar()">
+                                </div>
+                            </label>
+                            <label class="field field-small">
+                                <span>Idade</span>
+                                <div class="input-wrap no-icon">
+                                    <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
+                                           placeholder="18+" value="${escapeHtml(myProfile.age)}">
+                                </div>
+                            </label>
+                        </div>
+
+                        <label class="field">
+                            <span>Cidade <button type="button" class="me-link-btn" id="me-location-btn" onclick="fillLocation()">Usar minha localização</button></span>
+                            <div class="input-wrap">
+                                ${meIcon('pin')}
+                                <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
+                                       placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
+                            </div>
+                        </label>
+                        <p class="section-hint" id="me-location-status" aria-live="polite"></p>
+                    </div>
+
+                    <div class="me-block">
+                        <div class="me-block-head">
+                            <div>
+                                <h3>Sobre você</h3>
+                                <p>Uma frase boa vale mais que um texto longo.</p>
+                            </div>
+                        </div>
+
+                        <label class="field">
+                            <span>Bio <small id="me-bio-count">${myProfile.bio.length}/200</small></span>
+                            <textarea id="me-bio-input" rows="4" maxlength="200"
+                                      placeholder="Conte um pouco sobre você"
+                                      oninput="document.getElementById('me-bio-count').textContent = this.value.length + '/200'">${escapeHtml(myProfile.bio)}</textarea>
                         </label>
                     </div>
 
-                    <div class="me-hero-info">
-                        <h2 class="me-name" id="me-name">Seu nome</h2>
-                        <p class="me-sub" id="me-sub">Complete seu perfil</p>
-                        <button type="button" class="me-link-btn" onclick="removeMyPhoto()">Remover foto</button>
+                    <div class="me-block">
+                        <div class="me-block-head">
+                            <div>
+                                <h3>Interesses</h3>
+                                <p>Até 8, para combinar com quem pensa parecido.</p>
+                            </div>
+                            <small class="me-count" id="me-int-count">${draftInterests.length}/8</small>
+                        </div>
+
+                        <div class="interest-add">
+                            <div class="input-wrap no-icon">
+                                <input id="me-interest-input" type="text" maxlength="20" placeholder="Digite e aperte Enter"
+                                       aria-label="Novo interesse" onkeydown="interestKey(event)">
+                            </div>
+                            <button type="button" class="btn-add" onclick="addInterest()" aria-label="Adicionar interesse">${meIcon('plus')}</button>
+                        </div>
+
+                        <div class="chips" id="me-interests"></div>
+                        <div class="me-suggest" id="me-suggest"></div>
                     </div>
 
-                    <div class="me-ring" title="Quanto do seu perfil está preenchido">
-                        <svg viewBox="0 0 100 100" aria-hidden="true">
-                            <defs>
-                                <linearGradient id="me-ring-grad" x1="0" y1="0" x2="1" y2="1">
-                                    <stop offset="0" stop-color="#2de2f5"/>
-                                    <stop offset="0.55" stop-color="#8b5cf6"/>
-                                    <stop offset="1" stop-color="#ff4fa3"/>
-                                </linearGradient>
-                            </defs>
-                            <circle class="ring-bg" cx="50" cy="50" r="44"/>
-                            <circle class="ring-fg" id="me-ring-fg" cx="50" cy="50" r="44" transform="rotate(-90 50 50)"/>
-                        </svg>
-                        <b id="me-percent">0%</b>
-                        <small>completo</small>
+                    <div class="me-save-bar">
+                        <p>Confira o cartão e salve quando estiver pronto.</p>
+                        <button type="submit" class="btn-primary btn-save">${meIcon('check')}Salvar perfil</button>
                     </div>
-                </div>
+                </form>
 
-                <div class="me-stats" id="me-stats"></div>
-            </section>
-
-            <!-- ===== Corpo: formulário + prévia ===== -->
-            <div class="me-grid">
-                <div class="me-col">
-                    <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview()">
-
-                        <section class="me-step">
-                            <div class="me-step-head">
-                                <i>1</i>
-                                <div><h3>Informações básicas</h3><p>Quem você é e de onde fala.</p></div>
-                            </div>
-
-                            <div class="field-row">
-                                <label class="field">
-                                    <span>Nome</span>
-                                    <div class="input-wrap">
-                                        ${meIcon('user')}
-                                        <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
-                                               placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
-                                               oninput="renderMyAvatar()">
-                                    </div>
-                                </label>
-                                <label class="field field-small">
-                                    <span>Idade</span>
-                                    <div class="input-wrap no-icon">
-                                        <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
-                                               placeholder="18+" value="${escapeHtml(myProfile.age)}">
-                                    </div>
-                                </label>
-                            </div>
-
-                            <label class="field">
-                                <span>Cidade</span>
-                                <div class="input-wrap">
-                                    ${meIcon('pin')}
-                                    <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
-                                           placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
-                                </div>
-                            </label>
-                            <button type="button" class="btn-ghost" id="me-location-btn" onclick="fillLocation()">Usar minha localização</button>
-                            <p class="section-hint" id="me-location-status" aria-live="polite"></p>
-                        </section>
-
-                        <section class="me-step">
-                            <div class="me-step-head">
-                                <i>2</i>
-                                <div><h3>Sobre você</h3><p>Uma frase boa vale mais que um texto longo.</p></div>
-                            </div>
-
-                            <label class="field">
-                                <span>Bio <small id="me-bio-count">${myProfile.bio.length}/200</small></span>
-                                <textarea id="me-bio-input" rows="4" maxlength="200"
-                                          placeholder="Conte um pouco sobre você"
-                                          oninput="document.getElementById('me-bio-count').textContent = this.value.length + '/200'">${escapeHtml(myProfile.bio)}</textarea>
-                            </label>
-                        </section>
-
-                        <section class="me-step">
-                            <div class="me-step-head">
-                                <i>3</i>
-                                <div><h3>Interesses</h3><p>Escolha até 8 para combinar com quem pensa parecido.</p></div>
-                                <small class="me-count" id="me-int-count">${draftInterests.length}/8</small>
-                            </div>
-
-                            <div class="interest-add">
-                                <div class="input-wrap no-icon">
-                                    <input id="me-interest-input" type="text" maxlength="20" placeholder="Digite e aperte Enter"
-                                           onkeydown="interestKey(event)">
-                                </div>
-                                <button type="button" class="btn-add" onclick="addInterest()" aria-label="Adicionar interesse">${meIcon('plus')}</button>
-                            </div>
-
-                            <div class="chips" id="me-interests"></div>
-
-                            <div class="me-suggest">
-                                ${INTEREST_SUGGESTIONS.map(item => `<button type="button" onclick="quickInterest('${item}')">+ ${item}</button>`).join('')}
-                            </div>
-                        </section>
-
-                        <div class="me-save-bar">
-                            <p>Confira a prévia ao lado e salve quando estiver pronto.</p>
-                            <button type="submit" class="btn-primary btn-save">${meIcon('check')}Salvar perfil</button>
+                <section class="me-account">
+                    <div class="me-account-row">
+                        <div>
+                            <strong>Conta</strong>
+                            <p>${escapeHtml(currentUser ? currentUser.email : '')}</p>
                         </div>
-                    </form>
-
-                    <section class="me-account">
-                        <div class="me-account-row">
-                            <div class="me-account-icon">${meIcon('mail')}</div>
-                            <div class="me-account-text">
-                                <strong>Conta</strong>
-                                <p>${escapeHtml(currentUser ? currentUser.email : '')}</p>
-                            </div>
-                            <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
+                        <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
+                    </div>
+                    <div class="me-account-row danger">
+                        <div>
+                            <strong>Apagar conta</strong>
+                            <p>Remove perfil, curtidas, matches e mensagens. Não dá para desfazer.</p>
                         </div>
-                        <div class="me-account-row danger">
-                            <div class="me-account-icon">${meIcon('trash')}</div>
-                            <div class="me-account-text">
-                                <strong>Zona de perigo</strong>
-                                <p>Apaga sua conta, perfil, curtidas, matches e mensagens. Não dá para desfazer.</p>
-                            </div>
-                            <button type="button" class="btn-ghost btn-danger" onclick="deleteMyAccount()">Apagar minha conta</button>
-                        </div>
-                    </section>
-                </div>
-
-                <aside class="me-preview-col">
-                    <p class="me-preview-label"><span class="live-dot"></span>Prévia ao vivo · como te veem</p>
-                    <article class="me-preview" id="me-preview"></article>
-                </aside>
+                        <button type="button" class="btn-ghost btn-danger" onclick="deleteMyAccount()">Apagar minha conta</button>
+                    </div>
+                </section>
             </div>
         </div>
     `;
@@ -1957,36 +1943,30 @@ function renderMyProfile() {
     updateProfileStats();
 }
 
-// Prévia: mostra como seu perfil aparece para os outros (atualiza enquanto você digita)
+// Cartão ao vivo: mostra como seu perfil aparece para os outros (atualiza enquanto você digita)
 function updateMePreview() {
-    const box = document.getElementById('me-preview');
-    if (!box) return;
+    const body = document.getElementById('me-preview');
+    const title = document.getElementById('me-photo-title');
+    if (!body) return;
 
     const val = id => (document.getElementById(id)?.value || '').trim();
     const name = val('me-name-input') || 'Seu nome';
     const age = parseInt(val('me-age-input'), 10);
     const city = val('me-location-input');
     const bio = val('me-bio-input');
-    const initial = escapeHtml((name.trim()[0] || '?').toUpperCase());
 
-    box.innerHTML = `
-        <div class="pv-photo">
-            ${draftPhoto
-                ? `<img src="${escapeHtml(draftPhoto)}" alt="Prévia da sua foto">`
-                : `<span class="pv-initial">${initial}</span>`}
-            <div class="pv-shade"></div>
-            <div class="pv-title">
-                <h4>${escapeHtml(name)}${age >= 18 ? `<em>, ${age}</em>` : ''}</h4>
-                ${city ? `<p>${meIcon('pin')}${escapeHtml(city)}</p>` : ''}
-            </div>
-        </div>
-        <div class="pv-body">
-            <p class="pv-bio ${bio ? '' : 'empty'}">${bio ? escapeHtml(bio) : 'Sua bio aparece aqui.'}</p>
-            <div class="chips">
-                ${draftInterests.length
-                    ? draftInterests.map(item => `<span class="chip">${escapeHtml(item)}</span>`).join('')
-                    : '<span class="pv-empty">Seus interesses aparecem aqui</span>'}
-            </div>
+    if (title) {
+        title.innerHTML = `
+            <h2 class="me-name">${escapeHtml(name)}${age >= 18 ? `<em>${age}</em>` : ''}</h2>
+            ${city ? `<p class="me-city">${escapeHtml(city)}</p>` : ''}`;
+    }
+
+    body.innerHTML = `
+        <p class="pv-bio ${bio ? '' : 'empty'}">${bio ? escapeHtml(bio) : 'Sua bio aparece aqui.'}</p>
+        <div class="chips">
+            ${draftInterests.length
+                ? draftInterests.map(item => `<span class="chip">${escapeHtml(item)}</span>`).join('')
+                : '<span class="pv-empty">Seus interesses aparecem aqui</span>'}
         </div>`;
 }
 
@@ -2002,25 +1982,36 @@ function renderMyAvatar() {
             avatar.innerHTML = `<span>${escapeHtml(initial)}</span>`;
         }
     }
+
+    const remove = document.getElementById('me-photo-remove');
+    if (remove) remove.hidden = !draftPhoto;
+
     updateMePreview();
 }
 
-// Topo: nome, idade, cidade e anel de perfil completo
+// Progresso do perfil: porcentagem, barra e o que ainda falta
 function updateProfileSummary() {
-    const name = document.getElementById('me-name');
-    if (!name) return;
+    const percentBox = document.getElementById('me-percent');
+    if (!percentBox) return;
 
-    const details = [myProfile.age ? `${myProfile.age} anos` : '', myProfile.location].filter(Boolean).join(' · ');
     const percent = profileCompletion(myProfile);
-    const circumference = 2 * Math.PI * 44;
+    const missing = [
+        ['nome', myProfile.name],
+        ['idade', myProfile.age],
+        ['cidade', myProfile.location],
+        ['bio', myProfile.bio],
+        ['3 interesses', myProfile.interests.length >= 3],
+        ['foto', myProfile.photo]
+    ].filter(([, done]) => !done).map(([label]) => label);
 
-    name.textContent = myProfile.name || 'Seu nome';
-    document.getElementById('me-sub').textContent = details || 'Complete seu perfil';
-    document.getElementById('me-percent').textContent = percent + '%';
+    percentBox.textContent = percent + '%';
+    document.getElementById('me-progress-label').textContent = percent === 100
+        ? 'Perfil completo'
+        : `Falta: ${missing.join(', ')}`;
 
-    const ring = document.getElementById('me-ring-fg');
-    ring.style.strokeDasharray = circumference;
-    ring.style.strokeDashoffset = circumference * (1 - percent / 100);
+    const bar = document.getElementById('me-bar-fg');
+    void bar.offsetWidth; // garante que a barra "cresce" a partir do zero
+    bar.style.width = percent + '%';
 }
 
 // Números da sua atividade (atualizam sozinhos)
@@ -2029,17 +2020,17 @@ function updateProfileStats() {
     if (!stats) return;
 
     const items = [
-        ['heart', 'pink', likedProfiles.size, 'Curtidas enviadas'],
-        ['sparkle', 'violet', getMatches().length, 'Matches'],
-        ['clock', 'gold', getPending().length, 'Aguardando'],
-        ['eye', 'cyan', profiles.filter(likesYouNow).length, 'Curtiram você']
+        ['pink', likedProfiles.size, 'Curtidas enviadas'],
+        ['violet', getMatches().length, 'Matches'],
+        ['gold', getPending().length, 'Aguardando'],
+        ['cyan', profiles.filter(likesYouNow).length, 'Curtiram você']
     ];
 
     stats.innerHTML = items
-        .map(([icon, tone, value, label]) => `
+        .map(([tone, value, label]) => `
             <div class="me-stat ${tone}">
-                <i>${meIcon(icon)}</i>
-                <div><strong>${value}</strong><span>${label}</span></div>
+                <strong>${value}</strong>
+                <span>${label}</span>
             </div>`)
         .join('');
 }
@@ -2058,6 +2049,16 @@ function renderInterestChips() {
                 <button type="button" onclick="removeInterest(${index})" aria-label="Remover ${escapeHtml(item)}">×</button>
             </span>`).join('')
         : '<p class="field-hint">Adicione pelo menos 3 interesses para completar o perfil.</p>';
+
+    // sugestões: só as que você ainda não escolheu (e somem quando chega em 8)
+    const suggest = document.getElementById('me-suggest');
+    if (suggest) {
+        const taken = draftInterests.map(item => item.toLowerCase());
+        suggest.innerHTML = draftInterests.length >= 8 ? '' : INTEREST_SUGGESTIONS
+            .filter(item => !taken.includes(item.toLowerCase()))
+            .map(item => `<button type="button" onclick="quickInterest('${item}')">+ ${item}</button>`)
+            .join('');
+    }
 
     updateMePreview();
 }
