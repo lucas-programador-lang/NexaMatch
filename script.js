@@ -1406,8 +1406,12 @@ function updateThread() {
 
     let html = empty ? `<p class="thread-empty">${empty}</p>` : '';
 
+    const GROUP_GAP = 5 * 60 * 1000; // mensagens com até 5 min de diferença ficam agrupadas
     let lastDay = null;
-    html += currentThread.map(m => {
+    let prevFrom = null;
+    let prevTime = 0;
+
+    html += currentThread.map((m, i) => {
         const note = m.price
             ? `<em class="bubble-price">${m.from === 'me' ? '−' : '+'}${formatMoney(m.price)}</em>`
             : '';
@@ -1415,13 +1419,28 @@ function updateThread() {
         // título com dia, mês e ano quando começa um dia novo na conversa
         let dayTitle = '';
         const dayKey = new Date(m.time).toDateString();
-        if (dayKey !== lastDay) {
+        const newDay = dayKey !== lastDay;
+        if (newDay) {
             lastDay = dayKey;
             dayTitle = `<div class="thread-day"><span>${formatDayLabel(m.time)}</span></div>`;
         }
 
+        // agrupamento: continua a sequência da mesma pessoa?
+        const time = Number(m.time) || 0;
+        const continues = !newDay && prevFrom === m.from && (time - prevTime) < GROUP_GAP;
+        const next = currentThread[i + 1];
+        const nextTime = next ? Number(next.time) || 0 : 0;
+        const nextContinues = Boolean(next)
+            && new Date(next.time).toDateString() === dayKey
+            && next.from === m.from
+            && (nextTime - time) < GROUP_GAP;
+        prevFrom = m.from;
+        prevTime = time;
+
+        const groupClass = `${continues ? 'grp-cont' : 'grp-first'} ${nextContinues ? '' : 'grp-last'}`;
+
         return dayTitle + `
-        <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''}" title="${formatFullDate(m.time)}, ${formatTime(m.time)}">
+        <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''} ${groupClass}" title="${formatFullDate(m.time)}, ${formatTime(m.time)}">
             ${m.image ? `<img class="bubble-img" src="${m.image}" alt="Foto enviada" onclick="openPhoto(this.src)">` : ''}
             ${m.text ? `<span>${escapeHtml(m.text)}</span>` : ''}
             <small>${note}${formatTime(m.time)}</small>
