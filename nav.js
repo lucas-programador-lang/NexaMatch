@@ -1,4 +1,4 @@
-// nav.js — indicador deslizante do menu (computador e celular).
+// nav.js — menu com indicador deslizante (computador e celular).
 // Mede o item ativo e escreve --ind-x / --ind-w no <nav>; o CSS faz a pílula deslizar até lá.
 // É independente do script.js (que espera o login) e, se falhar, o menu continua funcionando.
 (function () {
@@ -7,13 +7,34 @@
     const nav = document.querySelector('header nav');
     if (!nav) return;
 
+    // luz que segue o mouse (só aparece em quem tem mouse)
+    const spot = document.createElement('i');
+    spot.className = 'nx-spot';
+    spot.setAttribute('aria-hidden', 'true');
+
+    // a pílula que desliza
     const indicator = document.createElement('i');
     indicator.className = 'nx-ind';
     indicator.setAttribute('aria-hidden', 'true');
-    nav.appendChild(indicator); // por último, para não mexer na ordem dos links (:nth-child)
+
+    // por último, para não mexer na ordem dos links (regras :nth-child dos ícones)
+    nav.appendChild(spot);
+    nav.appendChild(indicator);
 
     const badgeText = new Map();
     let frame = 0;
+    let lastActive = null;
+    let lastX = null;
+
+    function jelly() {
+        indicator.classList.remove('nx-moving');
+        void indicator.offsetWidth; // reinicia a animação
+        indicator.classList.add('nx-moving');
+    }
+
+    indicator.addEventListener('animationend', event => {
+        if (event.animationName === 'nxJelly') indicator.classList.remove('nx-moving');
+    });
 
     function place() {
         frame = 0;
@@ -21,7 +42,8 @@
         nav.classList.toggle('nx-none', !active);
         if (!active || !active.offsetWidth) return; // menu oculto: não dá para medir
 
-        nav.style.setProperty('--ind-x', active.offsetLeft + 'px');
+        const x = active.offsetLeft;
+        nav.style.setProperty('--ind-x', x + 'px');
         nav.style.setProperty('--ind-w', active.offsetWidth + 'px');
 
         if (!nav.classList.contains('nx-ready')) {
@@ -29,7 +51,12 @@
             indicator.classList.add('nx-still');
             nav.classList.add('nx-ready');
             requestAnimationFrame(() => requestAnimationFrame(() => indicator.classList.remove('nx-still')));
+        } else if (!indicator.classList.contains('nx-still') &&
+                   (active !== lastActive || Math.abs(x - lastX) > 8)) {
+            jelly(); // trocou de aba: a pílula "estica" no caminho
         }
+        lastActive = active;
+        lastX = x;
 
         // contador: dá uma "pulada" quando o número muda
         nav.querySelectorAll('.nav-badge').forEach(badge => {
@@ -37,7 +64,7 @@
             if (badgeText.get(badge) !== text) {
                 if (badgeText.has(badge) && text) {
                     badge.classList.remove('nx-pop');
-                    void badge.offsetWidth; // reinicia a animação
+                    void badge.offsetWidth;
                     badge.classList.add('nx-pop');
                 }
                 badgeText.set(badge, text);
@@ -56,6 +83,13 @@
         attributeFilter: ['class'],
         childList: true,
         characterData: true
+    });
+
+    // a luz acompanha o ponteiro dentro da barra
+    nav.addEventListener('pointermove', event => {
+        if (event.pointerType === 'touch') return;
+        const box = nav.getBoundingClientRect();
+        nav.style.setProperty('--mx', (event.clientX - box.left) + 'px');
     });
 
     window.addEventListener('resize', schedule);
