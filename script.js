@@ -810,7 +810,93 @@ function startRealtime() {
 
 // ---------- Mural (Descobrir) ----------
 // Só aparecem os gêneros marcados em "Tenho interesse em" (Meu Perfil)
-const visibleProfiles = () => profiles.filter(profile => myProfile.interestedIn.includes(profile.gender));
+// Filtro de localização (estado e cidade). Vale só nesta sessão.
+const UF_NAMES = {
+    AC: 'Acre', AL: 'Alagoas', AP: 'Amapá', AM: 'Amazonas', BA: 'Bahia', CE: 'Ceará',
+    DF: 'Distrito Federal', ES: 'Espírito Santo', GO: 'Goiás', MA: 'Maranhão',
+    MT: 'Mato Grosso', MS: 'Mato Grosso do Sul', MG: 'Minas Gerais', PA: 'Pará',
+    PB: 'Paraíba', PR: 'Paraná', PE: 'Pernambuco', PI: 'Piauí', RJ: 'Rio de Janeiro',
+    RN: 'Rio Grande do Norte', RS: 'Rio Grande do Sul', RO: 'Rondônia', RR: 'Roraima',
+    SC: 'Santa Catarina', SP: 'São Paulo', SE: 'Sergipe', TO: 'Tocantins'
+};
+let stateFilter = 'all';
+let cityFilter = 'all';
+
+const normalizeText = text => String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+
+// Aceita "Porto Velho, RO", "Porto Velho - RO", "Porto Velho/RO" e "Porto Velho, Rondônia"
+function parseLocation(raw) {
+    const text = String(raw || '').trim();
+    // separadores: vírgula, barra ou hífen com espaços (o hífen de "Ji-Paraná" não separa)
+    let parts = text.split(/\s*,\s*|\s*\/\s*|\s+-\s+/).filter(Boolean);
+    const glued = text.match(/^(.*\S)-([A-Za-z]{2})$/); // "Porto Velho-RO"
+    if (parts.length < 2 && glued && UF_NAMES[glued[2].toUpperCase()]) parts = [glued[1], glued[2]];
+    if (parts.length < 2) return { city: text, uf: '' };
+
+    const last = parts[parts.length - 1];
+    let uf = last.toUpperCase();
+    if (!UF_NAMES[uf]) {
+        uf = Object.keys(UF_NAMES).find(code => normalizeText(UF_NAMES[code]) === normalizeText(last)) || '';
+    }
+    return uf ? { city: parts.slice(0, -1).join(' '), uf } : { city: text, uf: '' };
+}
+
+function matchesLocation(profile) {
+    if (stateFilter === 'all') return true;
+    const place = parseLocation(profile.location);
+    if (place.uf !== stateFilter) return false;
+    return cityFilter === 'all' || normalizeText(place.city) === cityFilter;
+}
+
+const visibleProfiles = () => profiles.filter(profile =>
+    myProfile.interestedIn.includes(profile.gender) && matchesLocation(profile));
+
+// Monta os seletores só com estados e cidades que têm gente cadastrada
+function updateLocationFilter() {
+    const stateSelect = document.getElementById('state-filter');
+    const citySelect = document.getElementById('city-filter');
+    if (!stateSelect || !citySelect) return;
+
+    const places = profiles.map(profile => parseLocation(profile.location)).filter(place => place.uf);
+
+    const states = [...new Set(places.map(place => place.uf))]
+        .sort((a, b) => UF_NAMES[a].localeCompare(UF_NAMES[b], 'pt-BR'));
+    if (stateFilter !== 'all' && !states.includes(stateFilter)) states.push(stateFilter);
+
+    stateSelect.innerHTML = '<option value="all">Todo o Brasil</option>' + states
+        .map(uf => `<option value="${uf}">${UF_NAMES[uf]} (${uf})</option>`).join('');
+    stateSelect.value = stateFilter;
+
+    const cities = new Map(); // chave normalizada -> nome para exibir
+    places.filter(place => place.uf === stateFilter).forEach(place => {
+        const key = normalizeText(place.city);
+        if (key && !cities.has(key)) cities.set(key, place.city);
+    });
+    if (cityFilter !== 'all' && !cities.has(cityFilter)) cityFilter = 'all';
+
+    citySelect.innerHTML = '<option value="all">Todas as cidades</option>' + [...cities]
+        .sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'))
+        .map(([key, name]) => `<option value="${escapeHtml(key)}">${escapeHtml(name)}</option>`).join('');
+    citySelect.value = cityFilter;
+    citySelect.disabled = stateFilter === 'all';
+}
+
+function setStateFilter(uf) {
+    stateFilter = uf;
+    cityFilter = 'all';
+    renderProfiles();
+}
+
+function setCityFilter(cityKey) {
+    cityFilter = cityKey;
+    renderProfiles();
+}
+
+function clearLocationFilter() {
+    stateFilter = 'all';
+    cityFilter = 'all';
+    renderProfiles();
+}
 
 function updateDiscoverFilter() {
     const box = document.getElementById('discover-filter');
@@ -852,6 +938,7 @@ function renderProfiles() {
     if (!grid) return;
     grid.innerHTML = '';
     updateDiscoverFilter();
+    updateLocationFilter();
 
     if (!loaded.users) {
         grid.innerHTML = `
@@ -880,7 +967,7 @@ function renderProfiles() {
             <div class="empty-state">
                 <h2>Nenhum perfil para esse filtro</h2>
                 <p>Ainda não há ninguém disponível para esse filtro.</p>
-                <button class="btn-primary" onclick="selectAllGenders()">Mostrar todos</button>
+                <button class="btn-primary" onclick="selectAllGenders(); clearLocationFilter()">Mostrar todos</button>
             </div>
         `;
         return;
@@ -2886,7 +2973,7 @@ async function fillLocation() {
 // precisam ser publicadas no window.
 Object.assign(window, {
     addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
-    fillLocation, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
+    fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile
 });
