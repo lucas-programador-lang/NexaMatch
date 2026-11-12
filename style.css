@@ -5316,3 +5316,259 @@ select:focus-visible {
     #messages-content .chat-send,
     #messages-content .chat-header .btn-view { transition: none; }
 }
+
+
+/* ==========================================================
+   Mensagens — v4 (visual extra + animações)
+   Vem depois da v3 e a complementa.
+   ========================================================== */
+
+/* ----- Entrada dos painéis ----- */
+@keyframes nxPanelIn {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxItemIn {
+    from { opacity: 0; transform: translateX(-14px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes nxBubbleMe {
+    from { opacity: 0; transform: translate(16px, 12px) scale(0.9); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxBubbleThem {
+    from { opacity: 0; transform: translate(-16px, 12px) scale(0.9); }
+    to   { opacity: 1; transform: none; }
+}
+@keyframes nxFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-8px); }
+}
+@keyframes nxBlobA {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(-18%, 22%, 0) scale(1.25); }
+}
+@keyframes nxBlobB {
+    from { transform: translate3d(0, 0, 0) scale(1.1); }
+    to   { transform: translate3d(24%, -20%, 0) scale(0.9); }
+}
+@keyframes nxBadgePulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 79, 163, 0.6); }
+    70%  { box-shadow: 0 0 0 9px rgba(255, 79, 163, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 79, 163, 0); }
+}
+@keyframes nxRing {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 79, 163, 0.5), 0 0 16px -2px rgba(255, 79, 163, 0.55); }
+    70%  { box-shadow: 0 0 0 7px rgba(255, 79, 163, 0), 0 0 16px -2px rgba(255, 79, 163, 0.55); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 79, 163, 0), 0 0 16px -2px rgba(255, 79, 163, 0.55); }
+}
+@keyframes nxSendReady {
+    0%, 100% { box-shadow: 0 8px 20px -6px rgba(139, 92, 246, 0.8), 0 0 0 0 rgba(139, 92, 246, 0.5); }
+    50%      { box-shadow: 0 8px 20px -6px rgba(139, 92, 246, 0.8), 0 0 0 9px rgba(139, 92, 246, 0); }
+}
+@keyframes nxHaloSpin {
+    to { transform: rotate(360deg); }
+}
+
+#messages-content .chat-shell > .chat-list   { animation: nxPanelIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#messages-content .chat-shell > .chat-window { animation: nxPanelIn 0.55s 0.08s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* conversas entram uma depois da outra (só na primeira vez) */
+#messages-content .chat-item.enter {
+    animation: nxItemIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(0.12s + var(--i, 0) * 0.06s);
+}
+
+/* ----- Janela do chat: brilhos que se movem ao fundo ----- */
+#messages-content .chat-window {
+    position: relative;
+    isolation: isolate;
+}
+
+#messages-content .chat-window::before,
+#messages-content .chat-window::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: 24rem;
+    height: 24rem;
+    border-radius: 50%;
+    pointer-events: none;
+    will-change: transform;
+}
+
+#messages-content .chat-window::before {
+    top: -9rem;
+    right: -7rem;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.22), transparent 68%);
+    animation: nxBlobA 16s ease-in-out infinite alternate;
+}
+
+#messages-content .chat-window::after {
+    bottom: -10rem;
+    left: -8rem;
+    background: radial-gradient(circle, rgba(45, 226, 245, 0.15), transparent 68%);
+    animation: nxBlobB 20s ease-in-out infinite alternate;
+}
+
+#messages-content .chat-thread { background: transparent; }
+
+/* cabeçalho, aviso, mensagens e campo entram em sequência quando a conversa abre */
+#messages-content .chat-header { animation: nxSlideDown 0.45s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#messages-content #chat-banner { animation: nxFadeIn 0.5s 0.15s both; }
+#messages-content .chat-thread { animation: nxFadeIn 0.5s 0.12s both; }
+#messages-content .chat-form   { animation: nxSlideUp 0.45s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+/* ----- Título da lista ----- */
+#messages-content .chat-list-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.2rem 0.5rem 0.6rem;
+}
+
+#messages-content .chat-list-title strong {
+    color: rgba(176, 184, 216, 0.9);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+#messages-content .chat-list-title .count {
+    min-width: 1.4rem;
+    padding: 0.1rem 0.5rem;
+    color: #fff;
+    background: var(--grad-soft);
+    border: 1px solid rgba(139, 92, 246, 0.45);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ----- Saldo: brilho que passa ao passar o mouse ----- */
+#messages-content .wallet-bar button {
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.25s;
+}
+
+#messages-content .wallet-bar button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.5) 50%, transparent 70%);
+    transform: translateX(-130%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+}
+
+#messages-content .wallet-bar button:hover::after { transform: translateX(130%); }
+#messages-content .wallet-bar button:active { transform: scale(0.96); }
+
+/* ----- Itens da lista ----- */
+#messages-content .chat-item img { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+#messages-content .chat-item:hover img { transform: scale(1.07); }
+#messages-content .chat-item:active { transform: scale(0.985); }
+
+/* "Você:" destacado na prévia */
+#messages-content .chat-item-info .you {
+    color: var(--cyan);
+    font-weight: 600;
+}
+
+/* mensagem nova: o anel do avatar e a bolinha pulsam */
+#messages-content .chat-item.has-unread img { animation: nxRing 2.2s ease-out infinite; }
+#messages-content .unread-badge { animation: nxBadgePulse 2.2s ease-out infinite; }
+
+/* ----- Cabeçalho: ícone de localização ----- */
+#messages-content .chat-header-info span::before {
+    content: "";
+    display: inline-block;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-right: 0.3rem;
+    vertical-align: -0.1rem;
+    background-color: var(--cyan);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z'/><circle cx='12' cy='10' r='3'/></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z'/><circle cx='12' cy='10' r='3'/></svg>") center / contain no-repeat;
+}
+
+/* ----- Bolhas: só as novas animam ----- */
+#messages-content .bubble { animation: none; }
+#messages-content .bubble.me.is-new   { transform-origin: bottom right; animation: nxBubbleMe 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+#messages-content .bubble.them.is-new { transform-origin: bottom left;  animation: nxBubbleThem 0.38s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+#messages-content .bubble.me {
+    background: linear-gradient(135deg, #2de2f5 0%, #8b5cf6 58%, #ff4fa3 100%);
+}
+
+#messages-content .bubble-img { transition: transform 0.3s, filter 0.3s; }
+#messages-content .bubble-img:hover { transform: scale(1.02); filter: brightness(1.08); }
+
+/* ----- Campo de envio ----- */
+#messages-content .chat-attach { transition: color 0.2s, border-color 0.2s, background 0.2s, transform 0.2s; }
+#messages-content .chat-attach:active { transform: scale(0.92); }
+
+#messages-content .chat-form input {
+    transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+
+#messages-content .chat-form input:focus { background: rgba(8, 10, 28, 0.9); }
+
+/* digitando: o botão enviar chama atenção */
+#messages-content .chat-form:not(:has(#chat-input:placeholder-shown)) .chat-send {
+    animation: nxSendReady 1.8s ease-in-out infinite;
+}
+
+#messages-content .chat-send:active { transform: scale(0.88); }
+
+/* ----- Nenhuma conversa aberta ----- */
+#messages-content .chat-placeholder { animation: nxFadeIn 0.6s 0.2s both; }
+#messages-content .chat-placeholder::before { animation: nxFloat 4s ease-in-out infinite; }
+
+#messages-content .chat-placeholder h2 {
+    background: linear-gradient(135deg, #ffffff 30%, #c9b8ff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ----- Celular ----- */
+@media (max-width: 860px) {
+    #messages-content .chat-window::before,
+    #messages-content .chat-window::after { width: 16rem; height: 16rem; }
+}
+
+/* ----- Quem prefere menos movimento ----- */
+@media (prefers-reduced-motion: reduce) {
+    #messages-content .chat-shell > .chat-list,
+    #messages-content .chat-shell > .chat-window,
+    #messages-content .chat-item.enter,
+    #messages-content .chat-header,
+    #messages-content #chat-banner,
+    #messages-content .chat-thread,
+    #messages-content .chat-form,
+    #messages-content .chat-placeholder,
+    #messages-content .chat-placeholder::before,
+    #messages-content .chat-window::before,
+    #messages-content .chat-window::after,
+    #messages-content .chat-item.has-unread img,
+    #messages-content .unread-badge,
+    #messages-content .bubble.is-new,
+    #messages-content .chat-form:not(:has(#chat-input:placeholder-shown)) .chat-send { animation: none; }
+}
