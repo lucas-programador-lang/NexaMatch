@@ -5831,3 +5831,19 @@ select:focus-visible {
 @media (prefers-reduced-motion: reduce) {
     #messages-content .sound-toggle { transition: none; }
 }
+
+/* ----- Celular: nome completo no cabeçalho do chat ----- */
+/* O nome ocupa a linha toda (quebra em 2 linhas se for longo) e o selo Online/Offline fica logo abaixo. */
+@media (max-width: 600px) {
+    #messages-content .chat-header { gap: 0.6rem; }
+    #messages-content .chat-header .btn-view { padding: 0.45rem 0.8rem; font-size: 0.8rem; }
+    #messages-content .chat-name-row { flex-wrap: wrap; gap: 0.15rem 0.5rem; }
+    #messages-content .chat-name-row strong {
+        flex: 1 1 100%;
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+    }
+}
