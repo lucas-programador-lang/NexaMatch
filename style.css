@@ -3905,166 +3905,312 @@ select:focus-visible {
 
 
 /* ==========================================================
-   Meu Perfil — acabamento profissional (v3)
-   Mesma estrutura e IDs. Menos movimento, mais clareza:
-   ícones por seção, campos consistentes, prévia realista,
-   checklist ao vivo e zona de perigo bem separada.
+   Meu Perfil — visual v4 ("Studio")
+   Substitui o bloco v3. Só CSS: HTML, IDs e JS continuam iguais.
+   Ideias: superfícies sólidas e limpas, um único destaque de cor,
+   avatar redondo, formulário com campos grandes e consistentes,
+   prévia em cartão e nada se mexendo sozinho.
    ========================================================== */
 
-/* ----- Calma: nada fica se mexendo sozinho ----- */
-.me-avatar-wrap,
-.me-preview,
-.me-avatar-edit,
-.btn-save::after { animation: none; }
+.me-page {
+    --me-surface: #0d1126;
+    --me-surface-2: #131937;
+    --me-line: rgba(255, 255, 255, 0.08);
+    --me-line-2: rgba(255, 255, 255, 0.15);
+    --me-ok: #34f5a1;
+    --me-radius: 1.25rem;
+    max-width: 1100px;
+    margin-top: 1.4rem;
+}
 
-.me-avatar-wrap::before { animation: none; opacity: 0.35; filter: blur(22px); }
-.me-avatar-edit:hover { transform: scale(1.08); }
+/* ----- Nada se mexe sozinho ----- */
+.me-page .me-avatar-wrap,
+.me-page .me-avatar-edit,
+.me-page .me-preview,
+.me-page .me-banner,
+.me-page .btn-save::after { animation: none; }
 
+.me-page .me-avatar-wrap::before { display: none; }
+.me-page .live-dot { animation: none; }
+
+/* ----- Superfícies ----- */
 .me-page .me-hero,
 .me-page .me-step,
 .me-page .me-account,
 .me-page .me-preview,
 .me-page .me-tips {
-    background: linear-gradient(180deg, rgba(24, 28, 54, 0.72), rgba(14, 17, 36, 0.72));
-    border-color: rgba(255, 255, 255, 0.09);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+    background: var(--me-surface);
+    border: 1px solid var(--me-line);
+    border-radius: var(--me-radius);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -28px rgba(0, 0, 0, 0.9);
 }
 
-/* ----- Topo ----- */
-.me-avatar {
-    border-radius: 2rem;
-    border-width: 4px;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.55), 0 16px 34px -12px rgba(139, 92, 246, 0.7);
+/* ===================== TOPO ===================== */
+.me-page .me-hero { padding-bottom: 1.4rem; }
+
+.me-page .me-banner {
+    height: 9rem;
+    background:
+        radial-gradient(28rem 10rem at 8% 0%, rgba(45, 226, 245, 0.35), transparent 70%),
+        radial-gradient(30rem 11rem at 60% -10%, rgba(139, 92, 246, 0.55), transparent 72%),
+        radial-gradient(24rem 10rem at 100% 10%, rgba(255, 79, 163, 0.32), transparent 70%);
+    -webkit-mask-image: linear-gradient(#000 30%, transparent 100%);
+    mask-image: linear-gradient(#000 30%, transparent 100%);
 }
 
-.me-name { letter-spacing: -0.5px; }
+.me-page .me-hero-body {
+    align-items: flex-end;
+    gap: 1.5rem;
+    padding: 0 2rem;
+    margin-top: -4.4rem;
+}
 
-.me-sub::before {
-    content: "";
-    display: inline-block;
-    width: 0.45rem;
-    height: 0.45rem;
-    margin-right: 0.5rem;
-    vertical-align: middle;
-    background: #34f5a1;
+/* Avatar redondo com anel de cor */
+.me-page .me-avatar {
+    width: 8.6rem;
+    height: 8.6rem;
+    background: linear-gradient(135deg, #2de2f5, #8b5cf6 60%, #ff4fa3);
+    border: 4px solid var(--me-surface);
     border-radius: 50%;
-    box-shadow: 0 0 8px rgba(52, 245, 161, 0.7);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.6), 0 18px 30px -14px rgba(0, 0, 0, 0.8);
 }
 
-.me-stat {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.08);
+.me-page .me-avatar span { font-size: 3.2rem; }
+
+.me-page .me-avatar-edit {
+    right: 0.1rem;
+    bottom: 0.1rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #fff;
+    background: #1b2147;
+    border: 3px solid var(--me-surface);
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px var(--me-line-2);
+    transition: background 0.2s, transform 0.2s;
 }
 
-.me-stat:hover { transform: none; }
-.me-stat strong { font-size: 1.6rem; letter-spacing: -0.3px; }
+.me-page .me-avatar-edit:hover { background: #8b5cf6; transform: scale(1.06); }
 
-/* ----- Seções do formulário ----- */
-.me-page .me-step { gap: 1.25rem; }
+.me-page .me-hero-info { padding-bottom: 0.3rem; }
 
-.me-page .me-step:hover,
-.me-page .me-step:focus-within { transform: none; }
+.me-page .me-name {
+    font-size: clamp(1.5rem, 3.2vw, 2.15rem);
+    letter-spacing: -0.5px;
+}
+
+.me-page .me-sub {
+    margin-top: 0.35rem;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.me-page .me-remove {
+    margin-top: 0.6rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--me-line);
+    border-radius: 999px;
+    padding: 0.3rem 0.8rem;
+}
+
+.me-page .me-remove:hover,
+.me-page .me-remove:focus-visible {
+    color: #ff9bc9;
+    border-color: rgba(255, 79, 163, 0.5);
+    background: rgba(255, 79, 163, 0.08);
+}
+
+/* Anel de progresso, mais discreto */
+.me-page .me-ring { width: 5.6rem; height: 5.6rem; }
+.me-page .me-ring svg { filter: none; }
+.me-page .me-ring circle { stroke-width: 6; }
+.me-page .me-ring .ring-bg { stroke: rgba(255, 255, 255, 0.09); }
+.me-page .me-ring b { font-size: 1.2rem; }
+.me-page .me-ring small { font-size: 0.58rem; }
+
+/* Números */
+.me-page .me-stats {
+    gap: 0.75rem;
+    margin: 1.5rem 2rem 0;
+}
+
+.me-page .me-stat {
+    position: relative;
+    overflow: hidden;
+    padding: 0.9rem 1rem;
+    background: var(--me-surface-2);
+    border: 1px solid var(--me-line);
+    border-radius: 1rem;
+}
+
+.me-page .me-stat::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: var(--tone);
+    opacity: 0.8;
+}
+
+.me-page .me-stat:hover {
+    transform: none;
+    border-color: var(--me-line-2);
+    background: var(--me-surface-2);
+}
+
+.me-page .me-stat > i { border-radius: 0.8rem; }
+.me-page .me-stat strong { font-size: 1.7rem; letter-spacing: -0.5px; }
+.me-page .me-stat span { font-size: 0.74rem; }
+
+/* ===================== CORPO ===================== */
+.me-page .me-grid {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.me-page .me-form { gap: 1.2rem; }
+.me-page .me-col { gap: 1.2rem; }
+
+/* ----- Cartões do formulário ----- */
+.me-page .me-step {
+    gap: 1.3rem;
+    padding: 1.6rem 1.7rem 1.8rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.me-page .me-step:hover { transform: none; border-color: var(--me-line-2); box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 20px 40px -28px rgba(0,0,0,.9); }
 
 .me-page .me-step:focus-within {
-    border-color: rgba(139, 92, 246, 0.5);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 3px rgba(139, 92, 246, 0.12), 0 18px 40px -22px rgba(0, 0, 0, 0.8);
+    transform: none;
+    border-color: rgba(139, 92, 246, 0.55);
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1), 0 20px 40px -28px rgba(0, 0, 0, 0.9);
 }
 
 .me-page .me-step-head {
-    padding-bottom: 1.1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    align-items: center;
+    gap: 0.95rem;
+    padding-bottom: 1.15rem;
+    border-bottom: 1px solid var(--me-line);
 }
 
 .me-page .me-step-head > i,
 .me-page .me-step.done .me-step-head > i {
-    width: 2.6rem;
-    height: 2.6rem;
-    font-size: inherit;
-    color: var(--cyan);
-    background: rgba(45, 226, 245, 0.1);
-    border: 1px solid rgba(45, 226, 245, 0.28);
+    width: 2.7rem;
+    height: 2.7rem;
+    color: #c9b6ff;
+    background: rgba(139, 92, 246, 0.14);
+    border: 1px solid rgba(139, 92, 246, 0.35);
     border-radius: 0.9rem;
     box-shadow: none;
     transform: none;
 }
 
-.me-page .me-step:nth-of-type(2) .me-step-head > i { color: #b79cff; background: rgba(139, 92, 246, 0.14); border-color: rgba(139, 92, 246, 0.38); }
-.me-page .me-step:nth-of-type(3) .me-step-head > i { color: #ff8cc3; background: rgba(255, 79, 163, 0.12); border-color: rgba(255, 79, 163, 0.34); }
-
 .me-page .me-step.done .me-step-head > i::after { content: none; }
 .me-page .me-step:hover .me-step-head > i { transform: none; }
 .me-page .me-step-head .ico { width: 1.2rem; height: 1.2rem; }
 
-/* selo "completo" no canto da seção */
-.me-step-state {
+.me-page .me-step-head h3 { font-size: 1.08rem; letter-spacing: -0.2px; }
+.me-page .me-step-head p { margin-top: 0.1rem; font-size: 0.84rem; color: var(--text-muted); }
+
+/* Selo "completo" */
+.me-page .me-step-state {
     display: none;
     align-items: center;
     justify-content: center;
     flex: none;
-    width: 1.6rem;
-    height: 1.6rem;
-    color: #06261c;
-    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    width: 1.55rem;
+    height: 1.55rem;
+    color: #04241a;
+    background: var(--me-ok);
     border-radius: 50%;
-    box-shadow: 0 0 14px rgba(52, 245, 161, 0.45);
 }
 
-.me-step-state .ico { width: 0.9rem; height: 0.9rem; stroke-width: 3; }
-.me-step.done .me-step-state { display: inline-flex; animation: pop 0.35s ease; }
+.me-page .me-step-state .ico { width: 0.85rem; height: 0.85rem; stroke-width: 3.2; }
+.me-page .me-step.done .me-step-state { display: inline-flex; }
 
-.me-count.full {
+.me-page .me-count {
+    padding: 0.2rem 0.65rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--me-line);
+    border-radius: 999px;
+    font-size: 0.76rem;
+    font-weight: 600;
+}
+
+.me-page .me-count.full {
     color: var(--gold);
     background: rgba(255, 200, 87, 0.1);
     border-color: rgba(255, 200, 87, 0.4);
 }
 
 /* ----- Campos ----- */
+.me-page .field-row { gap: 1rem; }
+.me-page .field-row .field-small { flex: 0 0 8.2rem; }
+.me-page .field { gap: 0.5rem; }
+
 .me-page .field > span {
-    color: rgba(241, 242, 255, 0.92);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #e4e7fb;
     font-size: 0.84rem;
     font-weight: 600;
+    letter-spacing: 0.1px;
 }
+
+.me-page .field > span small { color: var(--text-muted); font-weight: 500; }
+
+.me-page .input-wrap { position: relative; display: flex; align-items: center; }
+.me-page .input-wrap > .ico { left: 1rem; color: #8f98c4; }
+.me-page .input-wrap:focus-within > .ico { color: #b79cff; }
 
 .me-page .input-wrap input,
 .me-page .field textarea {
+    width: 100%;
     min-height: 3.1rem;
     padding: 0.8rem 1rem;
     color: var(--text-main);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--me-line-2);
+    border-radius: 0.85rem;
     font-size: 0.97rem;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.me-page .input-wrap:not(.no-icon) input { padding-left: 2.85rem; }
+.me-page .input-wrap:not(.no-icon) input { padding-left: 2.8rem; }
+.me-page .field textarea { min-height: 7.5rem; line-height: 1.6; resize: vertical; }
+
+.me-page .input-wrap input::placeholder,
+.me-page .field textarea::placeholder { color: rgba(176, 184, 216, 0.45); }
 
 .me-page .input-wrap input:hover,
-.me-page .field textarea:hover {
-    background: rgba(255, 255, 255, 0.055);
-    border-color: rgba(255, 255, 255, 0.22);
-}
+.me-page .field textarea:hover { border-color: rgba(255, 255, 255, 0.28); }
 
 .me-page .input-wrap input:focus,
-.me-page .field textarea:focus,
-.me-page .input-wrap input:focus-visible,
-.me-page .field textarea:focus-visible {
-    background: rgba(10, 12, 30, 0.85);
-    border-color: var(--violet);
+.me-page .field textarea:focus {
+    outline: none;
+    background: rgba(8, 10, 26, 0.9);
+    border-color: #8b5cf6;
     box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.22);
 }
 
-.me-page .input-wrap input:disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
+.me-page .input-wrap.invalid input {
+    border-color: #ff4fa3;
+    box-shadow: 0 0 0 4px rgba(255, 79, 163, 0.18);
 }
 
-/* "anos" dentro do campo de idade, sem setinhas do navegador */
-.has-suffix input { padding-right: 3.3rem; }
-.has-suffix input::-webkit-outer-spin-button,
-.has-suffix input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-.has-suffix input { -moz-appearance: textfield; appearance: textfield; }
+.me-page .input-wrap input:disabled { cursor: not-allowed; opacity: 0.5; }
 
-.input-suffix {
+.me-page .has-suffix input { padding-right: 3.4rem; -moz-appearance: textfield; appearance: textfield; }
+.me-page .has-suffix input::-webkit-outer-spin-button,
+.me-page .has-suffix input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.me-page .input-suffix {
     position: absolute;
     right: 1rem;
     color: var(--text-muted);
@@ -4073,40 +4219,50 @@ select:focus-visible {
     pointer-events: none;
 }
 
-.me-page .field-row .field-small { flex: 0 0 8rem; }
+.me-page .field-hint { font-size: 0.8rem; line-height: 1.5; color: var(--text-muted); }
+.me-page .field-error { font-size: 0.82rem; color: #ff9bc9; }
+.me-page .section-hint { font-size: 0.82rem; color: var(--text-muted); }
 
-/* barra de progresso da bio */
-.bio-meter {
+/* Barra de progresso da bio */
+.me-page .bio-meter {
     height: 4px;
-    margin-top: -0.55rem;
+    margin-top: -0.7rem;
     overflow: hidden;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.07);
     border-radius: 999px;
 }
 
-.bio-meter i {
+.me-page .bio-meter i {
     display: block;
     height: 100%;
-    background: var(--grad-brand);
+    background: linear-gradient(90deg, #8b5cf6, #2de2f5);
     border-radius: inherit;
     transition: width 0.25s ease, background 0.25s;
 }
 
-.bio-meter i.warn { background: var(--gold); }
-.bio-meter i.full { background: var(--pink); }
+.me-page .bio-meter i.warn { background: var(--gold); }
+.me-page .bio-meter i.full { background: var(--pink); }
 
-.me-page .field-hint { font-size: 0.8rem; line-height: 1.45; }
-
-/* botão "usar minha localização" */
-.me-page .me-geo {
-    padding: 0.55rem 1rem;
+/* Botões secundários */
+.me-page .btn-ghost {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--me-line-2);
     border-radius: 0.8rem;
+    transition: background 0.2s, border-color 0.2s;
 }
 
-.me-page .section-hint {
-    color: var(--text-muted);
-    font-size: 0.82rem;
+.me-page .btn-ghost:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.3); }
+
+.me-page .me-geo {
+    align-self: flex-start;
+    padding: 0.6rem 1rem;
+    color: #7eeeff;
+    background: rgba(45, 226, 245, 0.08);
+    border-color: rgba(45, 226, 245, 0.3);
 }
+
+.me-page .me-geo:hover { background: rgba(45, 226, 245, 0.16); border-color: rgba(45, 226, 245, 0.5); }
 
 /* ----- Interesses ----- */
 .me-page .interest-add { gap: 0.6rem; }
@@ -4114,106 +4270,133 @@ select:focus-visible {
 .me-page .btn-add {
     width: 3.1rem;
     min-height: 3.1rem;
-    border-radius: 0.9rem;
+    border-radius: 0.85rem;
+    background: linear-gradient(135deg, #8b5cf6, #ff4fa3);
+    box-shadow: 0 10px 20px -12px rgba(139, 92, 246, 0.9);
 }
+
+.me-page .btn-add:hover { transform: none; filter: brightness(1.1); }
 
 .me-page .btn-add:disabled {
     cursor: not-allowed;
     background: rgba(255, 255, 255, 0.08);
     box-shadow: none;
-    opacity: 0.6;
-    transform: none;
+    opacity: 0.55;
+    filter: none;
 }
 
+.me-page .chips { gap: 0.55rem; }
+
 .me-page .chip-edit {
-    padding: 0.4rem 0.45rem 0.4rem 0.9rem;
-    background: rgba(139, 92, 246, 0.14);
-    border: 1px solid rgba(139, 92, 246, 0.4);
+    padding: 0.42rem 0.45rem 0.42rem 0.95rem;
+    color: #efeaff;
+    background: rgba(139, 92, 246, 0.16);
+    border: 1px solid rgba(139, 92, 246, 0.42);
+    border-radius: 999px;
     font-size: 0.86rem;
     font-weight: 600;
 }
 
 .me-page .chip-edit button { background: rgba(255, 255, 255, 0.14); }
-
-.me-page .chip-edit button:focus-visible {
-    outline: 2px solid var(--cyan);
-    outline-offset: 2px;
-}
+.me-page .chip-edit button:hover { background: rgba(255, 79, 163, 0.55); }
 
 .me-page .me-suggest {
     align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    gap: 0.5rem;
+    padding-top: 1.1rem;
+    border-top: 1px dashed var(--me-line-2);
 }
 
 .me-page .me-suggest::before {
     content: "Sugestões";
     flex: 1 0 100%;
-    margin-bottom: 0.1rem;
     color: var(--text-muted);
-    font-size: 0.74rem;
-    font-weight: 600;
-    letter-spacing: 0.6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.7px;
     text-transform: uppercase;
 }
 
+.me-page .me-suggest button {
+    padding: 0.35rem 0.85rem;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px dashed var(--me-line-2);
+    border-radius: 999px;
+    font-size: 0.82rem;
+}
+
+.me-page .me-suggest button:hover { transform: none; color: #fff; border-style: solid; border-color: #8b5cf6; background: rgba(139, 92, 246, 0.14); }
+
 /* ----- Barra de salvar ----- */
 .me-page .me-save-bar {
-    padding: 0.7rem 0.7rem 0.7rem 1.3rem;
-    background: rgba(10, 12, 30, 0.9);
-    border-color: rgba(255, 255, 255, 0.12);
+    padding: 0.7rem 0.7rem 0.7rem 1.4rem;
+    background: rgba(10, 13, 32, 0.92);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--me-line-2);
     border-radius: 1.1rem;
+    box-shadow: 0 18px 36px -16px rgba(0, 0, 0, 0.95);
 }
 
 .me-page .btn-save {
-    padding: 0.8rem 1.5rem;
+    padding: 0.8rem 1.6rem;
+    color: #fff;
+    background: linear-gradient(135deg, #8b5cf6, #ff4fa3);
+    border: none;
     border-radius: 0.85rem;
     font-size: 0.95rem;
+    font-weight: 600;
+    box-shadow: 0 12px 24px -12px rgba(139, 92, 246, 0.95);
+    transition: filter 0.2s, transform 0.15s;
 }
 
 .me-page .btn-save::after { display: none; }
+.me-page .btn-save:hover { filter: brightness(1.1); }
+.me-page .btn-save:active { transform: scale(0.97); }
 
-/* ----- Prévia (cartão como aparece para os outros) ----- */
-.me-preview-col { display: flex; flex-direction: column; gap: 1.1rem; }
-.me-preview-col .me-preview-label { margin-bottom: 0; }
-
-.me-page .me-preview { border-radius: 1.5rem; }
-.me-page .me-preview:hover { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 50px -22px rgba(139, 92, 246, 0.55); }
-
-.pv-photo { aspect-ratio: 4 / 4.3; }
-
-.pv-photo:not(:has(img))::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(60% 50% at 20% 15%, rgba(255, 255, 255, 0.22), transparent 70%),
-        radial-gradient(50% 50% at 85% 90%, rgba(255, 79, 163, 0.35), transparent 70%);
+.me-page .btn-save.saved {
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    color: #04241a;
+    box-shadow: 0 12px 24px -12px rgba(52, 245, 161, 0.8);
 }
 
-.pv-initial {
-    position: relative;
+/* ===================== PRÉVIA ===================== */
+.me-page .me-preview-col { display: flex; flex-direction: column; gap: 1.2rem; top: 5.5rem; }
+
+.me-page .me-preview-label { margin: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 0.55rem; row-gap: 0.15rem; align-items: center; }
+.me-page .me-preview-label small { grid-column: 2; text-transform: none; letter-spacing: 0; font-weight: 500; }
+
+.me-page .me-preview { border-radius: 1.5rem; overflow: hidden; }
+.me-page .me-preview:hover { box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 28px 50px -28px rgba(139, 92, 246, 0.6); }
+
+.me-page .pv-photo {
+    aspect-ratio: 4 / 4.2;
+    background: linear-gradient(150deg, #2de2f5 0%, #8b5cf6 55%, #ff4fa3 120%);
+}
+
+.me-page .pv-initial {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 6.4rem;
-    height: 6.4rem;
+    width: 6.2rem;
+    height: 6.2rem;
     color: #fff;
     background: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 50%;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    font-size: 3rem;
+    font-size: 2.9rem;
+    animation: none;
 }
 
-.pv-title h4 { font-size: 1.45rem; letter-spacing: -0.3px; }
+.me-page .pv-title h4 { font-size: 1.45rem; letter-spacing: -0.3px; }
 
-.pv-body { gap: 1rem; padding: 1.2rem; }
+.me-page .pv-body { gap: 1.1rem; padding: 1.25rem 1.3rem 1.4rem; }
+.me-page .pv-body > section { display: flex; flex-direction: column; gap: 0.5rem; }
 
-.pv-body > section { display: flex; flex-direction: column; gap: 0.45rem; }
-
-.pv-label {
+.me-page .pv-label {
     color: var(--text-muted);
     font-size: 0.7rem;
     font-weight: 700;
@@ -4221,38 +4404,29 @@ select:focus-visible {
     text-transform: uppercase;
 }
 
-.pv-body .chip { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
+.me-page .pv-bio { font-size: 0.92rem; }
+.me-page .pv-body .chip { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
 
-/* ----- Checklist do perfil ----- */
-.me-tips {
-    padding: 1.1rem 1.2rem;
-    border: 1px solid rgba(255, 255, 255, 0.09);
-    border-radius: 1.2rem;
-}
+/* ----- Checklist ----- */
+.me-page .me-tips { padding: 1.2rem 1.3rem; }
 
-.me-tips h4 {
-    margin-bottom: 0.8rem;
+.me-page .me-tips h4 {
+    margin-bottom: 0.9rem;
     font-family: var(--font-display);
     font-size: 0.95rem;
 }
 
-.me-tips ul {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    list-style: none;
-}
+.me-page .me-tips ul { display: flex; flex-direction: column; gap: 0.65rem; list-style: none; }
 
-.me-tips li {
+.me-page .me-tips li {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
-    color: var(--text-muted);
-    font-size: 0.84rem;
-    transition: color 0.2s;
+    gap: 0.7rem;
+    color: var(--text-main);
+    font-size: 0.86rem;
 }
 
-.me-tips li i {
+.me-page .me-tips li i {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4265,57 +4439,76 @@ select:focus-visible {
     transition: background 0.2s, border-color 0.2s, color 0.2s;
 }
 
-.me-tips li i .ico { width: 0.75rem; height: 0.75rem; stroke-width: 3.2; }
+.me-page .me-tips li i .ico { width: 0.75rem; height: 0.75rem; stroke-width: 3.2; }
 
-.me-tips li.ok { color: rgba(241, 242, 255, 0.55); text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.25); }
+.me-page .me-tips li.ok { color: rgba(241, 242, 255, 0.5); text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.25); }
 
-.me-tips li.ok i {
-    color: #06261c;
-    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+.me-page .me-tips li.ok i {
+    color: #04241a;
+    background: var(--me-ok);
     border: 1.5px solid transparent;
 }
 
-/* ----- Conta e zona de perigo ----- */
-.me-page .me-account { padding: 0.3rem 1.4rem 0.3rem; }
+/* ===================== CONTA ===================== */
+.me-page .me-account { padding: 0.5rem 1.5rem; }
+.me-page .me-account-row { padding: 1.1rem 0; }
+.me-page .me-account-row + .me-account-row { border-top: 1px solid var(--me-line); }
+
+.me-page .me-account-icon {
+    color: #7eeeff;
+    background: rgba(45, 226, 245, 0.08);
+    border: 1px solid rgba(45, 226, 245, 0.25);
+    border-radius: 0.85rem;
+}
 
 .me-page .me-account-row.danger {
-    margin: 0.4rem -0.8rem 0.8rem;
-    padding: 1rem 0.8rem;
+    margin: 0 -0.9rem 0.9rem;
+    padding: 1rem 0.9rem;
     background: rgba(255, 79, 163, 0.06);
-    border: 1px solid rgba(255, 79, 163, 0.22);
+    border: 1px solid rgba(255, 79, 163, 0.25);
     border-radius: 1rem;
 }
 
-.me-page .me-account-row + .me-account-row { border-top: none; }
+.me-page .me-account-row.danger + .me-account-row,
+.me-page .me-account-row + .me-account-row.danger { border-top: 1px solid rgba(255, 79, 163, 0.25); }
 
-.me-page .me-account-row .btn-ghost {
-    padding: 0.6rem 1rem;
-    border-radius: 0.8rem;
+.me-page .me-account-row.danger .me-account-icon {
+    color: #ff8cc3;
+    background: rgba(255, 79, 163, 0.12);
+    border-color: rgba(255, 79, 163, 0.35);
 }
 
-.me-page .btn-danger:hover {
-    color: #fff;
-    background: rgba(255, 79, 163, 0.28);
-    border-color: var(--pink);
-}
+.me-page .btn-danger { color: #ff9bc9; border-color: rgba(255, 79, 163, 0.45); background: transparent; }
+.me-page .btn-danger:hover { color: #fff; background: rgba(255, 79, 163, 0.3); border-color: #ff4fa3; }
 
-/* ----- Foco visível para teclado ----- */
+/* ----- Teclado ----- */
 .me-page button:focus-visible,
 .me-page .me-avatar-edit:focus-within {
-    outline: 2px solid var(--cyan);
+    outline: 2px solid #2de2f5;
     outline-offset: 2px;
 }
 
-/* ----- Celular ----- */
+/* ===================== TABLET / CELULAR ===================== */
 @media (max-width: 960px) {
-    .me-preview-col { order: -1; }
-    .me-page .pv-photo { aspect-ratio: 16 / 9; }
-    .me-tips { display: none; }
+    .me-page .me-grid { grid-template-columns: minmax(0, 1fr); }
+    .me-page .me-preview-col { position: static; order: -1; }
+    .me-page .me-preview { max-width: 380px; margin: 0 auto; width: 100%; }
+    .me-page .pv-photo { aspect-ratio: 4 / 3.4; }
+    .me-page .me-tips { display: none; }
+    .me-page .me-stats { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 860px) {
-    .me-page .me-step-head { padding-bottom: 0.9rem; }
+    .me-page .me-hero-body { flex-direction: column; align-items: center; gap: 0.9rem; padding: 0 1.2rem; text-align: center; }
+    .me-page .me-hero-info { padding-bottom: 0; }
+    .me-page .me-ring { position: absolute; top: -3.2rem; right: 1.2rem; width: 4.6rem; height: 4.6rem; }
+    .me-page .me-ring b { font-size: 1rem; }
+    .me-page .me-stats { margin: 1.2rem 1.2rem 0; }
+    .me-page .me-step { padding: 1.3rem 1.2rem 1.4rem; }
+    .me-page .field-row { flex-direction: column; }
     .me-page .field-row .field-small { flex: 1; }
-    .me-page .me-account-row.danger { margin: 0.4rem 0 0.8rem; }
-    .me-page .me-account-row.danger .btn-ghost { width: 100%; }
+    .me-page .me-account { padding: 0.4rem 1.2rem; }
+    .me-page .me-account-row { flex-wrap: wrap; }
+    .me-page .me-account-row .btn-ghost { width: 100%; }
+    .me-page .me-account-row.danger { margin: 0 0 0.9rem; }
 }
