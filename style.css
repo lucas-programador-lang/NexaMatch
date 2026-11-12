@@ -5572,3 +5572,149 @@ select:focus-visible {
     #messages-content .bubble.is-new,
     #messages-content .chat-form:not(:has(#chat-input:placeholder-shown)) .chat-send { animation: none; }
 }
+
+
+/* ==========================================================
+   Mensagens — v5 (visto ✓✓ e online/offline)
+   ========================================================== */
+@keyframes nxDotPulse {
+    0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.65); }
+    70%  { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+@keyframes nxTickPop {
+    0%   { transform: scale(0.4); opacity: 0; }
+    60%  { transform: scale(1.3); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ----- Foto com bolinha de presença ----- */
+#messages-content .chat-avatar {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+}
+
+#messages-content .presence-dot {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 2.5px solid #10142a;
+    border-radius: 50%;
+    background: #5b6384;
+    box-sizing: content-box;
+    transition: background 0.3s;
+}
+
+/* sem informação ainda: não mostra nada */
+#messages-content .presence-dot:not(.on):not(.off) { display: none; }
+
+#messages-content .presence-dot.on {
+    background: #34d399;
+    animation: nxDotPulse 2.2s ease-out infinite;
+}
+
+#messages-content .chat-header .presence-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+}
+
+/* ----- Cabeçalho: nome + selo Online/Offline ----- */
+#messages-content .chat-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+}
+
+#messages-content .chat-name-row strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#messages-content .chat-presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: none;
+    padding: 0.12rem 0.55rem;
+    font-size: 0.7rem;
+    font-style: normal;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid transparent;
+}
+
+#messages-content .chat-presence[hidden] { display: none; }
+
+#messages-content .chat-presence::before {
+    content: "";
+    width: 0.42rem;
+    height: 0.42rem;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+#messages-content .chat-presence.on {
+    color: #34d399;
+    background: rgba(52, 211, 153, 0.12);
+    border-color: rgba(52, 211, 153, 0.35);
+}
+
+#messages-content .chat-presence.off {
+    color: rgba(176, 184, 216, 0.85);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+#messages-content #chat-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ----- Visto (✓ enviada, ✓✓ vista) ----- */
+#messages-content .tick {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    margin-left: 0.3rem;
+    vertical-align: -0.2rem;
+    transition: color 0.3s, opacity 0.3s;
+}
+
+#messages-content .tick.pop {
+    animation: nxTickPop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* dentro da bolha */
+#messages-content .bubble small {
+    display: inline-flex;
+    align-items: center;
+}
+
+#messages-content .bubble .tick.sent { color: rgba(255, 255, 255, 0.65); }
+
+#messages-content .bubble .tick.seen {
+    color: #fff;
+    filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.75));
+}
+
+/* na lista de conversas */
+#messages-content .chat-item-info .tick {
+    width: 0.95rem;
+    height: 0.95rem;
+    margin: 0 0.3rem 0 0.3rem;
+    vertical-align: -0.18rem;
+}
+
+#messages-content .chat-item-info .tick.sent { color: rgba(176, 184, 216, 0.8); }
+#messages-content .chat-item-info .tick.seen { color: var(--cyan); }
+
+@media (prefers-reduced-motion: reduce) {
+    #messages-content .presence-dot.on,
+    #messages-content .tick.pop { animation: none; }
+}
