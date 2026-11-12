@@ -488,7 +488,6 @@ select option {
     -webkit-backdrop-filter: blur(10px);
 }
 
-.location-tag::before { content: "📍 "; }
 
 .card-info {
     display: flex;
@@ -553,7 +552,7 @@ select option {
 }
 
 /* Botão de curtir: o emoji do HTML/JS é escondido (font-size: 0)
-   e no lugar entra um coração desenhado em SVG */
+   e no lugar entra um coração desenhado em SVG com degradê */
 .btn-like {
     --heart-outline: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>");
     --heart-filled: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'/></svg>");
@@ -561,15 +560,20 @@ select option {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
     font-size: 0;
-    min-width: 3.1rem;
-    background: var(--grad-soft);
-    border: 1px solid rgba(45, 226, 245, 0.38);
-    color: var(--cyan);
-    padding: 0.7rem 1rem;
-    border-radius: 0.9rem;
+    color: #fff;
+    /* fundo escuro com borda em degradê (ciano → rosa) */
+    background:
+        linear-gradient(rgba(14, 18, 38, 0.92), rgba(14, 18, 38, 0.92)) padding-box,
+        linear-gradient(135deg, rgba(45, 226, 245, 0.75), rgba(255, 79, 163, 0.75)) border-box;
+    border: 1.5px solid transparent;
+    border-radius: 50%;
     cursor: pointer;
-    transition: all 0.25s;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .btn-like::before {
@@ -577,48 +581,54 @@ select option {
     width: 1.3rem;
     height: 1.3rem;
     flex: none;
-    background-color: currentColor;
+    background: linear-gradient(135deg, #ff8ac4 0%, #ff4fa3 50%, #a78bfa 100%);
     -webkit-mask: var(--heart-outline) center / contain no-repeat;
     mask: var(--heart-outline) center / contain no-repeat;
-    transition: transform 0.25s;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.25s;
 }
 
 .btn-like:hover {
     background: var(--grad-brand);
-    border-color: transparent;
-    color: #fff;
-    box-shadow: 0 8px 22px -4px rgba(255, 79, 163, 0.65);
-    transform: translateY(-2px);
+    box-shadow: 0 10px 24px -6px rgba(255, 79, 163, 0.7);
+    transform: translateY(-2px) scale(1.06);
 }
 
 .btn-like:hover::before {
+    background: #fff;
     -webkit-mask-image: var(--heart-filled);
     mask-image: var(--heart-filled);
-    transform: scale(1.15);
+    transform: scale(1.12);
 }
 
 .btn-view:active,
-.btn-like:active { transform: scale(0.95); }
+.btn-like:active { transform: scale(0.92); }
 
-/* Curtido: coração cheio, dourado, batendo */
-.btn-like.liked {
-    background: linear-gradient(135deg, #ffc857, #ff9f43);
-    border-color: transparent;
-    color: #2a1804;
-    box-shadow: 0 8px 22px -4px rgba(255, 200, 87, 0.6);
-    cursor: not-allowed;
-    transform: none;
-    animation: pop 0.45s ease;
+.btn-like:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 3px;
 }
 
-.btn-like.liked::before {
+/* Curtido: coração cheio e branco sobre degradê rosa → coral, com batida e onda */
+.btn-like.liked,
+.btn-like.liked:hover {
+    background: linear-gradient(135deg, #ff4fa3, #ff8a5c);
+    box-shadow: 0 8px 22px -4px rgba(255, 79, 163, 0.65);
+    cursor: default;
+    transform: none;
+    animation: pop 0.45s ease, likeRipple 0.8s ease-out;
+}
+
+.btn-like.liked::before,
+.btn-like.liked:hover::before {
+    background: #fff;
     -webkit-mask-image: var(--heart-filled);
     mask-image: var(--heart-filled);
-    animation: heartbeat 1.6s ease-in-out 0.45s infinite;
+    transform: none;
+    animation: heartbeat 1.8s ease-in-out 0.45s infinite;
 }
 
 @keyframes pop {
-    0%   { transform: scale(0.85); }
+    0%   { transform: scale(0.8); }
     60%  { transform: scale(1.18); }
     100% { transform: scale(1); }
 }
@@ -627,6 +637,18 @@ select option {
     0%, 60%, 100% { transform: scale(1); }
     20%           { transform: scale(1.22); }
     40%           { transform: scale(1.05); }
+}
+
+@keyframes likeRipple {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 79, 163, 0.55), 0 8px 22px -4px rgba(255, 79, 163, 0.65); }
+    100% { box-shadow: 0 0 0 16px rgba(255, 79, 163, 0), 0 8px 22px -4px rgba(255, 79, 163, 0.65); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-like,
+    .btn-like::before,
+    .btn-like.liked,
+    .btn-like.liked::before { animation: none; transition: none; }
 }
 
 /* ---------- Página de perfil da pessoa ---------- */
@@ -734,7 +756,6 @@ select option {
     font-weight: 600;
 }
 
-.profile-location::before { content: "📍 "; }
 
 .profile-section {
     margin-top: 1.75rem;
@@ -787,7 +808,10 @@ select option {
 /* Botão grande de curtir: ícone + texto */
 .btn-like-lg {
     gap: 0.6rem;
+    width: auto;
+    height: auto;
     padding: 0.85rem 1.6rem;
+    border-radius: 999px;
 }
 
 .btn-like-lg::after {
@@ -1619,7 +1643,8 @@ select:focus-visible {
 
     .pending-item { flex-wrap: wrap; }
 
-    .pending-item .btn-ghost { flex: 1 1 100%; }
+    .pending-item .btn-ghost,
+    .pending-item .btn-unmatch { flex: 1 1 100%; }
 
     /* contador vira bolinha no canto do ícone do menu */
     .nav-badge {
@@ -3574,19 +3599,22 @@ select:focus-visible {
    Só vale para #profiles-grid: Matches e a página de perfil
    continuam como estavam.
    ========================================================== */
-#profiles-grid .card-image-wrapper {
+#profiles-grid .card-image-wrapper,
+#matches-content .grid .card-image-wrapper {
     height: auto;
     aspect-ratio: 4 / 4.5;
 }
 
 /* gradiente mais forte embaixo para o texto sempre ler bem */
-#profiles-grid .card-image-wrapper::after {
+#profiles-grid .card-image-wrapper::after,
+#matches-content .grid .card-image-wrapper::after {
     background:
         linear-gradient(to top, rgba(6, 7, 19, 0.95) 0%, rgba(6, 7, 19, 0.6) 28%, rgba(6, 7, 19, 0) 58%),
         linear-gradient(135deg, rgba(139, 92, 246, 0.12), transparent 40%);
 }
 
-#profiles-grid .card-head {
+#profiles-grid .card-head,
+#matches-content .grid .card-head {
     position: absolute;
     z-index: 1;
     right: 0;
@@ -3595,7 +3623,8 @@ select:focus-visible {
     padding: 1rem 1.25rem 1.05rem;
 }
 
-#profiles-grid .card-head h2 {
+#profiles-grid .card-head h2,
+#matches-content .grid .card-head h2 {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
@@ -3608,7 +3637,8 @@ select:focus-visible {
     text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
 }
 
-#profiles-grid .card-head h2 span {
+#profiles-grid .card-head h2 span,
+#matches-content .grid .card-head h2 span {
     color: var(--cyan);
     font-family: var(--font-body);
     font-size: 1.1rem;
@@ -3617,7 +3647,8 @@ select:focus-visible {
 }
 
 /* cidade: texto simples, sem emoji, sem pílula */
-#profiles-grid .location-tag {
+#profiles-grid .location-tag,
+#matches-content .grid .location-tag {
     position: static;
     display: block;
     margin-top: 0.3rem;
@@ -3637,37 +3668,101 @@ select:focus-visible {
     text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
 
-#profiles-grid .location-tag::before { content: none; }
 
-#profiles-grid .card-info {
+#profiles-grid .card-info,
+#matches-content .grid .card-info {
     padding: 1.1rem 1.25rem 1.25rem;
 }
 
-#profiles-grid .card-info p {
+#profiles-grid .card-info p,
+#matches-content .grid .card-info p {
     height: auto;
     min-height: 2.6rem;
     margin-bottom: 1rem;
     color: rgba(190, 197, 225, 0.85);
 }
 
-#profiles-grid .actions { gap: 0.65rem; }
+#profiles-grid .actions,
+#matches-content .grid .actions { gap: 0.65rem; }
 
-#profiles-grid .btn-view {
+#profiles-grid .btn-view,
+#matches-content .grid .btn-view {
     min-height: 3rem;
     padding: 0 1rem;
     border-radius: 1rem;
     font-size: 0.92rem;
 }
 
-#profiles-grid .btn-like {
-    flex: none;
+#profiles-grid .btn-like,
+#matches-content .grid .btn-like {
     width: 3rem;
-    min-width: 0;
     height: 3rem;
     padding: 0;
-    border-radius: 1rem;
+    border-radius: 50%;
 }
 
+
+#matches-content .grid .btn-msg {
+    min-height: 3rem;
+    padding: 0 1rem;
+    border-radius: 1rem;
+    font-size: 0.92rem;
+}
+
+/* ----- Desfazer match / Cancelar curtida ----- */
+.btn-unmatch {
+    --icon-heart-crack: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z'/><path d='m12 13-1-1 2-2-3-3 2-2'/></svg>");
+    --icon-x: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M18 6 6 18M6 6l12 12'/></svg>");
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.6rem;
+    padding: 0 1rem;
+    background: rgba(255, 79, 163, 0.07);
+    color: #ff9bc9;
+    border: 1px solid rgba(255, 79, 163, 0.3);
+    border-radius: 1rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.25s, border-color 0.25s, color 0.25s, box-shadow 0.25s, transform 0.15s;
+}
+
+.btn-unmatch::before {
+    content: "";
+    width: 1.05rem;
+    height: 1.05rem;
+    flex: none;
+    background-color: currentColor;
+    -webkit-mask: var(--icon-heart-crack) center / contain no-repeat;
+    mask: var(--icon-heart-crack) center / contain no-repeat;
+    transition: transform 0.25s;
+}
+
+.btn-unmatch-x::before {
+    -webkit-mask-image: var(--icon-x);
+    mask-image: var(--icon-x);
+}
+
+.btn-unmatch:hover {
+    background: rgba(255, 79, 163, 0.2);
+    border-color: rgba(255, 79, 163, 0.7);
+    color: #fff;
+    box-shadow: 0 8px 20px -8px rgba(255, 79, 163, 0.7);
+}
+
+.btn-unmatch:hover::before { transform: rotate(-12deg) scale(1.15); }
+.btn-unmatch:active { transform: scale(0.97); }
+
+.btn-unmatch:focus-visible {
+    outline: 2px solid var(--pink);
+    outline-offset: 2px;
+}
+
+.actions-wrap .btn-unmatch { flex: 1 1 100%; }
 
 /* ==========================================================
    Mensagens — v2
