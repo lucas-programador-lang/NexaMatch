@@ -3905,11 +3905,13 @@ select:focus-visible {
 
 
 /* ==========================================================
-   Meu Perfil — visual v4 ("Studio")
-   Substitui o bloco v3. Só CSS: HTML, IDs e JS continuam iguais.
-   Ideias: superfícies sólidas e limpas, um único destaque de cor,
-   avatar redondo, formulário com campos grandes e consistentes,
-   prévia em cartão e nada se mexendo sozinho.
+   Meu Perfil — visual v5 ("Studio", layout organizado)
+   Substitui os blocos anteriores (v3/v4). Só CSS: HTML, IDs e JS
+   continuam iguais.
+
+   COMPUTADOR  : formulário à esquerda | prévia fixa à direita
+                 (conta e zona de perigo logo abaixo do formulário)
+   TABLET/CEL. : uma coluna → formulário, prévia, conta
    ========================================================== */
 
 .me-page {
@@ -3919,7 +3921,8 @@ select:focus-visible {
     --me-line-2: rgba(255, 255, 255, 0.15);
     --me-ok: #34f5a1;
     --me-radius: 1.25rem;
-    max-width: 1100px;
+    --me-gap: 1.5rem;
+    max-width: 1120px;
     margin-top: 1.4rem;
 }
 
@@ -3947,43 +3950,48 @@ select:focus-visible {
     box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -28px rgba(0, 0, 0, 0.9);
 }
 
-/* ===================== TOPO ===================== */
-.me-page .me-hero { padding-bottom: 1.4rem; }
+/* ==========================================================
+   TOPO
+   ========================================================== */
+.me-page .me-hero {
+    padding-bottom: 1.6rem;
+    margin-bottom: var(--me-gap);
+}
 
 .me-page .me-banner {
-    height: 9rem;
+    height: 7.5rem;
     background:
-        radial-gradient(28rem 10rem at 8% 0%, rgba(45, 226, 245, 0.35), transparent 70%),
-        radial-gradient(30rem 11rem at 60% -10%, rgba(139, 92, 246, 0.55), transparent 72%),
-        radial-gradient(24rem 10rem at 100% 10%, rgba(255, 79, 163, 0.32), transparent 70%);
-    -webkit-mask-image: linear-gradient(#000 30%, transparent 100%);
-    mask-image: linear-gradient(#000 30%, transparent 100%);
+        radial-gradient(26rem 9rem at 5% 0%, rgba(45, 226, 245, 0.32), transparent 70%),
+        radial-gradient(30rem 10rem at 55% -20%, rgba(139, 92, 246, 0.55), transparent 72%),
+        radial-gradient(24rem 9rem at 100% 0%, rgba(255, 79, 163, 0.30), transparent 70%);
+    -webkit-mask-image: linear-gradient(#000 40%, transparent 100%);
+    mask-image: linear-gradient(#000 40%, transparent 100%);
 }
 
 .me-page .me-hero-body {
-    align-items: flex-end;
-    gap: 1.5rem;
+    align-items: center;
+    gap: 1.6rem;
     padding: 0 2rem;
-    margin-top: -4.4rem;
+    margin-top: -3.6rem;
 }
 
-/* Avatar redondo com anel de cor */
+/* Avatar redondo com anel */
 .me-page .me-avatar {
-    width: 8.6rem;
-    height: 8.6rem;
+    width: 7.6rem;
+    height: 7.6rem;
     background: linear-gradient(135deg, #2de2f5, #8b5cf6 60%, #ff4fa3);
     border: 4px solid var(--me-surface);
     border-radius: 50%;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.6), 0 18px 30px -14px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.6), 0 16px 28px -14px rgba(0, 0, 0, 0.8);
 }
 
-.me-page .me-avatar span { font-size: 3.2rem; }
+.me-page .me-avatar span { font-size: 2.9rem; }
 
 .me-page .me-avatar-edit {
-    right: 0.1rem;
+    right: 0;
     bottom: 0.1rem;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 2.3rem;
+    height: 2.3rem;
     color: #fff;
     background: #1b2147;
     border: 3px solid var(--me-surface);
@@ -3994,26 +4002,31 @@ select:focus-visible {
 
 .me-page .me-avatar-edit:hover { background: #8b5cf6; transform: scale(1.06); }
 
-.me-page .me-hero-info { padding-bottom: 0.3rem; }
+/* Nome fica ao lado do avatar, alinhado abaixo da capa */
+.me-page .me-hero-info {
+    align-self: flex-end;
+    padding-top: 3.9rem;
+    padding-bottom: 0.2rem;
+}
 
 .me-page .me-name {
-    font-size: clamp(1.5rem, 3.2vw, 2.15rem);
+    font-size: clamp(1.45rem, 3vw, 2rem);
     letter-spacing: -0.5px;
 }
 
 .me-page .me-sub {
-    margin-top: 0.35rem;
+    margin-top: 0.3rem;
     font-size: 0.95rem;
     color: var(--text-muted);
 }
 
 .me-page .me-remove {
     margin-top: 0.6rem;
+    padding: 0.3rem 0.8rem;
     color: var(--text-muted);
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid var(--me-line);
     border-radius: 999px;
-    padding: 0.3rem 0.8rem;
 }
 
 .me-page .me-remove:hover,
@@ -4023,66 +4036,86 @@ select:focus-visible {
     background: rgba(255, 79, 163, 0.08);
 }
 
-/* Anel de progresso, mais discreto */
-.me-page .me-ring { width: 5.6rem; height: 5.6rem; }
+/* Anel de progresso */
+.me-page .me-ring { align-self: flex-end; width: 5.4rem; height: 5.4rem; margin-bottom: 0.1rem; }
 .me-page .me-ring svg { filter: none; }
 .me-page .me-ring circle { stroke-width: 6; }
 .me-page .me-ring .ring-bg { stroke: rgba(255, 255, 255, 0.09); }
-.me-page .me-ring b { font-size: 1.2rem; }
-.me-page .me-ring small { font-size: 0.58rem; }
+.me-page .me-ring b { font-size: 1.15rem; }
+.me-page .me-ring small { font-size: 0.56rem; }
 
-/* Números */
+/* Números: uma faixa única, divididas por linhas finas */
 .me-page .me-stats {
-    gap: 0.75rem;
-    margin: 1.5rem 2rem 0;
-}
-
-.me-page .me-stat {
-    position: relative;
+    gap: 1px;
+    margin: 1.6rem 2rem 0;
     overflow: hidden;
-    padding: 0.9rem 1rem;
-    background: var(--me-surface-2);
+    background: var(--me-line);
     border: 1px solid var(--me-line);
     border-radius: 1rem;
 }
 
-.me-page .me-stat::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 2px;
-    background: var(--tone);
-    opacity: 0.8;
+.me-page .me-stat {
+    gap: 0.8rem;
+    padding: 1rem 1.1rem;
+    background: var(--me-surface-2);
+    border: 0;
+    border-radius: 0;
 }
 
-.me-page .me-stat:hover {
-    transform: none;
-    border-color: var(--me-line-2);
-    background: var(--me-surface-2);
-}
+.me-page .me-stat::before { display: none; }
+
+.me-page .me-stat:hover { transform: none; background: #181f42; }
 
 .me-page .me-stat > i { border-radius: 0.8rem; }
-.me-page .me-stat strong { font-size: 1.7rem; letter-spacing: -0.5px; }
-.me-page .me-stat span { font-size: 0.74rem; }
+.me-page .me-stat strong { font-size: 1.6rem; letter-spacing: -0.5px; }
+.me-page .me-stat span { font-size: 0.76rem; }
 
-/* ===================== CORPO ===================== */
+/* ==========================================================
+   LAYOUT PRINCIPAL (computador)
+   .me-col vira "invisível" para que formulário, prévia e conta
+   possam ser posicionados na mesma grade.
+   ========================================================== */
 .me-page .me-grid {
+    display: grid;
     grid-template-columns: minmax(0, 1fr) 340px;
-    gap: 1.5rem;
-    margin-top: 1.5rem;
+    grid-template-areas:
+        "form    side"
+        "account side";
+    column-gap: var(--me-gap);
+    row-gap: var(--me-gap);
+    align-items: start;
+    margin-top: 0;
 }
 
-.me-page .me-form { gap: 1.2rem; }
-.me-page .me-col { gap: 1.2rem; }
+.me-page .me-col { display: contents; }
 
-/* ----- Cartões do formulário ----- */
+.me-page .me-form    { grid-area: form; display: flex; flex-direction: column; gap: var(--me-gap); min-width: 0; }
+.me-page .me-account { grid-area: account; }
+
+.me-page .me-preview-col {
+    grid-area: side;
+    position: sticky;
+    top: 5.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    min-width: 0;
+}
+
+/* ==========================================================
+   CARTÕES DO FORMULÁRIO
+   ========================================================== */
 .me-page .me-step {
     gap: 1.3rem;
-    padding: 1.6rem 1.7rem 1.8rem;
+    padding: 1.6rem 1.8rem 1.8rem;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.me-page .me-step:hover { transform: none; border-color: var(--me-line-2); box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 20px 40px -28px rgba(0,0,0,.9); }
+.me-page .me-step:hover {
+    transform: none;
+    border-color: var(--me-line-2);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 40px -28px rgba(0, 0, 0, 0.9);
+}
 
 .me-page .me-step:focus-within {
     transform: none;
@@ -4116,7 +4149,7 @@ select:focus-visible {
 .me-page .me-step-head h3 { font-size: 1.08rem; letter-spacing: -0.2px; }
 .me-page .me-step-head p { margin-top: 0.1rem; font-size: 0.84rem; color: var(--text-muted); }
 
-/* Selo "completo" */
+/* selo "completo" */
 .me-page .me-step-state {
     display: none;
     align-items: center;
@@ -4147,6 +4180,26 @@ select:focus-visible {
     background: rgba(255, 200, 87, 0.1);
     border-color: rgba(255, 200, 87, 0.4);
 }
+
+/* ----- Informações básicas: grade organizada -----
+   Nome + Idade na primeira linha; Cidade + botão na segunda. */
+.me-page #me-step-1 {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 1rem;
+    row-gap: 1.3rem;
+    align-items: end;
+}
+
+.me-page #me-step-1 > .me-step-head,
+.me-page #me-step-1 > .field-row,
+.me-page #me-step-1 > .field-error,
+.me-page #me-step-1 > .section-hint { grid-column: 1 / -1; }
+
+.me-page #me-step-1 > .field-error[hidden],
+.me-page #me-step-1 > .section-hint:empty { display: none; }
+
+.me-page #me-step-1 > .me-geo { height: 3.1rem; align-self: end; white-space: nowrap; }
 
 /* ----- Campos ----- */
 .me-page .field-row { gap: 1rem; }
@@ -4223,7 +4276,7 @@ select:focus-visible {
 .me-page .field-error { font-size: 0.82rem; color: #ff9bc9; }
 .me-page .section-hint { font-size: 0.82rem; color: var(--text-muted); }
 
-/* Barra de progresso da bio */
+/* barra de progresso da bio */
 .me-page .bio-meter {
     height: 4px;
     margin-top: -0.7rem;
@@ -4243,7 +4296,7 @@ select:focus-visible {
 .me-page .bio-meter i.warn { background: var(--gold); }
 .me-page .bio-meter i.full { background: var(--pink); }
 
-/* Botões secundários */
+/* botões secundários */
 .me-page .btn-ghost {
     color: var(--text-main);
     background: rgba(255, 255, 255, 0.04);
@@ -4255,8 +4308,7 @@ select:focus-visible {
 .me-page .btn-ghost:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(255, 255, 255, 0.3); }
 
 .me-page .me-geo {
-    align-self: flex-start;
-    padding: 0.6rem 1rem;
+    padding: 0 1.1rem;
     color: #7eeeff;
     background: rgba(45, 226, 245, 0.08);
     border-color: rgba(45, 226, 245, 0.3);
@@ -4326,7 +4378,13 @@ select:focus-visible {
     font-size: 0.82rem;
 }
 
-.me-page .me-suggest button:hover { transform: none; color: #fff; border-style: solid; border-color: #8b5cf6; background: rgba(139, 92, 246, 0.14); }
+.me-page .me-suggest button:hover {
+    transform: none;
+    color: #fff;
+    background: rgba(139, 92, 246, 0.14);
+    border-style: solid;
+    border-color: #8b5cf6;
+}
 
 /* ----- Barra de salvar ----- */
 .me-page .me-save-bar {
@@ -4356,22 +4414,38 @@ select:focus-visible {
 .me-page .btn-save:active { transform: scale(0.97); }
 
 .me-page .btn-save.saved {
-    background: linear-gradient(135deg, #34f5a1, #14b8a6);
     color: #04241a;
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
     box-shadow: 0 12px 24px -12px rgba(52, 245, 161, 0.8);
 }
 
-/* ===================== PRÉVIA ===================== */
-.me-page .me-preview-col { display: flex; flex-direction: column; gap: 1.2rem; top: 5.5rem; }
+/* ==========================================================
+   PRÉVIA + CHECKLIST (coluna da direita)
+   ========================================================== */
+.me-page .me-preview-label {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.55rem;
+    row-gap: 0.15rem;
+    align-items: center;
+    margin: 0;
+}
 
-.me-page .me-preview-label { margin: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 0.55rem; row-gap: 0.15rem; align-items: center; }
-.me-page .me-preview-label small { grid-column: 2; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.me-page .me-preview-label small {
+    grid-column: 2;
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 500;
+}
 
-.me-page .me-preview { border-radius: 1.5rem; overflow: hidden; }
-.me-page .me-preview:hover { box-shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 28px 50px -28px rgba(139, 92, 246, 0.6); }
+.me-page .me-preview { overflow: hidden; border-radius: 1.5rem; }
+
+.me-page .me-preview:hover {
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 28px 50px -28px rgba(139, 92, 246, 0.6);
+}
 
 .me-page .pv-photo {
-    aspect-ratio: 4 / 4.2;
+    aspect-ratio: 4 / 3.4;
     background: linear-gradient(150deg, #2de2f5 0%, #8b5cf6 55%, #ff4fa3 120%);
 }
 
@@ -4379,21 +4453,22 @@ select:focus-visible {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 6.2rem;
-    height: 6.2rem;
+    width: 5.6rem;
+    height: 5.6rem;
     color: #fff;
     background: rgba(255, 255, 255, 0.16);
     border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 50%;
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
-    font-size: 2.9rem;
+    margin-bottom: 4rem;
+    font-size: 2.6rem;
     animation: none;
 }
 
-.me-page .pv-title h4 { font-size: 1.45rem; letter-spacing: -0.3px; }
+.me-page .pv-title h4 { font-size: 1.35rem; letter-spacing: -0.3px; }
 
-.me-page .pv-body { gap: 1.1rem; padding: 1.25rem 1.3rem 1.4rem; }
+.me-page .pv-body { gap: 1.1rem; padding: 1.2rem 1.3rem 1.4rem; }
 .me-page .pv-body > section { display: flex; flex-direction: column; gap: 0.5rem; }
 
 .me-page .pv-label {
@@ -4407,7 +4482,7 @@ select:focus-visible {
 .me-page .pv-bio { font-size: 0.92rem; }
 .me-page .pv-body .chip { padding: 0.3rem 0.75rem; font-size: 0.8rem; }
 
-/* ----- Checklist ----- */
+/* checklist */
 .me-page .me-tips { padding: 1.2rem 1.3rem; }
 
 .me-page .me-tips h4 {
@@ -4441,7 +4516,11 @@ select:focus-visible {
 
 .me-page .me-tips li i .ico { width: 0.75rem; height: 0.75rem; stroke-width: 3.2; }
 
-.me-page .me-tips li.ok { color: rgba(241, 242, 255, 0.5); text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, 0.25); }
+.me-page .me-tips li.ok {
+    color: rgba(241, 242, 255, 0.5);
+    text-decoration: line-through;
+    text-decoration-color: rgba(255, 255, 255, 0.25);
+}
 
 .me-page .me-tips li.ok i {
     color: #04241a;
@@ -4449,9 +4528,11 @@ select:focus-visible {
     border: 1.5px solid transparent;
 }
 
-/* ===================== CONTA ===================== */
-.me-page .me-account { padding: 0.5rem 1.5rem; }
-.me-page .me-account-row { padding: 1.1rem 0; }
+/* ==========================================================
+   CONTA E ZONA DE PERIGO
+   ========================================================== */
+.me-page .me-account { padding: 0.4rem 1.8rem; }
+.me-page .me-account-row { padding: 1.2rem 0; }
 .me-page .me-account-row + .me-account-row { border-top: 1px solid var(--me-line); }
 
 .me-page .me-account-icon {
@@ -4462,14 +4543,13 @@ select:focus-visible {
 }
 
 .me-page .me-account-row.danger {
-    margin: 0 -0.9rem 0.9rem;
-    padding: 1rem 0.9rem;
+    margin: 0 -1rem 1rem;
+    padding: 1.1rem 1rem;
     background: rgba(255, 79, 163, 0.06);
     border: 1px solid rgba(255, 79, 163, 0.25);
     border-radius: 1rem;
 }
 
-.me-page .me-account-row.danger + .me-account-row,
 .me-page .me-account-row + .me-account-row.danger { border-top: 1px solid rgba(255, 79, 163, 0.25); }
 
 .me-page .me-account-row.danger .me-account-icon {
@@ -4478,37 +4558,108 @@ select:focus-visible {
     border-color: rgba(255, 79, 163, 0.35);
 }
 
-.me-page .btn-danger { color: #ff9bc9; border-color: rgba(255, 79, 163, 0.45); background: transparent; }
+.me-page .btn-danger { color: #ff9bc9; background: transparent; border-color: rgba(255, 79, 163, 0.45); }
 .me-page .btn-danger:hover { color: #fff; background: rgba(255, 79, 163, 0.3); border-color: #ff4fa3; }
 
-/* ----- Teclado ----- */
+/* teclado */
 .me-page button:focus-visible,
 .me-page .me-avatar-edit:focus-within {
     outline: 2px solid #2de2f5;
     outline-offset: 2px;
 }
 
-/* ===================== TABLET / CELULAR ===================== */
+/* ==========================================================
+   NOTEBOOK PEQUENO / TABLET LARGO
+   ========================================================== */
+@media (max-width: 1100px) {
+    .me-page .me-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+    .me-page .pv-photo { aspect-ratio: 4 / 3.9; }
+    .me-page .me-hero-body { padding: 0 1.6rem; }
+    .me-page .me-stats { margin: 1.6rem 1.6rem 0; }
+}
+
+/* ==========================================================
+   TABLET E CELULAR: uma coluna só
+   ordem: formulário → prévia → conta
+   ========================================================== */
 @media (max-width: 960px) {
-    .me-page .me-grid { grid-template-columns: minmax(0, 1fr); }
-    .me-page .me-preview-col { position: static; order: -1; }
-    .me-page .me-preview { max-width: 380px; margin: 0 auto; width: 100%; }
-    .me-page .pv-photo { aspect-ratio: 4 / 3.4; }
+    .me-page .me-grid {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+            "form"
+            "side"
+            "account";
+    }
+
+    .me-page .me-preview-col { position: static; }
+    .me-page .me-preview { width: 100%; max-width: 440px; margin: 0 auto; }
+    .me-page .pv-photo { aspect-ratio: 4 / 3.2; }
     .me-page .me-tips { display: none; }
-    .me-page .me-stats { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 860px) {
-    .me-page .me-hero-body { flex-direction: column; align-items: center; gap: 0.9rem; padding: 0 1.2rem; text-align: center; }
-    .me-page .me-hero-info { padding-bottom: 0; }
-    .me-page .me-ring { position: absolute; top: -3.2rem; right: 1.2rem; width: 4.6rem; height: 4.6rem; }
-    .me-page .me-ring b { font-size: 1rem; }
-    .me-page .me-stats { margin: 1.2rem 1.2rem 0; }
-    .me-page .me-step { padding: 1.3rem 1.2rem 1.4rem; }
-    .me-page .field-row { flex-direction: column; }
-    .me-page .field-row .field-small { flex: 1; }
-    .me-page .me-account { padding: 0.4rem 1.2rem; }
+    .me-page { margin-top: 1rem; --me-gap: 1.1rem; }
+
+    /* topo centralizado */
+    .me-page .me-hero-body {
+        flex-direction: column;
+        flex-wrap: nowrap;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 0 1.2rem;
+        margin-top: -3.6rem;
+        text-align: center;
+    }
+
+    .me-page .me-hero-info { flex: none; align-self: center; width: 100%; padding-top: 0; order: 0; }
+    .me-page .me-name { font-size: 1.55rem; }
+
+    .me-page .me-ring {
+        position: absolute;
+        top: -3.6rem;
+        right: 1.1rem;
+        width: 4.4rem;
+        height: 4.4rem;
+        margin: 0;
+    }
+
+    .me-page .me-ring b { font-size: 0.98rem; }
+    .me-page .me-ring small { display: none; }
+
+    .me-page .me-stats { grid-template-columns: 1fr 1fr; margin: 1.3rem 1.2rem 0; }
+    .me-page .me-stat { padding: 0.85rem 0.9rem; gap: 0.65rem; }
+    .me-page .me-stat > i { width: 2.2rem; height: 2.2rem; }
+    .me-page .me-stat strong { font-size: 1.35rem; }
+
+    /* formulário */
+    .me-page .me-step { padding: 1.3rem 1.15rem 1.4rem; gap: 1.15rem; }
+    .me-page .me-step-head { padding-bottom: 1rem; }
+    .me-page .me-step-head > i,
+    .me-page .me-step.done .me-step-head > i { width: 2.4rem; height: 2.4rem; }
+    .me-page .me-step-head h3 { font-size: 1.02rem; }
+    .me-page .me-step-head p { font-size: 0.8rem; }
+
+    .me-page .field-row { flex-direction: row; gap: 0.8rem; }
+    .me-page .field-row .field-small { flex: 0 0 6.8rem; }
+
+    .me-page #me-step-1 { grid-template-columns: minmax(0, 1fr); }
+    .me-page #me-step-1 > .me-geo { width: 100%; justify-content: center; }
+
+    /* botão salvar fica acima do menu de baixo (mantém a regra original) */
+    .me-page .me-save-bar { padding: 0.6rem; }
+    .me-page .me-save-bar p { display: none; }
+    .me-page .btn-save { flex: 1; justify-content: center; }
+
+    /* conta */
+    .me-page .me-account { padding: 0.3rem 1.15rem; }
     .me-page .me-account-row { flex-wrap: wrap; }
     .me-page .me-account-row .btn-ghost { width: 100%; }
-    .me-page .me-account-row.danger { margin: 0 0 0.9rem; }
+    .me-page .me-account-row.danger { margin: 0 0 0.9rem; padding: 1rem; }
+}
+
+@media (max-width: 420px) {
+    .me-page .field-row { flex-direction: column; }
+    .me-page .field-row .field-small { flex: 1; }
+    .me-page .me-avatar { width: 6.8rem; height: 6.8rem; }
+    .me-page .me-stat span { font-size: 0.7rem; }
 }
