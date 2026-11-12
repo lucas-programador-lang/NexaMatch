@@ -1034,15 +1034,17 @@ function renderMatches() {
                 <div class="card-image-wrapper" onclick="viewProfile('${profile.id}')">
                     <img src="${profile.photo}" alt="Foto de ${profile.name}">
                     <div class="match-badge">Match</div>
-                    <div class="location-tag">${profile.location}</div>
+                    <div class="card-head">
+                        <h2>${profile.name} <span>${profile.age}</span></h2>
+                        <div class="location-tag">${profile.location}</div>
+                    </div>
                 </div>
                 <div class="card-info">
-                    <h2>${profile.name} <span>${profile.age}</span></h2>
                     <p>${profile.bio}</p>
                     <div class="actions actions-wrap">
                         <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
                         <button class="btn-msg" onclick="goToMessages('${profile.id}')">Mensagem</button>
-                        <button class="btn-ghost" onclick="removeLike('${profile.id}')">Desfazer match</button>
+                        <button class="btn-unmatch" onclick="removeLike('${profile.id}')">Desfazer match</button>
                     </div>
                 </div>
             </div>
@@ -1063,7 +1065,7 @@ function renderMatches() {
                         <strong>${profile.name}, ${profile.age}</strong>
                         <span>${profile.location}</span>
                     </div>
-                    <button class="btn-ghost" onclick="removeLike('${profile.id}')">Cancelar curtida</button>
+                    <button class="btn-unmatch btn-unmatch-x" onclick="removeLike('${profile.id}')">Cancelar curtida</button>
                 </div>
             `).join('') + `</div>
         </section>`;
