@@ -4820,3 +4820,208 @@ select:focus-visible {
     .me-page .field-row { gap: 1.1rem; }
     .me-page .me-account { padding: 0.5rem 2rem; }
 }
+
+
+/* ==========================================================
+   BRILHO + ANIMAÇÃO (v7)
+   Cores mais vivas, brilhos que pulsam e microanimações.
+   Tudo é desativado para quem usa "reduzir movimento" no sistema.
+   ========================================================== */
+
+@keyframes nxSpin    { to { transform: rotate(360deg); } }
+@keyframes nxFlow    { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
+@keyframes nxAurora  { 0%, 100% { background-position: 0% 0%; } 50% { background-position: 100% 100%; } }
+@keyframes nxBanner  { 0% { background-position: 0% 0%, 100% 0%, 50% 0%; } 100% { background-position: 100% 70%, 0% 80%, 20% 30%; } }
+@keyframes nxShine   { 0% { left: -60%; } 55%, 100% { left: 140%; } }
+@keyframes nxPop     { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes nxPulse   { 0% { box-shadow: 0 0 0 0 rgba(52, 245, 161, 0.75); } 70%, 100% { box-shadow: 0 0 0 0.55rem rgba(52, 245, 161, 0); } }
+@keyframes nxDirty   { 0% { box-shadow: 0 0 0 0 rgba(255, 200, 87, 0.8); } 70%, 100% { box-shadow: 0 0 0 0.5rem rgba(255, 200, 87, 0); } }
+@keyframes nxRing    { 0%, 100% { filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.7)); } 50% { filter: drop-shadow(0 0 12px rgba(255, 79, 163, 0.95)); } }
+@keyframes nxIcon    { 0%, 100% { box-shadow: 0 0 6px rgba(var(--sec), 0.25); } 50% { box-shadow: 0 0 22px rgba(var(--sec), 0.75); } }
+@keyframes nxFocus   { 0%, 100% { box-shadow: 0 0 0 3px rgba(var(--sec), 0.14), 0 0 22px rgba(var(--sec), 0.18), 0 24px 44px -30px rgba(0, 0, 0, 0.95); }
+                       50%      { box-shadow: 0 0 0 4px rgba(var(--sec), 0.32), 0 0 34px rgba(var(--sec), 0.40), 0 24px 44px -30px rgba(0, 0, 0, 0.95); } }
+@keyframes nxFloat   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* ----- Topo ----- */
+.me-page .me-banner {
+    background:
+        radial-gradient(26rem 9rem at 5% 0%,  rgba(45, 226, 245, 0.62), transparent 70%),
+        radial-gradient(30rem 10rem at 55% -20%, rgba(139, 92, 246, 0.85), transparent 72%),
+        radial-gradient(24rem 9rem at 100% 0%, rgba(255, 79, 163, 0.60), transparent 70%);
+    background-size: 150% 150%, 150% 150%, 130% 130%;
+    animation: nxBanner 12s ease-in-out infinite alternate;
+}
+
+/* anel de cores girando atrás do avatar */
+.me-page .me-avatar-wrap::before {
+    content: "";
+    display: block;
+    position: absolute;
+    inset: -5px;
+    z-index: -1;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #2de2f5, #8b5cf6, #ff4fa3, #ffc857, #2de2f5);
+    filter: blur(7px);
+    opacity: 0.9;
+    animation: nxSpin 7s linear infinite;
+}
+
+.me-page .me-avatar {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 16px 28px -14px rgba(0, 0, 0, 0.8);
+}
+
+.me-page .me-avatar-edit { animation: none; }
+.me-page .me-avatar-edit:hover { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: scale(1.12) rotate(-8deg); }
+
+.me-page .me-ring svg { animation: nxRing 3.2s ease-in-out infinite; }
+.me-page .me-ring .ring-bg { stroke: rgba(255, 255, 255, 0.12); }
+
+.me-page .me-stat > i { box-shadow: 0 0 16px color-mix(in srgb, var(--tone) 45%, transparent); }
+.me-page .me-stat:hover { transform: translateY(-2px); background: #1a2147; }
+.me-page .me-stat { transition: transform 0.2s, background 0.2s; }
+
+/* ----- Cartões: brilho mais vivo, pulsa no que você está editando ----- */
+.me-page #me-step-1 { background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(45, 226, 245, 0.20), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+.me-page #me-step-2 { background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(139, 92, 246, 0.26), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+.me-page #me-step-3 { background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(255, 79, 163, 0.20), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+
+.me-page .me-step:focus-within { animation: nxFocus 2.4s ease-in-out infinite; }
+
+.me-page .me-step .me-step-head > i,
+.me-page .me-step.done .me-step-head > i {
+    color: rgb(var(--sec));
+    background: rgba(var(--sec), 0.18);
+    border-color: rgba(var(--sec), 0.65);
+    animation: nxIcon 3.4s ease-in-out infinite;
+}
+
+.me-page .me-step.done .me-step-state {
+    box-shadow: 0 0 14px rgba(52, 245, 161, 0.7);
+    animation: nxPop 0.45s ease backwards;
+}
+
+.me-page .me-count { color: #fff; }
+
+/* ----- Campos ----- */
+.me-page .input-wrap input:focus,
+.me-page .field textarea:focus {
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.45),
+        0 0 0 4px rgba(var(--sec, 139, 92, 246), 0.30),
+        0 0 22px rgba(var(--sec, 139, 92, 246), 0.35);
+}
+
+.me-page .bio-meter i {
+    background: linear-gradient(90deg, #2de2f5, #8b5cf6, #ff4fa3, #2de2f5);
+    background-size: 300% 100%;
+    animation: nxFlow 4s linear infinite;
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
+}
+
+.me-page .bio-meter i.warn { background: var(--gold); animation: none; box-shadow: 0 0 10px rgba(255, 200, 87, 0.7); }
+.me-page .bio-meter i.full { background: var(--pink); animation: none; box-shadow: 0 0 10px rgba(255, 79, 163, 0.8); }
+
+/* ----- Botões ----- */
+.me-page .btn-save {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(120deg, #8b5cf6, #ff4fa3, #2de2f5, #8b5cf6);
+    background-size: 300% 100%;
+    animation: nxFlow 6s linear infinite;
+    box-shadow: 0 14px 30px -10px rgba(255, 79, 163, 0.85), 0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+.me-page .btn-save::after {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 38%;
+    height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-20deg);
+    pointer-events: none;
+    animation: nxShine 3.8s ease-in-out infinite;
+}
+
+.me-page .btn-save:hover { filter: brightness(1.12) saturate(1.1); }
+
+.me-page .btn-save.saved {
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    background-size: 100% 100%;
+    animation: none;
+    box-shadow: 0 14px 30px -10px rgba(52, 245, 161, 0.9);
+}
+
+.me-page .btn-save.saved::after { display: none; }
+
+.me-page .me-save-status.dirty::before { animation: nxDirty 1.5s ease-out infinite; }
+.me-page .me-save-bar:has(.dirty) { box-shadow: 0 0 0 3px rgba(255, 200, 87, 0.12), 0 0 28px rgba(255, 200, 87, 0.18), 0 18px 36px -16px rgba(0, 0, 0, 0.95); }
+
+.me-page .btn-add { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); box-shadow: 0 0 18px rgba(255, 79, 163, 0.55), 0 1px 0 rgba(255, 255, 255, 0.3) inset; transition: transform 0.15s, filter 0.2s; }
+.me-page .btn-add:hover { transform: scale(1.08) rotate(90deg); filter: brightness(1.15); }
+.me-page .btn-add:disabled { box-shadow: none; transform: none; }
+
+.me-page .me-geo:hover { box-shadow: 0 0 20px rgba(45, 226, 245, 0.4); }
+
+/* ----- Chips: neon, entram com "pop" e levantam no hover ----- */
+.me-page .chip-edit,
+.me-page .pv-body .chip {
+    color: #fff;
+    background: rgba(var(--c), 0.24);
+    border: 1px solid rgba(var(--c), 0.8);
+    box-shadow: 0 0 14px rgba(var(--c), 0.35);
+    transition: transform 0.18s, box-shadow 0.18s;
+}
+
+.me-page .chip-edit { animation: nxPop 0.4s ease backwards; }
+.me-page .chips > :nth-child(1) { animation-delay: 0.00s; }
+.me-page .chips > :nth-child(2) { animation-delay: 0.04s; }
+.me-page .chips > :nth-child(3) { animation-delay: 0.08s; }
+.me-page .chips > :nth-child(4) { animation-delay: 0.12s; }
+.me-page .chips > :nth-child(5) { animation-delay: 0.16s; }
+.me-page .chips > :nth-child(6) { animation-delay: 0.20s; }
+.me-page .chips > :nth-child(7) { animation-delay: 0.24s; }
+.me-page .chips > :nth-child(8) { animation-delay: 0.28s; }
+
+.me-page .chip-edit:hover,
+.me-page .pv-body .chip:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(var(--c), 0.6); }
+
+.me-page .me-suggest button:hover { box-shadow: 0 0 16px rgba(139, 92, 246, 0.5); }
+
+/* ----- Prévia: fundo em movimento + flutuação suave ----- */
+.me-page .me-preview-col .me-preview { animation: nxFloat 7s ease-in-out infinite; }
+.me-page .me-preview:hover { animation-play-state: paused; box-shadow: 0 30px 60px -26px rgba(139, 92, 246, 0.8); }
+
+.me-page .pv-photo {
+    background: linear-gradient(135deg, #2de2f5, #8b5cf6, #ff4fa3, #2de2f5);
+    background-size: 300% 300%;
+    animation: nxAurora 9s ease-in-out infinite;
+}
+
+.me-page .pv-initial { box-shadow: 0 0 30px rgba(255, 255, 255, 0.35); }
+
+.me-page .live-dot { animation: nxPulse 1.8s ease-out infinite; }
+
+.me-page .me-tips li.ok i { box-shadow: 0 0 12px rgba(52, 245, 161, 0.65); }
+
+/* ----- Conta ----- */
+.me-page .me-account-icon { box-shadow: 0 0 14px rgba(45, 226, 245, 0.3); }
+.me-page .me-account-row.danger .me-account-icon { box-shadow: 0 0 14px rgba(255, 79, 163, 0.45); }
+.me-page .btn-danger:hover { box-shadow: 0 0 22px rgba(255, 79, 163, 0.55); }
+
+/* ----- Quem prefere menos movimento ----- */
+@media (prefers-reduced-motion: reduce) {
+    .me-page *,
+    .me-page *::before,
+    .me-page *::after {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* celular: a prévia não flutua (economiza bateria) */
+@media (max-width: 860px) {
+    .me-page .me-preview-col .me-preview { animation: none; }
+}
