@@ -4663,3 +4663,160 @@ select:focus-visible {
     .me-page .me-avatar { width: 6.8rem; height: 6.8rem; }
     .me-page .me-stat span { font-size: 0.7rem; }
 }
+
+
+/* ==========================================================
+   REFINAMENTO (v6) — cartões do formulário
+   Cores por seção, campos "embutidos", botões com mais presença,
+   chips coloridos e espaçamento mais generoso.
+   ========================================================== */
+
+/* ----- Cartões: gradiente sutil + brilho de cor por seção ----- */
+.me-page .me-step,
+.me-page .me-account {
+    background:
+        linear-gradient(180deg, #121832 0%, #0c1024 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.07) inset,
+        0 24px 44px -30px rgba(0, 0, 0, 0.95);
+}
+
+.me-page #me-step-1 { --sec: 45, 226, 245;  background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(45, 226, 245, 0.10), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+.me-page #me-step-2 { --sec: 139, 92, 246;  background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(139, 92, 246, 0.14), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+.me-page #me-step-3 { --sec: 255, 79, 163;  background-image: radial-gradient(26rem 9rem at 0% 0%, rgba(255, 79, 163, 0.10), transparent 70%), linear-gradient(180deg, #121832, #0c1024); }
+
+.me-page .me-step:focus-within {
+    border-color: rgba(var(--sec), 0.6);
+    box-shadow: 0 0 0 4px rgba(var(--sec), 0.12), 0 24px 44px -30px rgba(0, 0, 0, 0.95);
+}
+
+/* ícone de cada seção com a cor dela */
+.me-page .me-step .me-step-head > i,
+.me-page .me-step.done .me-step-head > i {
+    color: rgb(var(--sec));
+    background: rgba(var(--sec), 0.13);
+    border-color: rgba(var(--sec), 0.4);
+}
+
+.me-page .me-step-head h3 { font-size: 1.1rem; font-weight: 700; }
+.me-page .me-step-head p  { color: #a9b2d6; }
+
+/* ----- Campos "embutidos" ----- */
+.me-page .field > span { color: #fff; font-size: 0.85rem; }
+
+.me-page .input-wrap input,
+.me-page .field textarea {
+    background: #080b1b;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 0.9rem;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.me-page .input-wrap input:hover,
+.me-page .field textarea:hover {
+    background: #0a0e22;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.me-page .input-wrap input:focus,
+.me-page .field textarea:focus {
+    background: #070a19;
+    border-color: rgb(var(--sec, 139, 92, 246));
+    box-shadow:
+        inset 0 2px 4px rgba(0, 0, 0, 0.45),
+        0 0 0 4px rgba(var(--sec, 139, 92, 246), 0.22);
+}
+
+.me-page .input-wrap:focus-within > .ico { color: rgb(var(--sec, 139, 92, 246)); }
+
+/* campo desativado (limite de interesses) com aparência clara de "travado" */
+.me-page .input-wrap input:disabled {
+    background: rgba(255, 255, 255, 0.03);
+    border-style: dashed;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* contador da bio */
+.me-page .field > span small {
+    padding: 0.1rem 0.55rem;
+    color: #b8c0e2;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    font-size: 0.74rem;
+}
+
+/* ----- Botões ----- */
+.me-page .btn-ghost {
+    min-height: 2.7rem;
+    padding: 0 1.1rem;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 0.85rem;
+    font-weight: 600;
+}
+
+.me-page .btn-ghost:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.38); }
+
+.me-page .me-geo {
+    color: #8cf3ff;
+    background: rgba(45, 226, 245, 0.1);
+    border-color: rgba(45, 226, 245, 0.38);
+}
+
+.me-page .btn-save {
+    min-width: 11.5rem;
+    min-height: 3rem;
+    justify-content: center;
+    border-radius: 0.9rem;
+    box-shadow: 0 14px 26px -12px rgba(139, 92, 246, 0.95), 0 1px 0 rgba(255, 255, 255, 0.3) inset;
+}
+
+/* barra de salvar chama atenção quando há mudanças pendentes */
+.me-page .me-save-bar:has(.dirty) {
+    border-color: rgba(255, 200, 87, 0.5);
+    box-shadow: 0 0 0 3px rgba(255, 200, 87, 0.08), 0 18px 36px -16px rgba(0, 0, 0, 0.95);
+}
+
+.me-page .me-save-status { font-weight: 500; }
+.me-page .me-save-status.dirty { color: #ffe3a3; }
+
+/* ----- Interesses: chips coloridos em rodízio ----- */
+.me-page .chip-edit,
+.me-page .pv-body .chip {
+    --c: 139, 92, 246;
+    color: #fff;
+    background: rgba(var(--c), 0.16);
+    border: 1px solid rgba(var(--c), 0.45);
+}
+
+.me-page .chips > :nth-child(4n+2) { --c: 45, 226, 245; }
+.me-page .chips > :nth-child(4n+3) { --c: 255, 79, 163; }
+.me-page .chips > :nth-child(4n+4) { --c: 255, 200, 87; }
+
+.me-page .chip-edit { padding: 0.45rem 0.5rem 0.45rem 1rem; font-size: 0.87rem; }
+.me-page .chip-edit button { background: rgba(255, 255, 255, 0.16); }
+.me-page .chip-edit button:hover { background: rgba(var(--c), 0.9); }
+
+.me-page .me-suggest button { color: #c3cae8; border-color: rgba(255, 255, 255, 0.2); }
+
+.me-page .btn-add { box-shadow: 0 12px 22px -12px rgba(255, 79, 163, 0.85), 0 1px 0 rgba(255, 255, 255, 0.3) inset; }
+
+/* ----- Conta: botões alinhados ----- */
+.me-page .me-account-row .btn-ghost { min-width: 10.5rem; justify-content: center; text-align: center; }
+.me-page .me-account-text strong { font-size: 0.96rem; font-weight: 700; }
+.me-page .me-account-text p { color: #a9b2d6; }
+
+.me-page .me-account-row.danger { background: rgba(255, 79, 163, 0.07); border-color: rgba(255, 79, 163, 0.3); }
+
+/* ----- Espaçamento mais generoso (só computador/tablet largo) ----- */
+@media (min-width: 861px) {
+    .me-page .me-step { gap: 1.5rem; padding: 1.8rem 2rem 2rem; }
+    .me-page .me-step-head { padding-bottom: 1.3rem; }
+    .me-page #me-step-1 { column-gap: 1.1rem; row-gap: 1.5rem; }
+    .me-page .field { gap: 0.6rem; }
+    .me-page .field-row { gap: 1.1rem; }
+    .me-page .me-account { padding: 0.5rem 2rem; }
+}
