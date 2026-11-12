@@ -5847,3 +5847,177 @@ select:focus-visible {
         line-height: 1.2;
     }
 }
+
+
+/* ==========================================================
+   Menu v4 — pílula que desliza + ícones com gesto próprio
+   Computador (barra no topo) e celular (dock embaixo).
+   O nav.js mede o item ativo e escreve --ind-x / --ind-w.
+   Sem o JS (sem .nx-ready) continua valendo o visual anterior.
+   ========================================================== */
+
+/* ----- Indicador (a pílula que desliza) ----- */
+nav .nx-ind {
+    position: absolute;
+    z-index: 0;
+    top: 0.4rem;
+    bottom: 0.4rem;
+    left: 0;
+    width: var(--ind-w, 0px);
+    transform: translateX(var(--ind-x, 0px));
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0) 55%),
+        var(--grad-brand);
+    box-shadow:
+        0 8px 26px -6px rgba(139, 92, 246, 0.95),
+        0 0 0 1px rgba(255, 255, 255, 0.14),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition:
+        transform 0.55s cubic-bezier(0.34, 1.35, 0.5, 1),
+        width 0.45s cubic-bezier(0.3, 1.15, 0.4, 1),
+        opacity 0.25s;
+}
+
+nav.nx-ready .nx-ind { opacity: 1; }
+nav.nx-none .nx-ind { opacity: 0; }
+nav .nx-ind.nx-still { transition: none; }
+
+/* com o indicador pronto, o item ativo não precisa de fundo próprio nem do reflexo antigo */
+nav.nx-ready a { position: relative; z-index: 1; }
+
+nav.nx-ready a.active,
+nav.nx-ready a.active:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
+nav.nx-ready::after,
+nav.nx-ready a.active::after {
+    content: none !important;
+    animation: none !important;
+}
+
+/* ----- Foco do teclado (sem anel ao clicar com o mouse) ----- */
+nav a:focus { outline: none; }
+nav a:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: -2px;
+}
+
+/* ----- Ícone do item ativo: posição de descanso igual no computador e no celular ----- */
+nav a.active::before,
+nav a.active:hover::before {
+    transform: translateY(-1px) rotate(0deg) scale(1.08);
+    filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.35));
+}
+
+nav a.active:active::before { transform: translateY(0) rotate(0deg) scale(0.92); }
+
+/* ----- Gesto de cada ícone ao chegar nele (uma vez só) ----- */
+nav a.active:nth-child(1)::before { animation: nxIconCompass 0.8s cubic-bezier(0.25, 0.9, 0.3, 1) 0.08s; }
+nav a.active:nth-child(2)::before { animation: nxIconHeart 0.75s ease-out 0.08s; }
+nav a.active:nth-child(3)::before { animation: nxIconChat 0.7s cubic-bezier(0.3, 1.2, 0.4, 1) 0.08s; }
+nav a.active:nth-child(4)::before { transform-origin: 50% 10%; animation: nxIconBell 0.9s ease-in-out 0.08s; }
+nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3, 0.9, 0.4, 1) 0.08s; }
+
+@keyframes nxIconCompass {
+    0%   { transform: translateY(0) rotate(-140deg) scale(0.7); }
+    55%  { transform: translateY(-1px) rotate(20deg) scale(1.2); }
+    80%  { transform: translateY(-1px) rotate(-6deg) scale(1.1); }
+    100% { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+}
+
+@keyframes nxIconHeart {
+    0%   { transform: translateY(0) rotate(0deg) scale(0.8); }
+    25%  { transform: translateY(-1px) rotate(0deg) scale(1.35); }
+    45%  { transform: translateY(-1px) rotate(0deg) scale(0.98); }
+    65%  { transform: translateY(-1px) rotate(0deg) scale(1.2); }
+    100% { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+}
+
+@keyframes nxIconChat {
+    0%   { transform: translateY(4px) rotate(-12deg) scale(0.6); }
+    50%  { transform: translateY(-3px) rotate(6deg) scale(1.2); }
+    75%  { transform: translateY(-1px) rotate(-3deg) scale(1.1); }
+    100% { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+}
+
+@keyframes nxIconBell {
+    0%   { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+    15%  { transform: translateY(-1px) rotate(22deg) scale(1.08); }
+    30%  { transform: translateY(-1px) rotate(-18deg) scale(1.08); }
+    45%  { transform: translateY(-1px) rotate(14deg) scale(1.08); }
+    60%  { transform: translateY(-1px) rotate(-9deg) scale(1.08); }
+    75%  { transform: translateY(-1px) rotate(4deg) scale(1.08); }
+    100% { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+}
+
+@keyframes nxIconUser {
+    0%   { transform: translateY(0) rotate(0deg) scale(1); }
+    30%  { transform: translateY(-7px) rotate(0deg) scale(1.12); }
+    55%  { transform: translateY(1px) rotate(0deg) scale(1.08); }
+    75%  { transform: translateY(-3px) rotate(0deg) scale(1.08); }
+    100% { transform: translateY(-1px) rotate(0deg) scale(1.08); }
+}
+
+/* ----- Contador: "pulada" quando o número muda ----- */
+.nav-badge.nx-pop { animation: nxBadgePop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+
+@keyframes nxBadgePop {
+    0%   { transform: scale(0.4); }
+    60%  { transform: scale(1.3); }
+    100% { transform: scale(1); }
+}
+
+/* ----- Computador: barra no topo ----- */
+@media (min-width: 861px) {
+    nav {
+        background: rgba(12, 14, 36, 0.7);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+    }
+
+    /* a barra desce suavemente quando o app aparece depois do login */
+    body:not(.auth-pending) nav {
+        animation: nxNavDrop 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.1) 0.1s backwards;
+    }
+
+    nav a { color: rgba(176, 184, 216, 0.92); }
+    nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.07); }
+    nav.nx-ready a.active, nav.nx-ready a.active:hover { color: #fff; }
+}
+
+@keyframes nxNavDrop {
+    from { opacity: 0; translate: 0 -16px; scale: 0.96; }
+    to   { opacity: 1; translate: 0 0; scale: 1; }
+}
+
+/* ----- Celular: dock embaixo ----- */
+@media (max-width: 860px) {
+    nav .nx-ind {
+        border-radius: 1.3rem;
+        background:
+            linear-gradient(90deg, transparent, var(--cyan), transparent) top center / 46% 2px no-repeat,
+            linear-gradient(180deg, rgba(139, 92, 246, 0.44), rgba(45, 226, 245, 0.12));
+        box-shadow:
+            inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+            0 10px 24px -10px rgba(139, 92, 246, 0.95),
+            0 -6px 18px -8px rgba(45, 226, 245, 0.65);
+    }
+
+    nav a { transition: color 0.25s, transform 0.2s; }
+    nav a:active { transform: scale(0.94); }
+    nav.nx-ready a.active, nav.nx-ready a.active:hover { color: #fff; }
+}
+
+/* ----- Respeita quem prefere menos movimento ----- */
+@media (prefers-reduced-motion: reduce) {
+    nav .nx-ind { transition: opacity 0.2s; }
+    nav a.active::before,
+    nav a.active:nth-child(n)::before,
+    .nav-badge.nx-pop,
+    body:not(.auth-pending) nav { animation: none; }
+}
