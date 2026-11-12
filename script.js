@@ -368,12 +368,53 @@ let presenceReadBlocked = false;    // o Firebase recusou ler a presença dos ou
 let presenceTimers = [];
 let presenceSignature = '';
 
+// "digitando": vai junto da minha presença (campo typingTo = id de quem está na conversa comigo)
+const TYPING_TTL_MS = 5000;         // sem novo sinal por esse tempo = parou de digitar
+const typingTimers = new Map();     // id -> timer que apaga o "digitando" dessa pessoa
+let typingTarget = null;            // com quem estou digitando agora
+let typingLastSent = 0;
+let typingIdleTimer = null;
+let typingSupported = true;         // false se as regras do Firebase ainda não aceitam o campo
+
 function announcePresence(online) {
     if (presenceStopped || presenceBlocked || !myId) return;
-    setDoc(doc(db, 'presence', myId), { online, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+
+    const ref = doc(db, 'presence', myId);
+    const base = { online, lastSeen: serverTimestamp() };
+    const payload = typingSupported ? { ...base, typingTo: online ? typingTarget : null } : base;
+
+    const giveUp = error => {
         presenceBlocked = true; // não insiste em loop se as regras não permitirem
         console.warn('Não consegui publicar minha presença:', error && error.code);
+    };
+
+    setDoc(ref, payload, { merge: true }).catch(error => {
+        if (!typingSupported) return giveUp(error);
+        // regras antigas sem o campo "typingTo": tenta de novo só com online/offline
+        typingSupported = false;
+        console.warn('Publique as regras novas do firestore.rules para ativar o "digitando".');
+        setDoc(ref, base, { merge: true }).catch(giveUp);
     });
+}
+
+// Eu estou digitando para otherId (ou null = parei). Reenvia no máximo a cada 2,5 s.
+function setTyping(otherId) {
+    if (otherId === null && typingTarget === null) return;
+    const now = Date.now();
+    if (otherId !== null && otherId === typingTarget && now - typingLastSent < 2500) return;
+    typingTarget = otherId;
+    typingLastSent = now;
+    if (typingSupported) announcePresence(!document.hidden);
+}
+
+function handleTypingInput(input) {
+    clearTimeout(typingIdleTimer);
+    if (!input.value.trim() || !currentChatId) {
+        setTyping(null);
+        return;
+    }
+    setTyping(currentChatId);
+    typingIdleTimer = setTimeout(() => setTyping(null), 3000); // parou de digitar por 3 s
 }
 
 // null = não sei (ainda carregando ou sem permissão): a tela não mostra nada
@@ -381,9 +422,11 @@ function presenceOf(id) {
     if (presenceReadBlocked) return null;
     const entry = presenceByUser.get(id);
     if (!entry) return null;
+    const online = entry.online && Date.now() - entry.lastSeen < PRESENCE_WINDOW_MS;
     return {
-        online: entry.online && Date.now() - entry.lastSeen < PRESENCE_WINDOW_MS,
-        lastSeen: entry.lastSeen
+        online,
+        lastSeen: entry.lastSeen,
+        typing: online && entry.typingUntil > Date.now()
     };
 }
 
@@ -404,18 +447,35 @@ function syncPresenceListeners(ids) {
         unsubscribe();
         presenceUnsubs.delete(id);
         presenceByUser.delete(id);
+        clearTimeout(typingTimers.get(id));
+        typingTimers.delete(id);
     });
 
     wanted.forEach(id => {
         if (presenceUnsubs.has(id) || presenceReadBlocked) return;
         presenceUnsubs.set(id, onSnapshot(doc(db, 'presence', id), snapshot => {
             const hadEntry = presenceByUser.has(id);
-            const wasOnline = hadEntry ? Boolean((presenceOf(id) || {}).online) : false;
+            const before = hadEntry ? (presenceOf(id) || {}) : {};
             const data = snapshot.exists() ? snapshot.data({ serverTimestamps: 'estimate' }) : null;
-            presenceByUser.set(id, { online: Boolean(data && data.online), lastSeen: data ? toMillis(data.lastSeen) : 0 });
+
+            presenceByUser.set(id, {
+                online: Boolean(data && data.online),
+                lastSeen: data ? toMillis(data.lastSeen) : 0,
+                // "digitando" só vale se for para mim e não na primeira leitura (evita sobra de sessão antiga)
+                typingUntil: hadEntry && data && data.typingTo === myId ? Date.now() + TYPING_TTL_MS : 0
+            });
+
+            // se o sinal parar de chegar, o "digitando" some sozinho
+            clearTimeout(typingTimers.get(id));
+            if (presenceByUser.get(id).typingUntil) {
+                typingTimers.set(id, setTimeout(refreshPresenceUi, TYPING_TTL_MS + 150));
+            }
 
             // o sinal chega a cada ~45 s: só redesenha quando algo muda de verdade
-            if (!hadEntry || wasOnline !== Boolean((presenceOf(id) || {}).online)) refreshPresenceUi();
+            const after = presenceOf(id) || {};
+            if (!hadEntry || Boolean(before.online) !== Boolean(after.online) || Boolean(before.typing) !== Boolean(after.typing)) {
+                refreshPresenceUi();
+            }
         }, error => {
             presenceReadBlocked = true;
             console.warn('Não consegui ler a presença:', error && error.code);
@@ -427,6 +487,26 @@ function syncPresenceListeners(ids) {
 function refreshPresenceUi() {
     if (document.getElementById('chat-shell')) renderChatList();
     updateChatPresence();
+    updateTypingBubble();
+}
+
+// Bolinhas "digitando" no fim da conversa aberta
+function updateTypingBubble() {
+    const thread = document.getElementById('chat-thread');
+    if (!thread || !currentChatId) return;
+
+    const state = presenceOf(currentChatId);
+    const typing = Boolean(state && state.typing);
+    const bubble = document.getElementById('typing-bubble');
+
+    if (typing && !bubble) {
+        const nearEnd = thread.scrollHeight - thread.scrollTop - thread.clientHeight < 140;
+        thread.insertAdjacentHTML('beforeend',
+            '<div class="bubble them typing" id="typing-bubble" role="status" aria-label="digitando"><i></i><i></i><i></i></div>');
+        if (nearEnd) thread.scrollTop = thread.scrollHeight;
+    } else if (!typing && bubble) {
+        bubble.remove();
+    }
 }
 
 // Cabeçalho da conversa: selo Online/Offline, bolinha na foto e "visto por último"
@@ -447,8 +527,8 @@ function updateChatPresence() {
     }
 
     pill.hidden = false;
-    pill.className = `chat-presence ${state.online ? 'on' : 'off'}`;
-    pill.textContent = state.online ? 'Online' : 'Offline';
+    pill.className = `chat-presence ${state.typing ? 'typing' : state.online ? 'on' : 'off'}`;
+    pill.textContent = state.typing ? 'digitando' : state.online ? 'Online' : 'Offline';
     if (dot) dot.className = `presence-dot ${state.online ? 'on' : 'off'}`;
     if (sub && profile) {
         sub.textContent = profile.location + (!state.online && state.lastSeen ? ` · ${formatLastSeen(state.lastSeen)}` : '');
@@ -474,6 +554,9 @@ function startPresence() {
 }
 
 function stopPresence() {
+    typingTarget = null;
+    typingTimers.forEach(timer => clearTimeout(timer));
+    typingTimers.clear();
     announcePresence(false);
     presenceStopped = true;
     presenceTimers.forEach(timer => clearInterval(timer));
@@ -1310,6 +1393,8 @@ function startThread(otherId) {
 }
 
 function stopThread() {
+    clearTimeout(typingIdleTimer);
+    setTyping(null);
     if (threadUnsub) threadUnsub();
     threadUnsub = null;
     threadKey = null;
@@ -1433,11 +1518,14 @@ function renderChatList() {
         const unread = unreadFor(profile.id);
         const listConv = conversationFor(profile.id);
         const mySeen = Boolean(listConv) && listConv.otherUnread === 0;
-        const preview = last
-            ? (last.from === 'me' ? '<b class="you">Você:</b>' + tickIcon(mySeen) : '') + escapeHtml(previewOf(last))
-            : 'Comece a conversa';
-        const photoOnly = Boolean(last && last.image && !last.text);
         const presence = presenceOf(profile.id);
+        const typingNow = Boolean(presence && presence.typing);
+        const preview = typingNow
+            ? '<b class="typing-text">digitando</b>'
+            : last
+                ? (last.from === 'me' ? '<b class="you">Você:</b>' + tickIcon(mySeen) : '') + escapeHtml(previewOf(last))
+                : 'Comece a conversa';
+        const photoOnly = Boolean(last && last.image && !last.text);
         const presenceDot = presence ? `<i class="presence-dot ${presence.online ? 'on' : 'off'}"></i>` : '';
         const tag = manPays(profile.id)
             ? `<em class="chat-tag">${myGender === 'homem' ? 'Paga' : 'Você recebe'}</em>`
@@ -1545,7 +1633,10 @@ function renderChatWindow() {
         </form>
     `;
 
-    document.getElementById('chat-input').value = typed;
+    const chatInput = document.getElementById('chat-input');
+    chatInput.value = typed;
+    chatInput.addEventListener('input', () => handleTypingInput(chatInput));
+    chatInput.addEventListener('blur', () => setTyping(null));
     updateThread();
     updateChatPresence();
 }
@@ -1634,6 +1725,8 @@ function updateThread() {
     threadRenderedFor = currentChatId;
     threadRenderedCount = currentThread.length;
     threadUnseenPrev = unseenIdx;
+
+    updateTypingBubble(); // o redesenho apaga a bolha "digitando": coloca de volta se ainda vale
 }
 
 function scrollThreadToEnd() {
@@ -1778,6 +1871,8 @@ async function sendMessage(event) {
     if (!text || !otherId) return;
 
     input.value = '';
+    clearTimeout(typingIdleTimer);
+    setTyping(null);
     const ok = await deliverMessage(otherId, { text });
     if (!ok) {
         const field = document.getElementById('chat-input');
