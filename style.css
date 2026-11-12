@@ -5025,3 +5025,294 @@ select:focus-visible {
 @media (max-width: 860px) {
     .me-page .me-preview-col .me-preview { animation: none; }
 }
+
+
+/* ==========================================================
+   Mensagens — v3
+   Fica no fim do arquivo para sobrescrever a v2.
+   Só vale dentro de #messages-content.
+   ========================================================== */
+#messages-content .chat-shell { gap: 1.2rem; }
+
+#messages-content .chat-list,
+#messages-content .chat-window {
+    background: linear-gradient(180deg, rgba(22, 26, 52, 0.72), rgba(12, 14, 32, 0.78));
+    border-color: rgba(255, 255, 255, 0.1);
+    border-radius: 1.6rem;
+}
+
+/* barras de rolagem discretas */
+#messages-content .chat-list,
+#messages-content .chat-thread {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+#messages-content .chat-list::-webkit-scrollbar,
+#messages-content .chat-thread::-webkit-scrollbar { width: 6px; }
+#messages-content .chat-list::-webkit-scrollbar-thumb,
+#messages-content .chat-thread::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+}
+
+/* ----- Saldo / ganhos ----- */
+#messages-content .wallet-bar {
+    margin: 0 0 1rem;
+    padding: 1rem 1rem 1rem 1.2rem;
+    border-radius: 1.3rem;
+    overflow: hidden;
+    box-shadow: 0 18px 36px -22px rgba(139, 92, 246, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+#messages-content .wallet-bar::after {
+    content: "";
+    position: absolute;
+    top: -3rem;
+    right: -2rem;
+    width: 7.5rem;
+    height: 7.5rem;
+    background: radial-gradient(circle, rgba(255, 79, 163, 0.35), transparent 70%);
+    pointer-events: none;
+}
+
+#messages-content .wallet-bar > * { position: relative; z-index: 1; }
+
+#messages-content .wallet-bar small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(176, 184, 216, 0.9);
+}
+
+#messages-content .wallet-bar strong {
+    font-size: 1.7rem;
+    background: linear-gradient(135deg, #ffffff 35%, #bfeaff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+}
+
+#messages-content .wallet-bar button {
+    line-height: 1.15;
+    text-align: center;
+    box-shadow: 0 10px 22px -8px rgba(139, 92, 246, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* ----- Lista de conversas ----- */
+#messages-content .chat-item {
+    padding: 0.8rem 0.7rem;
+    border-radius: 1.1rem;
+    transition: background 0.25s, transform 0.25s, box-shadow 0.25s;
+}
+
+#messages-content .chat-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(2px);
+}
+
+#messages-content .chat-item.active {
+    background: linear-gradient(135deg, rgba(45, 226, 245, 0.14), rgba(139, 92, 246, 0.22));
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.45), 0 14px 28px -20px rgba(139, 92, 246, 0.9);
+    transform: none;
+}
+
+/* barrinha colorida na conversa aberta */
+#messages-content .chat-item.active::after {
+    content: "";
+    position: absolute;
+    top: 24%;
+    bottom: 24%;
+    left: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--grad-brand);
+}
+
+#messages-content .chat-item img {
+    background: linear-gradient(#0e1226, #0e1226) padding-box, var(--grad-brand) border-box;
+    border: 2px solid transparent;
+}
+
+#messages-content .chat-item.has-unread img {
+    background: linear-gradient(#0e1226, #0e1226) padding-box, linear-gradient(135deg, var(--pink), var(--gold)) border-box;
+}
+
+#messages-content .chat-note {
+    margin: 0.9rem 0 0;
+    padding: 0.85rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px dashed rgba(255, 255, 255, 0.16);
+    border-radius: 1rem;
+}
+
+/* ----- Cabeçalho da conversa ----- */
+#messages-content .chat-header {
+    gap: 0.9rem;
+    padding: 0.9rem 1.2rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01));
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#messages-content .chat-header img {
+    width: 3rem;
+    height: 3rem;
+    background: linear-gradient(#0e1226, #0e1226) padding-box, var(--grad-brand) border-box;
+    border: 2px solid transparent;
+    box-shadow: 0 8px 20px -10px rgba(139, 92, 246, 0.9);
+}
+
+#messages-content .chat-header .btn-view {
+    padding: 0.5rem 1.1rem;
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+#messages-content .chat-header .btn-view:hover {
+    background: rgba(139, 92, 246, 0.22);
+    border-color: rgba(139, 92, 246, 0.6);
+    transform: translateY(-1px);
+}
+
+/* ----- Área das mensagens ----- */
+#messages-content .chat-thread {
+    gap: 0.5rem;
+    padding: 1.2rem 1.4rem;
+    background:
+        radial-gradient(60% 50% at 100% 0%, rgba(139, 92, 246, 0.10), transparent 70%),
+        radial-gradient(50% 40% at 0% 100%, rgba(45, 226, 245, 0.07), transparent 70%);
+}
+
+#messages-content .thread-day {
+    font-size: 0.74rem;
+    letter-spacing: 0.02em;
+}
+
+#messages-content .thread-day span {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.09);
+}
+
+/* ----- Bolhas ----- */
+#messages-content .bubble {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: flex-end;
+    column-gap: 0.7rem;
+    max-width: min(78%, 30rem);
+    padding: 0.6rem 0.95rem 0.5rem;
+    border-radius: 1.3rem;
+    line-height: 1.45;
+}
+
+#messages-content .bubble > span { min-width: 0; }
+
+#messages-content .bubble small {
+    margin-left: auto;
+    padding-top: 0.15rem;
+    font-size: 0.68rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+#messages-content .bubble.me {
+    background: var(--grad-brand);
+    box-shadow: 0 12px 26px -14px rgba(139, 92, 246, 0.95), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+#messages-content .bubble.them {
+    background: rgba(255, 255, 255, 0.075);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+/* mensagens seguidas da mesma pessoa ficam agrupadas */
+#messages-content .bubble.grp-cont { margin-top: -0.25rem; }
+#messages-content .bubble.me.grp-cont { border-top-right-radius: 0.4rem; }
+#messages-content .bubble.them.grp-cont { border-top-left-radius: 0.4rem; }
+#messages-content .bubble.me:not(.grp-last) { border-bottom-right-radius: 0.4rem; }
+#messages-content .bubble.them:not(.grp-last) { border-bottom-left-radius: 0.4rem; }
+#messages-content .bubble.me.grp-last { border-bottom-right-radius: 0.4rem; }
+#messages-content .bubble.them.grp-last { border-bottom-left-radius: 0.4rem; }
+
+/* bolha com foto continua em coluna */
+#messages-content .bubble.has-image {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+}
+#messages-content .bubble.has-image > small { align-self: flex-end; }
+
+/* ----- Campo de envio ----- */
+#messages-content .chat-form {
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1rem 1rem;
+    background: rgba(6, 7, 19, 0.35);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#messages-content .chat-form input {
+    padding: 0.9rem 1.3rem;
+    background: rgba(8, 10, 28, 0.7);
+    border-color: rgba(255, 255, 255, 0.14);
+}
+
+#messages-content .chat-form input:focus {
+    border-color: rgba(45, 226, 245, 0.8);
+    box-shadow: 0 0 0 3px rgba(45, 226, 245, 0.16), 0 10px 30px -14px rgba(45, 226, 245, 0.6);
+}
+
+#messages-content .chat-attach:hover,
+#messages-content .chat-attach:focus-within { transform: translateY(-1px); }
+
+#messages-content .chat-send {
+    transition: transform 0.2s, opacity 0.25s, box-shadow 0.25s;
+}
+
+#messages-content .chat-send:hover {
+    transform: scale(1.08) rotate(-8deg);
+    box-shadow: 0 12px 26px -6px rgba(139, 92, 246, 0.95);
+}
+
+/* botão enviar apagado enquanto o campo está vazio */
+#messages-content .chat-form:has(#chat-input:placeholder-shown) .chat-send {
+    opacity: 0.55;
+    box-shadow: none;
+}
+
+/* ----- Nenhuma conversa aberta ----- */
+#messages-content .chat-placeholder::before {
+    content: "";
+    display: block;
+    width: 4.2rem;
+    height: 4.2rem;
+    margin: 0 auto 1.1rem;
+    border-radius: 1.4rem;
+    background:
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.6-.8L3 21l1.9-5.2A8.4 8.4 0 1 1 21 11.5z'/></svg>") center / 52% no-repeat,
+        var(--grad-brand);
+    box-shadow: 0 18px 40px -14px rgba(139, 92, 246, 0.9);
+}
+
+@media (max-width: 860px) {
+    #messages-content .chat-list,
+    #messages-content .chat-window { border-radius: 1.3rem; }
+    #messages-content .chat-header { padding: 0.75rem 0.9rem; }
+    #messages-content .chat-thread { padding: 1rem 0.9rem; }
+    #messages-content .chat-form { padding: 0.7rem 0.8rem 0.9rem; }
+    #messages-content .bubble { max-width: 86%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #messages-content .chat-item,
+    #messages-content .chat-send,
+    #messages-content .chat-header .btn-view { transition: none; }
+}
