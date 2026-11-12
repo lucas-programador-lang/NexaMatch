@@ -1431,12 +1431,12 @@ function renderChatList() {
     list.innerHTML = walletBarHtml() + listTitle + conversations.map((profile, idx) => {
         const last = getLastMessage(profile.id);
         const unread = unreadFor(profile.id);
+        const listConv = conversationFor(profile.id);
+        const mySeen = Boolean(listConv) && listConv.otherUnread === 0;
         const preview = last
             ? (last.from === 'me' ? '<b class="you">Você:</b>' + tickIcon(mySeen) : '') + escapeHtml(previewOf(last))
             : 'Comece a conversa';
         const photoOnly = Boolean(last && last.image && !last.text);
-        const listConv = conversationFor(profile.id);
-        const mySeen = Boolean(listConv) && listConv.otherUnread === 0;
         const presence = presenceOf(profile.id);
         const presenceDot = presence ? `<i class="presence-dot ${presence.online ? 'on' : 'off'}"></i>` : '';
         const tag = manPays(profile.id)
