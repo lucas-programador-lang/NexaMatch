@@ -5718,3 +5718,64 @@ select:focus-visible {
     #messages-content .presence-dot.on,
     #messages-content .tick.pop { animation: none; }
 }
+
+
+/* ==========================================================
+   Mensagens — v6 ("digitando…")
+   ========================================================== */
+@keyframes nxEllipsis {
+    from { width: 0; }
+    to   { width: 1.1em; }
+}
+
+/* reticências animadas depois da palavra */
+#messages-content .chat-presence.typing::after,
+#messages-content .typing-text::after {
+    content: "...";
+    display: inline-block;
+    width: 0;
+    overflow: hidden;
+    vertical-align: bottom;
+    animation: nxEllipsis 1.2s steps(4) infinite;
+}
+
+/* selo do cabeçalho */
+#messages-content .chat-presence.typing {
+    color: var(--cyan);
+    background: rgba(45, 226, 245, 0.1);
+    border-color: rgba(45, 226, 245, 0.35);
+}
+
+/* na lista de conversas */
+#messages-content .typing-text {
+    color: var(--cyan);
+    font-style: italic;
+    font-weight: 600;
+}
+
+/* bolha com três pontinhos no fim da conversa */
+#messages-content .bubble.typing {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    align-self: flex-start;
+    gap: 0.32rem;
+    padding: 0.85rem 1rem;
+    border-bottom-left-radius: 0.4rem;
+    transform-origin: bottom left;
+    animation: nxBubbleThem 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+#messages-content .bubble.typing i {
+    background: rgba(255, 255, 255, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #messages-content .chat-presence.typing::after,
+    #messages-content .typing-text::after,
+    #messages-content .bubble.typing,
+    #messages-content .bubble.typing i { animation: none; }
+    #messages-content .chat-presence.typing::after,
+    #messages-content .typing-text::after { width: 1.1em; }
+}
