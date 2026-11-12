@@ -1179,6 +1179,10 @@ function stopThread() {
 }
 
 let renderedChatId = null; // conversa que está desenhada na janela de chat
+let chatListEntered = false; // a lista já fez a animação de entrada?
+let threadRenderedFor = null; // conversa cujas mensagens estão desenhadas
+let threadRenderedCount = 0; // quantas mensagens já estavam desenhadas (só as novas animam)
+let threadOpenedAt = 0; // quando a conversa foi aberta (o carregamento inicial não anima)
 
 // Carteira (homem) ou ganhos (mulher), no topo da lista de conversas
 function walletBarHtml() {
@@ -1239,6 +1243,7 @@ function renderMessages() {
             </div>
         `;
         rebuilt = true;
+        chatListEntered = false;
     }
 
     // A conversa passou de paga para match (ou nasceu agora): lê da coleção certa
@@ -1277,11 +1282,17 @@ function renderChatList() {
 
     const pending = getPending();
 
-    list.innerHTML = walletBarHtml() + conversations.map(profile => {
+    // a animação de entrada só roda na primeira vez (não a cada atualização em tempo real)
+    const animate = !chatListEntered;
+    chatListEntered = true;
+
+    const listTitle = `<div class="chat-list-title"><strong>Conversas</strong><span class="count">${conversations.length}</span></div>`;
+
+    list.innerHTML = walletBarHtml() + listTitle + conversations.map((profile, idx) => {
         const last = getLastMessage(profile.id);
         const unread = unreadFor(profile.id);
         const preview = last
-            ? (last.from === 'me' ? 'Você: ' : '') + escapeHtml(previewOf(last))
+            ? (last.from === 'me' ? '<b class="you">Você:</b> ' : '') + escapeHtml(previewOf(last))
             : 'Comece a conversa';
         const photoOnly = Boolean(last && last.image && !last.text);
         const tag = manPays(profile.id)
@@ -1289,7 +1300,7 @@ function renderChatList() {
             : '';
 
         return `
-            <button class="chat-item ${currentChatId === profile.id ? 'active' : ''} ${unread ? 'has-unread' : ''}" onclick="openChat('${profile.id}')">
+            <button class="chat-item ${currentChatId === profile.id ? 'active' : ''} ${unread ? 'has-unread' : ''} ${animate ? 'enter' : ''}" style="--i:${idx}" onclick="openChat('${profile.id}')">
                 <img src="${profile.photo}" alt="Foto de ${profile.name}">
                 <span class="chat-item-info">
                     <strong>${profile.name} ${tag}</strong>
@@ -1343,6 +1354,7 @@ function renderChatWindow() {
 
     const profile = currentChatId ? findProfile(currentChatId) : null;
     renderedChatId = currentChatId;
+    threadOpenedAt = Date.now();
 
     if (!profile) {
         win.innerHTML = `
@@ -1407,6 +1419,10 @@ function updateThread() {
     let html = empty ? `<p class="thread-empty">${empty}</p>` : '';
 
     const GROUP_GAP = 5 * 60 * 1000; // mensagens com até 5 min de diferença ficam agrupadas
+
+    // só as mensagens que chegaram agora animam; ao abrir uma conversa nenhuma pula
+    const initialLoad = threadRenderedFor !== currentChatId || Date.now() - threadOpenedAt < 1200;
+    const firstNew = initialLoad ? currentThread.length : threadRenderedCount;
     let lastDay = null;
     let prevFrom = null;
     let prevTime = 0;
@@ -1440,7 +1456,7 @@ function updateThread() {
         const groupClass = `${continues ? 'grp-cont' : 'grp-first'} ${nextContinues ? '' : 'grp-last'}`;
 
         return dayTitle + `
-        <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''} ${groupClass}" title="${formatFullDate(m.time)}, ${formatTime(m.time)}">
+        <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''} ${groupClass} ${i >= firstNew ? 'is-new' : ''}" title="${formatFullDate(m.time)}, ${formatTime(m.time)}">
             ${m.image ? `<img class="bubble-img" src="${m.image}" alt="Foto enviada" onclick="openPhoto(this.src)">` : ''}
             ${m.text ? `<span>${escapeHtml(m.text)}</span>` : ''}
             <small>${note}${formatTime(m.time)}</small>
@@ -1449,6 +1465,9 @@ function updateThread() {
 
     thread.innerHTML = html;
     thread.scrollTop = thread.scrollHeight;
+
+    threadRenderedFor = currentChatId;
+    threadRenderedCount = currentThread.length;
 }
 
 function scrollThreadToEnd() {
