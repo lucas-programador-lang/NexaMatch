@@ -335,6 +335,17 @@ main {
     margin-bottom: 2.4rem;
 }
 
+.location-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.location-filters select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 select {
     appearance: none;
     -webkit-appearance: none;
