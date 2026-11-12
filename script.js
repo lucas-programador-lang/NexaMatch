@@ -355,6 +355,142 @@ function markCurrentChatRead() {
     });
 }
 
+// ---------- Presença (online / offline) ----------
+// Cada pessoa avisa em presence/{id} que está com o app aberto. Quem conversa com ela
+// escuta esse documento. Sem sinal por ~100 s = offline.
+const PRESENCE_BEAT_MS = 45 * 1000;
+const PRESENCE_WINDOW_MS = 100 * 1000;
+const presenceByUser = new Map();   // id -> { online, lastSeen }
+const presenceUnsubs = new Map();   // id -> função que para de escutar
+let presenceStopped = false;        // saiu da conta / apagou tudo: não publica mais
+let presenceBlocked = false;        // o Firebase recusou escrever a minha presença
+let presenceReadBlocked = false;    // o Firebase recusou ler a presença dos outros
+let presenceTimers = [];
+let presenceSignature = '';
+
+function announcePresence(online) {
+    if (presenceStopped || presenceBlocked || !myId) return;
+    setDoc(doc(db, 'presence', myId), { online, lastSeen: serverTimestamp() }, { merge: true }).catch(error => {
+        presenceBlocked = true; // não insiste em loop se as regras não permitirem
+        console.warn('Não consegui publicar minha presença:', error && error.code);
+    });
+}
+
+// null = não sei (ainda carregando ou sem permissão): a tela não mostra nada
+function presenceOf(id) {
+    if (presenceReadBlocked) return null;
+    const entry = presenceByUser.get(id);
+    if (!entry) return null;
+    return {
+        online: entry.online && Date.now() - entry.lastSeen < PRESENCE_WINDOW_MS,
+        lastSeen: entry.lastSeen
+    };
+}
+
+function formatLastSeen(timestamp) {
+    const now = Date.now();
+    if (sameDay(timestamp, now)) return `visto hoje às ${formatTime(timestamp)}`;
+    if (sameDay(timestamp, now - 24 * 60 * 60 * 1000)) return `visto ontem às ${formatTime(timestamp)}`;
+    return `visto em ${new Date(timestamp).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}`;
+}
+
+// Escuta a presença de quem está na lista de conversas (e para de escutar quem saiu dela)
+function syncPresenceListeners(ids) {
+    if (presenceStopped) return;
+    const wanted = new Set(ids);
+
+    presenceUnsubs.forEach((unsubscribe, id) => {
+        if (wanted.has(id)) return;
+        unsubscribe();
+        presenceUnsubs.delete(id);
+        presenceByUser.delete(id);
+    });
+
+    wanted.forEach(id => {
+        if (presenceUnsubs.has(id) || presenceReadBlocked) return;
+        presenceUnsubs.set(id, onSnapshot(doc(db, 'presence', id), snapshot => {
+            const hadEntry = presenceByUser.has(id);
+            const wasOnline = hadEntry ? Boolean((presenceOf(id) || {}).online) : false;
+            const data = snapshot.exists() ? snapshot.data({ serverTimestamps: 'estimate' }) : null;
+            presenceByUser.set(id, { online: Boolean(data && data.online), lastSeen: data ? toMillis(data.lastSeen) : 0 });
+
+            // o sinal chega a cada ~45 s: só redesenha quando algo muda de verdade
+            if (!hadEntry || wasOnline !== Boolean((presenceOf(id) || {}).online)) refreshPresenceUi();
+        }, error => {
+            presenceReadBlocked = true;
+            console.warn('Não consegui ler a presença:', error && error.code);
+            refreshPresenceUi();
+        }));
+    });
+}
+
+function refreshPresenceUi() {
+    if (document.getElementById('chat-shell')) renderChatList();
+    updateChatPresence();
+}
+
+// Cabeçalho da conversa: selo Online/Offline, bolinha na foto e "visto por último"
+function updateChatPresence() {
+    const pill = document.getElementById('chat-presence');
+    const dot = document.getElementById('chat-avatar-dot');
+    const sub = document.getElementById('chat-sub');
+    if (!pill || !currentChatId) return;
+
+    const profile = findProfile(currentChatId);
+    const state = presenceOf(currentChatId);
+
+    if (!state) {
+        pill.hidden = true;
+        if (dot) dot.className = 'presence-dot';
+        if (sub && profile) sub.textContent = profile.location;
+        return;
+    }
+
+    pill.hidden = false;
+    pill.className = `chat-presence ${state.online ? 'on' : 'off'}`;
+    pill.textContent = state.online ? 'Online' : 'Offline';
+    if (dot) dot.className = `presence-dot ${state.online ? 'on' : 'off'}`;
+    if (sub && profile) {
+        sub.textContent = profile.location + (!state.online && state.lastSeen ? ` · ${formatLastSeen(state.lastSeen)}` : '');
+    }
+}
+
+function startPresence() {
+    announcePresence(!document.hidden);
+
+    presenceTimers.push(setInterval(() => { if (!document.hidden) announcePresence(true); }, PRESENCE_BEAT_MS));
+
+    // quem parou de dar sinal passa a aparecer offline, mesmo sem chegar nada novo
+    presenceTimers.push(setInterval(() => {
+        const signature = [...presenceUnsubs.keys()].map(id => `${id}:${presenceOf(id) && presenceOf(id).online ? 1 : 0}`).join(',');
+        if (signature !== presenceSignature) {
+            presenceSignature = signature;
+            refreshPresenceUi();
+        }
+    }, 20 * 1000));
+
+    document.addEventListener('visibilitychange', () => announcePresence(!document.hidden));
+    window.addEventListener('pagehide', () => announcePresence(false));
+}
+
+function stopPresence() {
+    announcePresence(false);
+    presenceStopped = true;
+    presenceTimers.forEach(timer => clearInterval(timer));
+    presenceTimers = [];
+    presenceUnsubs.forEach(unsubscribe => unsubscribe());
+    presenceUnsubs.clear();
+}
+
+// Visto: um traço = enviada; dois traços = a pessoa já viu
+function tickIcon(seen, pop = false) {
+    const paths = seen
+        ? '<path d="M2 12.5l4.5 4.5L15.5 7"/><path d="M11 15.2l1.8 1.8L22 7"/>'
+        : '<path d="M5 12.5l4.5 4.5L19 7"/>';
+    const label = seen ? 'Visto' : 'Enviado';
+    return `<svg class="tick ${seen ? 'seen' : 'sent'} ${pop ? 'pop' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="${label}"><title>${label}</title>${paths}</svg>`;
+}
+
 function startRealtime() {
     // 1) Pessoas cadastradas (mural Descobrir)
     unsubscribers.push(onSnapshot(collection(db, 'users'), snapshot => {
@@ -412,7 +548,8 @@ function startRealtime() {
                 lastMessage: last
                     ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), image: Boolean(last.image), time: toMillis(last.time) || Date.now() }
                     : null,
-                unread: Number(data.unread && data.unread[myId]) || 0
+                unread: Number(data.unread && data.unread[myId]) || 0,
+                otherUnread: Number(data.unread && data.unread[otherId]) || 0 // minhas mensagens que ela ainda não viu
             });
         });
 
@@ -447,7 +584,8 @@ function startRealtime() {
                 lastMessage: last
                     ? { from: last.from === myId ? 'me' : 'them', text: String(last.text || ''), image: Boolean(last.image), time: toMillis(last.time) || Date.now() }
                     : null,
-                unread: Number(data.unread && data.unread[myId]) || 0
+                unread: Number(data.unread && data.unread[myId]) || 0,
+                otherUnread: Number(data.unread && data.unread[otherId]) || 0 // minhas mensagens que ela ainda não viu
             });
         });
 
@@ -1182,6 +1320,7 @@ let renderedChatId = null; // conversa que está desenhada na janela de chat
 let chatListEntered = false; // a lista já fez a animação de entrada?
 let threadRenderedFor = null; // conversa cujas mensagens estão desenhadas
 let threadRenderedCount = 0; // quantas mensagens já estavam desenhadas (só as novas animam)
+let threadUnseenPrev = new Set(); // quais mensagens minhas ainda não tinham sido vistas (para animar o visto)
 let threadOpenedAt = 0; // quando a conversa foi aberta (o carregamento inicial não anima)
 
 // Carteira (homem) ou ganhos (mulher), no topo da lista de conversas
@@ -1209,6 +1348,7 @@ function renderMessages() {
     updateMessagesBadge();
 
     const conversations = getConversations();
+    syncPresenceListeners(conversations.map(profile => profile.id));
 
     // Nenhuma conversa possível ainda
     if (!conversations.length) {
@@ -1292,16 +1432,23 @@ function renderChatList() {
         const last = getLastMessage(profile.id);
         const unread = unreadFor(profile.id);
         const preview = last
-            ? (last.from === 'me' ? '<b class="you">Você:</b> ' : '') + escapeHtml(previewOf(last))
+            ? (last.from === 'me' ? '<b class="you">Você:</b>' + tickIcon(mySeen) : '') + escapeHtml(previewOf(last))
             : 'Comece a conversa';
         const photoOnly = Boolean(last && last.image && !last.text);
+        const listConv = conversationFor(profile.id);
+        const mySeen = Boolean(listConv) && listConv.otherUnread === 0;
+        const presence = presenceOf(profile.id);
+        const presenceDot = presence ? `<i class="presence-dot ${presence.online ? 'on' : 'off'}"></i>` : '';
         const tag = manPays(profile.id)
             ? `<em class="chat-tag">${myGender === 'homem' ? 'Paga' : 'Você recebe'}</em>`
             : '';
 
         return `
             <button class="chat-item ${currentChatId === profile.id ? 'active' : ''} ${unread ? 'has-unread' : ''} ${animate ? 'enter' : ''}" style="--i:${idx}" onclick="openChat('${profile.id}')">
-                <img src="${profile.photo}" alt="Foto de ${profile.name}">
+                <span class="chat-avatar">
+                    <img src="${profile.photo}" alt="Foto de ${profile.name}">
+                    ${presenceDot}
+                </span>
                 <span class="chat-item-info">
                     <strong>${profile.name} ${tag}</strong>
                     <span class="${unread ? 'unread' : ''} ${photoOnly ? 'is-photo' : ''}">${preview}</span>
@@ -1370,10 +1517,16 @@ function renderChatWindow() {
     win.innerHTML = `
         <div class="chat-header">
             <button class="chat-back" onclick="closeChat()" aria-label="Voltar para as conversas"></button>
-            <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+            <span class="chat-avatar">
+                <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+                <i class="presence-dot" id="chat-avatar-dot"></i>
+            </span>
             <div class="chat-header-info">
-                <strong>${profile.name}</strong>
-                <span>${profile.location}</span>
+                <div class="chat-name-row">
+                    <strong>${profile.name}</strong>
+                    <em class="chat-presence" id="chat-presence" hidden></em>
+                </div>
+                <span id="chat-sub">${profile.location}</span>
             </div>
             <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
         </div>
@@ -1394,6 +1547,7 @@ function renderChatWindow() {
 
     document.getElementById('chat-input').value = typed;
     updateThread();
+    updateChatPresence();
 }
 
 // Redesenha só as mensagens (não mexe no campo de texto)
@@ -1421,6 +1575,14 @@ function updateThread() {
     const GROUP_GAP = 5 * 60 * 1000; // mensagens com até 5 min de diferença ficam agrupadas
 
     // só as mensagens que chegaram agora animam; ao abrir uma conversa nenhuma pula
+    // "visto": as últimas N mensagens minhas ainda não foram lidas (N = contador da outra pessoa)
+    const viewConv = conversationFor(currentChatId);
+    const unseenIdx = new Set();
+    let unseenLeft = viewConv ? viewConv.otherUnread : 0;
+    for (let i = currentThread.length - 1; i >= 0 && unseenLeft > 0; i--) {
+        if (currentThread[i].from === 'me') { unseenIdx.add(i); unseenLeft--; }
+    }
+
     const initialLoad = threadRenderedFor !== currentChatId || Date.now() - threadOpenedAt < 1200;
     const firstNew = initialLoad ? currentThread.length : threadRenderedCount;
     let lastDay = null;
@@ -1453,13 +1615,16 @@ function updateThread() {
         prevFrom = m.from;
         prevTime = time;
 
+        const justSeen = threadRenderedFor === currentChatId && threadUnseenPrev.has(i) && !unseenIdx.has(i);
+        const tick = m.from === 'me' ? tickIcon(!unseenIdx.has(i), justSeen) : '';
+
         const groupClass = `${continues ? 'grp-cont' : 'grp-first'} ${nextContinues ? '' : 'grp-last'}`;
 
         return dayTitle + `
         <div class="bubble ${m.from === 'me' ? 'me' : 'them'} ${m.image ? 'has-image' : ''} ${groupClass} ${i >= firstNew ? 'is-new' : ''}" title="${formatFullDate(m.time)}, ${formatTime(m.time)}">
             ${m.image ? `<img class="bubble-img" src="${m.image}" alt="Foto enviada" onclick="openPhoto(this.src)">` : ''}
             ${m.text ? `<span>${escapeHtml(m.text)}</span>` : ''}
-            <small>${note}${formatTime(m.time)}</small>
+            <small>${note}${formatTime(m.time)}${tick}</small>
         </div>`;
     }).join('');
 
@@ -1468,6 +1633,7 @@ function updateThread() {
 
     threadRenderedFor = currentChatId;
     threadRenderedCount = currentThread.length;
+    threadUnseenPrev = unseenIdx;
 }
 
 function scrollThreadToEnd() {
@@ -2341,6 +2507,7 @@ async function saveProfileForm(event) {
 
 // ----- Sair da conta -----
 function logoutUser() {
+    stopPresence();
     unsubscribers.forEach(unsubscribe => unsubscribe());
     unsubscribers.length = 0;
     Auth.logout('login.html');
@@ -2435,6 +2602,8 @@ async function deleteMyAccount() {
         for (const matchId of matchIds) await deleteMatchData(matchId);
         for (const chatId of chatIds) await deleteConversationData('chats', chatId);
         await deleteDoc(doc(db, 'wallets', myId)).catch(() => {}); // pode nem existir
+        presenceStopped = true; // não recria o documento de presença depois de apagado
+        await deleteDoc(doc(db, 'presence', myId)).catch(() => {});
         await deleteDoc(userRef);
         await deleteDoc(accountRef);
 
@@ -2516,4 +2685,5 @@ Object.assign(window, {
 renderMyProfile();
 refreshAll();
 startRealtime(); // a partir daqui tudo se atualiza sozinho
+startPresence();
 document.body.classList.remove('auth-pending');
