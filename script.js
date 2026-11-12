@@ -306,6 +306,83 @@ function ensureMatches() {
     });
 }
 
+// ---------- Som das mensagens ----------
+// Sons gerados pelo próprio navegador (nenhum arquivo de áudio). A escolha fica salva no aparelho.
+const SOUND_KEY = 'nexamatch:som';
+let soundOn = true;
+try { soundOn = localStorage.getItem(SOUND_KEY) !== 'off'; } catch (error) { /* sem armazenamento: fica ligado */ }
+let audioCtx = null;
+
+function getAudio() {
+    if (audioCtx) return audioCtx;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    try { audioCtx = new AudioCtx(); } catch (error) { return null; }
+    return audioCtx;
+}
+
+// Os navegadores só liberam o som depois de um toque ou clique na página
+function unlockAudio() {
+    const ctx = getAudio();
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+}
+['pointerdown', 'keydown', 'touchstart'].forEach(name => document.addEventListener(name, unlockAudio, { passive: true }));
+
+function playTone(ctx, { freq, start = 0, duration = 0.18, type = 'sine', volume = 0.12, glideTo = null }) {
+    const t0 = ctx.currentTime + start;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t0);
+    if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+
+    // sobe rápido e some suave (sem estalo)
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.03);
+}
+
+// kind: 'send' (mensagem enviada) ou 'receive' (mensagem recebida)
+function playSound(kind) {
+    if (!soundOn) return;
+    const ctx = getAudio();
+    if (!ctx) return;
+    if (ctx.state !== 'running') { // ainda sem toque na página: tenta liberar e não toca agora
+        ctx.resume().catch(() => {});
+        return;
+    }
+
+    if (kind === 'send') {
+        playTone(ctx, { freq: 520, glideTo: 780, duration: 0.12, volume: 0.1 });
+        playTone(ctx, { freq: 1040, start: 0.07, duration: 0.1, volume: 0.05 });
+    } else {
+        playTone(ctx, { freq: 880, duration: 0.22, volume: 0.13 });
+        playTone(ctx, { freq: 1318.5, start: 0.12, duration: 0.36, volume: 0.11 });
+        playTone(ctx, { freq: 1760, start: 0.12, duration: 0.2, type: 'triangle', volume: 0.025 });
+    }
+}
+
+function soundIcon(on) {
+    const wave = on
+        ? '<path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'
+        : '<path d="M16 9l6 6"/><path d="M22 9l-6 6"/>';
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z"/>${wave}</svg>`;
+}
+
+function toggleSound() {
+    soundOn = !soundOn;
+    try { localStorage.setItem(SOUND_KEY, soundOn ? 'on' : 'off'); } catch (error) { /* ignora */ }
+    unlockAudio();
+    if (soundOn) playSound('receive'); // mostra como é o som
+    if (document.getElementById('chat-shell')) renderChatList();
+}
+
 // Avisos rápidos para o que aconteceu enquanto você usava o app
 function announceMatchChanges(previous, next) {
     next.forEach((match, otherId) => {
@@ -320,6 +397,7 @@ function announceMatchChanges(previous, next) {
         const before = previous.get(otherId).lastMessage;
         const last = match.lastMessage;
         const isNew = last && last.from === 'them' && (!before || before.time !== last.time);
+        if (isNew) playSound('receive');
         if (isNew && !isChatOnScreen(otherId)) {
             showToast(`${profile.name} enviou uma mensagem.`, 'Ver conversa', () => goToMessages(otherId));
         }
@@ -335,6 +413,7 @@ function announceChatChanges(previous, next) {
         const before = previous.has(otherId) ? previous.get(otherId).lastMessage : null;
         const last = chat.lastMessage;
         const isNew = last && last.from === 'them' && (!before || before.time !== last.time);
+        if (isNew) playSound('receive');
         if (isNew && !isChatOnScreen(otherId)) {
             showToast(`${profile.name} enviou uma mensagem.`, 'Ver conversa', () => goToMessages(otherId));
         }
@@ -1511,7 +1590,15 @@ function renderChatList() {
     const animate = !chatListEntered;
     chatListEntered = true;
 
-    const listTitle = `<div class="chat-list-title"><strong>Conversas</strong><span class="count">${conversations.length}</span></div>`;
+    const soundLabel = soundOn ? 'Som ligado (clique para desligar)' : 'Som desligado (clique para ligar)';
+    const listTitle = `
+        <div class="chat-list-title">
+            <strong>Conversas</strong>
+            <span class="title-actions">
+                <span class="count">${conversations.length}</span>
+                <button type="button" class="sound-toggle ${soundOn ? 'on' : ''}" onclick="toggleSound()" aria-pressed="${soundOn}" aria-label="${soundLabel}" title="${soundLabel}">${soundIcon(soundOn)}</button>
+            </span>
+        </div>`;
 
     list.innerHTML = walletBarHtml() + listTitle + conversations.map((profile, idx) => {
         const last = getLastMessage(profile.id);
@@ -1846,6 +1933,7 @@ async function deliverMessage(otherId, { text = '', image = '' }) {
                 });
             });
         }
+        playSound('send');
         return true;
     } catch (error) {
         console.error(error);
@@ -2774,7 +2862,7 @@ Object.assign(window, {
     addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
     fillLocation, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
-    showToast, toggleDiscoverGender, updateMePreview, updateBioCount, viewProfile
+    showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile
 });
 
 renderMyProfile();
