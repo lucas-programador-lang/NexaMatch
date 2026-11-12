@@ -5779,3 +5779,55 @@ select:focus-visible {
     #messages-content .chat-presence.typing::after,
     #messages-content .typing-text::after { width: 1.1em; }
 }
+
+
+/* ==========================================================
+   Mensagens — v7 (botão de som)
+   ========================================================== */
+#messages-content .title-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#messages-content .sound-toggle {
+    display: grid;
+    width: 2rem;
+    height: 2rem;
+    place-items: center;
+    padding: 0;
+    color: rgba(176, 184, 216, 0.85);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+#messages-content .sound-toggle svg {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
+#messages-content .sound-toggle:hover {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+}
+
+#messages-content .sound-toggle:active { transform: scale(0.9); }
+
+#messages-content .sound-toggle.on {
+    color: var(--cyan);
+    background: rgba(45, 226, 245, 0.12);
+    border-color: rgba(45, 226, 245, 0.4);
+}
+
+#messages-content .sound-toggle:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #messages-content .sound-toggle { transition: none; }
+}
