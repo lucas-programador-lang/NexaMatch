@@ -312,12 +312,27 @@ const SOUND_KEY = 'nexamatch:som';
 let soundOn = true;
 try { soundOn = localStorage.getItem(SOUND_KEY) !== 'off'; } catch (error) { /* sem armazenamento: fica ligado */ }
 let audioCtx = null;
+let audioOut = null;      // saída geral: filtro que deixa o som macio + volume
+const lastSoundAt = {};   // evita sons empilhados se várias mensagens chegarem juntas
 
 function getAudio() {
     if (audioCtx) return audioCtx;
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
-    try { audioCtx = new AudioCtx(); } catch (error) { return null; }
+    try {
+        audioCtx = new AudioCtx();
+        const lowpass = audioCtx.createBiquadFilter(); // corta os agudos "chiados"
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 3200;
+        audioOut = audioCtx.createGain();
+        audioOut.gain.value = 0.9;
+        audioOut.connect(lowpass);
+        lowpass.connect(audioCtx.destination);
+    } catch (error) {
+        audioCtx = null;
+        audioOut = null;
+        return null;
+    }
     return audioCtx;
 }
 
@@ -328,24 +343,31 @@ function unlockAudio() {
 }
 ['pointerdown', 'keydown', 'touchstart'].forEach(name => document.addEventListener(name, unlockAudio, { passive: true }));
 
-function playTone(ctx, { freq, start = 0, duration = 0.18, type = 'sine', volume = 0.12, glideTo = null }) {
+// partials = harmônicos: dão o timbre de "sininho" macio (mult = múltiplo da frequência, level = força)
+const SOFT_PARTIALS = [{ mult: 1, level: 1 }];
+const BELL_PARTIALS = [{ mult: 1, level: 1 }, { mult: 2, level: 0.28 }, { mult: 3, level: 0.07 }];
+
+function playTone(ctx, { freq, start = 0, duration = 0.18, type = 'sine', volume = 0.12, glideTo = null, partials = SOFT_PARTIALS }) {
     const t0 = ctx.currentTime + start;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
 
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, t0);
-    if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo, t0 + duration);
+    partials.forEach(({ mult, level }) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
 
-    // sobe rápido e some suave (sem estalo)
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(volume, t0 + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq * mult, t0);
+        if (glideTo) osc.frequency.exponentialRampToValueAtTime(glideTo * mult, t0 + duration);
 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(t0);
-    osc.stop(t0 + duration + 0.03);
+        // sobe rápido e some suave (sem estalo)
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume * level), t0 + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
+
+        osc.connect(gain);
+        gain.connect(audioOut || ctx.destination);
+        osc.start(t0);
+        osc.stop(t0 + duration + 0.05);
+    });
 }
 
 // kind: 'send' (mensagem enviada) ou 'receive' (mensagem recebida)
@@ -358,13 +380,17 @@ function playSound(kind) {
         return;
     }
 
+    const now = performance.now();
+    if (lastSoundAt[kind] && now - lastSoundAt[kind] < 80) return;
+    lastSoundAt[kind] = now;
+
     if (kind === 'send') {
-        playTone(ctx, { freq: 520, glideTo: 780, duration: 0.12, volume: 0.1 });
-        playTone(ctx, { freq: 1040, start: 0.07, duration: 0.1, volume: 0.05 });
+        // "pop" curto e leve, sobe um pouquinho
+        playTone(ctx, { freq: 480, glideTo: 720, duration: 0.11, volume: 0.1, partials: [{ mult: 1, level: 1 }, { mult: 2, level: 0.18 }] });
     } else {
-        playTone(ctx, { freq: 880, duration: 0.22, volume: 0.13 });
-        playTone(ctx, { freq: 1318.5, start: 0.12, duration: 0.36, volume: 0.11 });
-        playTone(ctx, { freq: 1760, start: 0.12, duration: 0.2, type: 'triangle', volume: 0.025 });
+        // duas notas suaves (mi -> lá), timbre de sininho
+        playTone(ctx, { freq: 659.25, duration: 0.22, volume: 0.11, partials: BELL_PARTIALS });
+        playTone(ctx, { freq: 880, start: 0.11, duration: 0.4, volume: 0.11, partials: BELL_PARTIALS });
     }
 }
 
