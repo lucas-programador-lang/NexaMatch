@@ -30,10 +30,14 @@
         <div id="page-descobrir" class="page-content">
             <div class="controls">
                 <h1>Mural de Conexões</h1>
-                <select id="location-filter">
-                    <option value="all">Todo o Brasil</option>
-                    <option value="ro">Porto Velho, RO</option>
-                </select>
+                <div class="location-filters">
+                    <select id="state-filter" aria-label="Filtrar por estado" onchange="setStateFilter(this.value)">
+                        <option value="all">Todo o Brasil</option>
+                    </select>
+                    <select id="city-filter" aria-label="Filtrar por cidade" onchange="setCityFilter(this.value)" disabled>
+                        <option value="all">Todas as cidades</option>
+                    </select>
+                </div>
             </div>
             <!-- Filtro de gênero (o JavaScript monta os botões) -->
             <div id="discover-filter" class="gender-filter" role="group" aria-label="Filtrar por gênero"></div>
