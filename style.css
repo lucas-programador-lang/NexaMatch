@@ -7212,3 +7212,20 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     .swipe-bar { gap: 0.9rem; padding: 0.6rem 1rem; }
     .swipe-act { width: 56px; height: 56px; }
 }
+
+/* ----- Cabeçalho do chat no celular: "visto hoje às 21:43" aparece inteiro ----- */
+@media (max-width: 600px) {
+    #messages-content #chat-sub {
+        display: block;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        line-height: 1.35;
+        font-size: 0.8rem;
+    }
+    #messages-content #chat-sub::before {
+        display: inline-block;
+        vertical-align: -0.12rem;
+        margin-right: 0.35rem;
+    }
+}
