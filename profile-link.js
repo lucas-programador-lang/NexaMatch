@@ -6,7 +6,8 @@
     const KEY = 'nx_open_profile';
     const RE = /^#\/u\/(.+)$/;
     const hashId = () => { const m = RE.exec(location.hash); return m ? decodeURIComponent(m[1]) : null; };
-    const linkFor = id => location.origin + location.pathname + '#/u/' + encodeURIComponent(id);
+    const keyOf = id => (window.profileKeyOf ? window.profileKeyOf(id) : id);
+    const linkFor = id => location.origin + location.pathname + '#/u/' + encodeURIComponent(keyOf(id));
 
     // guarda o link durante o login (o login redireciona e perde o #)
     try {
@@ -30,7 +31,7 @@
         window.viewProfile = function (id) {
             orig.apply(this, arguments);
             if (profileOpen()) {
-                const h = '#/u/' + encodeURIComponent(id);
+                const h = '#/u/' + encodeURIComponent(keyOf(id));
                 if (location.hash !== h) history.pushState(null, '', h);
             }
         };
@@ -85,8 +86,9 @@
     // botão Voltar / Avançar do navegador
     window.addEventListener('popstate', () => {
         if (!orig) return;
-        const id = hashId();
-        if (id) orig(id);
+        const key = hashId();
+        const r = key && window.resolveProfileKey ? window.resolveProfileKey(key) : null;
+        if (r && r.id) orig(r.id);
         else if (profileOpen() && window.goBack) window.goBack();
     });
 
@@ -96,7 +98,13 @@
         tries++;
         if (!orig && typeof window.viewProfile === 'function') wrap();
         const id = hashId();
-        if (orig && id && !profileOpen()) window.viewProfile(id);
+        const r = orig && id && window.resolveProfileKey ? window.resolveProfileKey(id) : null;
+        if (r && r.me) {                       // é o seu próprio link: abre Meu Perfil
+            const links = document.querySelectorAll('nav a');
+            if (links[4]) links[4].click();
+            cleanUrl(); clearKey(); clearInterval(timer); return;
+        }
+        if (r && r.id && !profileOpen()) window.viewProfile(r.id);
         if (orig && (!id || profileOpen())) { clearKey(); clearInterval(timer); return; }
         if (tries > 60) {                      // ~18 s: perfil não existe ou saiu da plataforma
             clearInterval(timer); clearKey();
