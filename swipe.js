@@ -19,7 +19,7 @@
     count.className = 'swipe-count';
     const hint = document.createElement('div');
     hint.className = 'swipe-hint';
-    hint.innerHTML = '<span class="h-pass"><b>←</b> Arraste para passar</span><span class="h-like">Arraste para curtir <b>→</b></span>';
+    hint.innerHTML = '<span class="h-pass"><svg viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Passar</span><i></i><span class="h-like">Curtir<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>';
     const end = document.createElement('div');
     end.className = 'swipe-end';
     end.hidden = true;
