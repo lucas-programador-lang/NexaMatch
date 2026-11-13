@@ -7042,3 +7042,81 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
         transition: none !important;
     }
 }
+
+/* ==========================================================
+   Descobrir — cards arrastáveis para o lado (carrossel)
+   Desktop: arraste com o mouse. Celular: deslize com o dedo.
+   Setas ‹ › aparecem no desktop. Só vale para #profiles-grid.
+   ========================================================== */
+.swipe-wrap { position: relative; }
+
+#profiles-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 1.4rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    padding: 0.6rem 0.25rem 1.4rem;
+    scrollbar-width: none;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+#profiles-grid::-webkit-scrollbar { display: none; }
+#profiles-grid.is-dragging { cursor: grabbing; scroll-snap-type: none; }
+#profiles-grid.is-dragging .card { transform: scale(0.985); }
+#profiles-grid.is-dragging * { pointer-events: none; }
+
+#profiles-grid > .card {
+    flex: 0 0 min(320px, 78vw);
+    scroll-snap-align: center;
+}
+#profiles-grid .card img { -webkit-user-drag: none; user-drag: none; }
+#profiles-grid > .empty-state { flex: 1 0 100%; }
+
+.swipe-arrow {
+    position: absolute;
+    top: 42%;
+    z-index: 5;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(20, 16, 40, 0.72);
+    color: #fff;
+    font-size: 1.6rem;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s, background 0.2s, opacity 0.2s;
+}
+.swipe-arrow:hover { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: scale(1.08); }
+.swipe-arrow.prev { left: 6px; }
+.swipe-arrow.next { right: 6px; }
+.swipe-arrow[hidden] { display: none; }
+
+.swipe-hint {
+    text-align: center;
+    margin: -0.4rem 0 0.4rem;
+    font-size: 0.82rem;
+    opacity: 0.65;
+    letter-spacing: 0.02em;
+}
+
+@media (max-width: 700px) {
+    .swipe-arrow { display: none; }
+    #profiles-grid { gap: 1rem; padding-inline: 0.15rem; }
+    #profiles-grid > .card { flex-basis: 82vw; }
+}
+@media (hover: none) { .swipe-arrow { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+    #profiles-grid { scroll-behavior: auto; }
+}
