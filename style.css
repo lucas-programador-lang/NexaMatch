@@ -8,9 +8,9 @@
 
 /* ---------- Variáveis ---------- */
 :root {
-    --bg-color: #070a18;
-    --card-bg: rgba(19, 24, 48, 0.72);
-    --surface-solid: #0e1226;
+    --bg-color: #0f0612;
+    --card-bg: rgba(27, 17, 42, 0.72);
+    --surface-solid: #130b1f;
 
     --text-main: #f1f2ff;
     --text-muted: #b0b8d8;
@@ -46,9 +46,8 @@ html {
 }
 
 /* ---------- Fundo ----------
-   Sem manchas/orbs: um degradê vertical de azul-noite bem escuro, com um
-   véu muito sutil nas cores da marca (ciano no canto de cima, rosa no de baixo)
-   e estrelinhas discretas. Tudo parado, sem animação pesada. */
+   Sem manchas/orbs: um degradê vertical vinho/ameixa bem escuro, com um
+   véu muito sutil nas cores da marca (rosa e violeta) e estrelinhas discretas. Tudo parado, sem animação pesada. */
 body {
     min-height: 100vh;
     color: var(--text-main);
@@ -65,11 +64,11 @@ body::before {
     pointer-events: none;
     background:
         /* véu de cor em diagonal (sem círculos) */
-        linear-gradient(135deg, rgba(45, 226, 245, 0.07) 0%, transparent 34%, transparent 62%, rgba(255, 79, 163, 0.07) 100%),
-        /* faixa de luz suave no topo, atrás do título e do menu */
-        linear-gradient(180deg, rgba(110, 100, 255, 0.13) 0, rgba(110, 100, 255, 0) 22rem),
-        /* base: azul-noite que escurece para baixo */
-        linear-gradient(180deg, #0b1023 0%, #080b1c 48%, #060713 100%);
+        linear-gradient(135deg, rgba(255, 79, 163, 0.07) 0%, transparent 40%, transparent 65%, rgba(139, 92, 246, 0.07) 100%),
+        /* faixa de luz rosada no topo, atrás do título e do menu */
+        linear-gradient(180deg, rgba(255, 79, 163, 0.12) 0, rgba(255, 79, 163, 0) 22rem),
+        /* base: vinho/ameixa que escurece para baixo */
+        linear-gradient(180deg, #1d0a25 0%, #12071a 50%, #0a040f 100%);
 }
 
 /* Vinheta bem leve nas bordas, para focar no conteúdo */
