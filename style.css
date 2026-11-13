@@ -7229,3 +7229,23 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
         margin-right: 0.35rem;
     }
 }
+
+/* ----- Perfil: botão Copiar link ----- */
+.btn-share {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+}
+.btn-share svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.btn-share:hover { transform: translateY(-2px); background: rgba(139, 92, 246, 0.25); border-color: rgba(139, 92, 246, 0.6); }
+.btn-share:active { transform: scale(0.97); }
