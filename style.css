@@ -7249,3 +7249,37 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 .btn-share svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .btn-share:hover { transform: translateY(-2px); background: rgba(139, 92, 246, 0.25); border-color: rgba(139, 92, 246, 0.6); }
 .btn-share:active { transform: scale(0.97); }
+
+/* ----- Meu Perfil: username ----- */
+.me-username-wrap { position: relative; }
+.me-username-wrap .at {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-style: normal;
+    font-weight: 700;
+    color: var(--cyan, #2de2f5);
+    pointer-events: none;
+}
+.me-username-wrap input { padding-left: 2.2rem !important; padding-right: 3.2rem !important; }
+.me-copy-link {
+    position: absolute;
+    right: 0.45rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.me-copy-link .ico { width: 1.05rem; height: 1.05rem; position: static; }
+.me-copy-link:hover { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: translateY(-50%) scale(1.06); }
+.me-username-hint { margin: 0.45rem 0 0; font-size: 0.78rem; opacity: 0.7; word-break: break-all; }
+.me-username-hint.bad { color: #ff7a8e; opacity: 1; }
