@@ -7090,29 +7090,63 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1.1rem;
-    margin-top: 1.6rem;
+    gap: 1.3rem;
+    margin-top: 1.5rem;
 }
-.swipe-count { min-width: 64px; text-align: center; font-weight: 700; letter-spacing: 0.04em; opacity: 0.85; }
-.swipe-arrow {
-    width: 48px;
-    height: 48px;
+.swipe-bar[hidden], .swipe-end[hidden], .swipe-hint[hidden] { display: none; }
+.swipe-act {
+    width: 62px;
+    height: 62px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(20, 16, 40, 0.72);
-    color: #fff;
-    font-size: 1.7rem;
-    line-height: 1;
     display: grid;
     place-items: center;
     cursor: pointer;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-    transition: transform 0.2s, background 0.2s, opacity 0.2s;
+    color: #fff;
+    border: 2px solid var(--c);
+    background: color-mix(in srgb, var(--c) 14%, rgba(16, 12, 34, 0.85));
+    box-shadow: 0 10px 28px color-mix(in srgb, var(--c) 35%, transparent);
+    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
 }
-.swipe-arrow:hover:not(:disabled) { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: scale(1.08); }
-.swipe-arrow:disabled { opacity: 0.3; cursor: default; }
-.swipe-bar[hidden] { display: none; }
-.swipe-hint { text-align: center; margin-top: 0.7rem; font-size: 0.82rem; opacity: 0.6; }
+.swipe-act svg { width: 28px; height: 28px; fill: none; stroke: var(--c); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.2s, fill 0.2s; }
+.swipe-act:hover:not(:disabled) { transform: translateY(-3px) scale(1.08); background: var(--c); box-shadow: 0 14px 34px color-mix(in srgb, var(--c) 55%, transparent); }
+.swipe-act:hover:not(:disabled) svg { stroke: #fff; }
+.swipe-act:active:not(:disabled) { transform: scale(0.94); }
+.swipe-act:disabled { opacity: 0.35; cursor: default; }
+.swipe-act.pass { --c: #ff5d73; }
+.swipe-act.chat { --c: #38d0ff; width: 52px; height: 52px; }
+.swipe-act.chat svg { width: 24px; height: 24px; }
+.swipe-act.like { --c: #ff4fa3; }
+.swipe-act.like.on svg { fill: #ff4fa3; }
+.swipe-act.like.on:hover:not(:disabled) svg { fill: #fff; }
+
+.swipe-count { text-align: center; margin-top: 0.9rem; font-weight: 700; letter-spacing: 0.04em; opacity: 0.8; font-size: 0.9rem; }
+.swipe-hint { text-align: center; margin-top: 0.3rem; font-size: 0.82rem; opacity: 0.6; }
+
+/* carimbo que aparece enquanto arrasta */
+.swipe-stamp {
+    position: absolute;
+    top: 1.4rem;
+    z-index: 6;
+    padding: 0.35rem 0.9rem;
+    border: 3px solid currentColor;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: 0.08em;
+    opacity: 0;
+    pointer-events: none;
+    background: rgba(10, 8, 24, 0.45);
+}
+.swipe-stamp.like { left: 1.2rem; color: #ff4fa3; transform: rotate(-12deg); }
+.swipe-stamp.nope { right: 1.2rem; color: #ff5d73; transform: rotate(12deg); }
+
+.swipe-end { text-align: center; padding: 2.5rem 1rem; }
+.swipe-end h2 { margin-bottom: 0.4rem; }
+.swipe-end p { opacity: 0.75; margin-bottom: 1.2rem; }
+
+/* o coração do próprio card sai: a curtida fica nos botões grandes */
+#profiles-grid .card .btn-like { display: none; }
+#profiles-grid .card .actions .btn-view { flex: 1; }
 
 @media (prefers-reduced-motion: reduce) {
     #profiles-grid > .card.is-enter { animation: none; }
