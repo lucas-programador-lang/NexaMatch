@@ -1442,11 +1442,22 @@ function updateNotificationsBadge() {
 
 
 function formatNotificationTime(timestamp) {
+    const minutes = Math.floor((Date.now() - timestamp) / 60000);
+    if (minutes < 1) return 'agora';
+    if (minutes < 60) return `há ${minutes} min`;
+    return formatTime(timestamp);
+}
+
+// Título do grupo: Hoje, Ontem ou a data (ex.: 10 de novembro)
+function notificationDayLabel(timestamp) {
     const date = new Date(timestamp);
-    const sameDay = date.toDateString() === new Date().toDateString();
-    return sameDay
-        ? formatTime(timestamp)
-        : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return 'Hoje';
+    if (date.toDateString() === yesterday.toDateString()) return 'Ontem';
+    return date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' });
 }
 
 function renderNotifications() {
@@ -1469,29 +1480,69 @@ function renderNotifications() {
         return;
     }
 
-    notificationsContent.innerHTML = '<div class="notification-list">' + items.map(({ n, profile }) => {
+    // resumo no topo
+    const matchCount = items.filter(({ n }) => n.type === 'match').length;
+    const likeCount = items.length - matchCount;
+    const newCount = items.filter(({ n }) => !n.read).length;
+    const plural = (total, one, many) => `${total} ${total === 1 ? one : many}`;
+
+    const chips = [
+        newCount ? `<span class="notification-chip chip-new">${plural(newCount, 'novo', 'novos')}</span>` : '',
+        matchCount ? `<span class="notification-chip">${plural(matchCount, 'match', 'matches')}</span>` : '',
+        likeCount ? `<span class="notification-chip">${plural(likeCount, 'curtida', 'curtidas')}</span>` : ''
+    ].join('');
+
+    // agrupa por dia (a lista já está do mais novo para o mais antigo)
+    const groups = [];
+    items.forEach(entry => {
+        const label = notificationDayLabel(entry.n.time);
+        const last = groups[groups.length - 1];
+        if (last && last.label === label) last.entries.push(entry);
+        else groups.push({ label, entries: [entry] });
+    });
+
+    const renderItem = ({ n, profile }) => {
         const isMatchNote = n.type === 'match';
+        const kind = isMatchNote ? 'Novo match' : 'Nova curtida';
         const text = isMatchNote
-            ? `Deu match com <strong>${profile.name}</strong>!`
+            ? `Você e <strong>${profile.name}</strong> combinaram`
             : `<strong>${profile.name}</strong> curtiu você`;
         const action = isMatchNote
             ? `<button class="btn-msg" onclick="goToMessages('${profile.id}')">Mensagem</button>`
-            : `<button class="btn-msg" onclick="handleLike('${profile.id}')">Curtir de volta</button>`;
+            : `<button class="btn-msg btn-msg-like" onclick="handleLike('${profile.id}')">Curtir de volta</button>`;
 
         return `
-            <div class="notification-item ${n.read ? '' : 'unread'}">
-                <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+            <article class="notification-item ${isMatchNote ? 'is-match' : 'is-like'} ${n.read ? '' : 'unread'}">
+                <div class="notification-avatar" onclick="viewProfile('${profile.id}')">
+                    <img src="${profile.photo}" alt="Foto de ${profile.name}">
+                    <span class="notification-type-icon" aria-hidden="true"></span>
+                </div>
                 <div class="notification-info">
+                    <p class="notification-kind">${kind}</p>
                     <p class="notification-title">${text}</p>
-                    <p class="notification-meta">${profile.age} anos · ${profile.location} · ${formatNotificationTime(n.time)}</p>
+                    <p class="notification-meta">
+                        <span>${profile.age} anos</span>
+                        <span>${profile.location}</span>
+                        <span class="notification-time">${formatNotificationTime(n.time)}</span>
+                    </p>
                 </div>
                 <div class="notification-actions">
                     <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
                     ${action}
                 </div>
-            </div>
+            </article>
         `;
-    }).join('') + '</div>';
+    };
+
+    notificationsContent.innerHTML = `
+        <div class="notification-summary">${chips}</div>
+        ${groups.map(group => `
+            <section class="notification-group">
+                <h3 class="notification-day">${group.label}</h3>
+                <div class="notification-list">${group.entries.map(renderItem).join('')}</div>
+            </section>
+        `).join('')}
+    `;
 }
 
 
