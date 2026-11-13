@@ -35,6 +35,12 @@
         window.viewProfile = function (id) {
             orig.apply(this, arguments);
             if (!profileOpen()) return;
+            // entrada animada do perfil (só ao abrir, não quando você curte e a tela se redesenha)
+            const d = document.getElementById('profile-detail');
+            if (d) {
+                d.classList.remove('pv-enter'); void d.offsetWidth; d.classList.add('pv-enter');
+                clearTimeout(window.__pvT); window.__pvT = setTimeout(() => d.classList.remove('pv-enter'), 1800);
+            }
             const u = usernameOf(id);
             const path = u ? '/@' + encodeURIComponent(u) : '/';
             if (location.pathname !== path) history.pushState(null, '', path + location.search);
