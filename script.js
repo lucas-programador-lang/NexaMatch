@@ -81,7 +81,7 @@ const readHiddenLikes = raw => {
     }
     return out;
 };
-let myProfile = { name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
+let myProfile = { username: '', name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
 
 try {
     const [userSnap, accountSnap] = await Promise.all([getDoc(userRef), getDoc(accountRef)]);
@@ -93,6 +93,7 @@ try {
     matchesSeenAt = toMillis(privateData.matchesSeenAt);
     hiddenLikes = readHiddenLikes(privateData.hiddenLikes);
     myProfile = {
+        username: cleanUsername(publicData.username),
         name: String(publicData.name || currentUser.name || '').slice(0, 40),
         age: publicData.age ? Number(publicData.age) : '',
         location: String(publicData.location || ''),
@@ -229,11 +230,59 @@ function placeholderPhoto(name) {
 
 // Tudo que vem de outras pessoas é escapado aqui, uma vez só,
 // para poder entrar com segurança nos modelos de HTML da tela.
+// ---------- Username (o link do perfil: #/u/username) ----------
+const USERNAME_RE = /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/;      // 3 a 20: letras minúsculas, números, ponto e _
+const RESERVED_USERNAMES = ['admin', 'nexamatch', 'suporte', 'support', 'ajuda', 'perfil', 'login', 'u'];
+function cleanUsername(value) {
+    const name = String(value || '').trim().toLowerCase().replace(/^@/, '');
+    return USERNAME_RE.test(name) ? name : '';
+}
+// o que vai depois de #/u/ no link da pessoa: username (ou o id, se ela ainda não escolheu)
+function profileKeyOf(id) {
+    const p = findProfile(id);
+    return (p && p.username) || id;
+}
+// transforma o que veio no link em uma pessoa: { me: true } | { id } | null
+function resolveProfileKey(key) {
+    const k = String(key || '').trim().toLowerCase().replace(/^@/, '');
+    if (!k) return null;
+    if (key === myId || (myProfile.username && k === myProfile.username)) return { me: true };
+    const p = profiles.find(x => x.username === k) || profiles.find(x => x.id === key);
+    return p ? { id: p.id } : null;
+}
+function myProfileLink() {
+    return location.origin + location.pathname + '#/u/' + encodeURIComponent(myProfile.username || myId);
+}
+async function copyMyLink() {
+    const url = myProfileLink();
+    try { await navigator.clipboard.writeText(url); }
+    catch (e) {
+        const t = document.createElement('textarea');
+        t.value = url; document.body.appendChild(t); t.select();
+        try { document.execCommand('copy'); } catch (e2) {}
+        t.remove();
+    }
+    showToast('Seu link foi copiado!');
+}
+function updateUsernameHint() {
+    const input = document.getElementById('me-username-input');
+    const hint = document.getElementById('me-username-hint');
+    if (!input || !hint) return;
+    const raw = input.value.trim().toLowerCase().replace(/^@/, '');
+    const ok = !raw || (USERNAME_RE.test(raw) && !RESERVED_USERNAMES.includes(raw));
+    hint.classList.toggle('bad', !ok);
+    hint.textContent = !raw
+        ? 'Escolha um username para ter seu link: ' + location.host + '/#/u/seu-username'
+        : ok ? 'Seu link: ' + location.host + location.pathname.replace(/index\.html$/, '') + '#/u/' + raw
+             : 'Use 3 a 20 letras minúsculas, números, ponto ou _ (sem começar ou terminar com ponto/_).';
+}
+
 function normalizeProfile(id, data) {
     const name = String(data.name || 'Sem nome').slice(0, 40);
     return {
         id,
         gender: ALL_GENDER_IDS.includes(data.gender) ? data.gender : 'outro',
+        username: cleanUsername(data.username),
         name: escapeHtml(name),
         age: Number(data.age) || '',
         location: escapeHtml(String(data.location || '').slice(0, 60) || 'Local não informado'),
@@ -2319,6 +2368,7 @@ function profileCompletion(profile) {
 const ME_ICONS = {
     camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
     user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
     pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
@@ -2424,6 +2474,18 @@ function renderMyProfile() {
                                 </label>
                             </div>
                             <p class="field-error" id="me-age-error" role="alert" hidden>A idade precisa estar entre 18 e 99 anos.</p>
+
+                            <label class="field">
+                                <span>Username <small>(o seu link no NexaMatch)</small></span>
+                                <div class="input-wrap no-icon me-username-wrap">
+                                    <em class="at" aria-hidden="true">@</em>
+                                    <input id="me-username-input" type="text" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false"
+                                           placeholder="seu.username" value="${escapeHtml(myProfile.username || '')}"
+                                           oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9._@]/g, ''); updateUsernameHint()">
+                                    <button type="button" class="me-copy-link" onclick="copyMyLink()" title="Copiar meu link">${meIcon('link') || 'Copiar'}</button>
+                                </div>
+                                <p class="me-username-hint" id="me-username-hint" aria-live="polite"></p>
+                            </label>
 
                             <label class="field">
                                 <span>Cidade</span>
@@ -2612,7 +2674,8 @@ function isProfileDirty() {
     const sameList = draftInterests.length === myProfile.interests.length
         && draftInterests.every((item, index) => item === myProfile.interests[index]);
 
-    return val('me-name-input') !== String(myProfile.name || '')
+    return val('me-username-input').toLowerCase().replace(/^@/, '') !== String(myProfile.username || '')
+        || val('me-name-input') !== String(myProfile.name || '')
         || val('me-age-input') !== String(myProfile.age || '')
         || val('me-location-input') !== String(myProfile.location || '')
         || val('me-bio-input') !== String(myProfile.bio || '')
@@ -2838,17 +2901,43 @@ async function saveProfileForm(event) {
         return;
     }
 
+    const typedUser = (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
+    if (typedUser && (!USERNAME_RE.test(typedUser) || RESERVED_USERNAMES.includes(typedUser))) {
+        showToast('Username inválido. Use 3 a 20 letras minúsculas, números, ponto ou _.');
+        document.getElementById('me-username-input').focus();
+        return;
+    }
+    const oldUsername = myProfile.username || '';
+
     const next = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
 
     try {
-        await setDoc(userRef, { ...next, gender: myGender, updatedAt: serverTimestamp() }, { merge: true });
+        if (typedUser !== oldUsername) {
+            // reserva o username (um por pessoa) e libera o antigo, tudo junto
+            const batch = writeBatch(db);
+            if (typedUser) {
+                const taken = await getDoc(doc(db, 'usernames', typedUser));
+                if (taken.exists() && taken.data().uid !== myId) {
+                    showToast('Esse username já está em uso. Escolha outro.');
+                    document.getElementById('me-username-input').focus();
+                    return;
+                }
+                if (!taken.exists()) batch.set(doc(db, 'usernames', typedUser), { uid: myId, createdAt: serverTimestamp() });
+            }
+            if (oldUsername) batch.delete(doc(db, 'usernames', oldUsername));
+            batch.set(userRef, { ...next, username: typedUser, gender: myGender, updatedAt: serverTimestamp() }, { merge: true });
+            await batch.commit();
+        } else {
+            await setDoc(userRef, { ...next, username: typedUser, gender: myGender, updatedAt: serverTimestamp() }, { merge: true });
+        }
     } catch (error) {
         console.error(error);
         showToast('Não deu para salvar agora. Confira a internet e tente de novo.');
         return;
     }
 
-    myProfile = { ...next, interestedIn: [...myProfile.interestedIn] };
+    myProfile = { ...next, username: typedUser, interestedIn: [...myProfile.interestedIn] };
+    updateUsernameHint();
     showToast('Perfil salvo!');
     flashSaved();
     updateProfileSummary();
@@ -2953,6 +3042,7 @@ async function deleteMyAccount() {
         await deleteDoc(doc(db, 'wallets', myId)).catch(() => {}); // pode nem existir
         presenceStopped = true; // não recria o documento de presença depois de apagado
         await deleteDoc(doc(db, 'presence', myId)).catch(() => {});
+        if (myProfile.username) await deleteDoc(doc(db, 'usernames', myProfile.username)).catch(() => {});
         await deleteDoc(userRef);
         await deleteDoc(accountRef);
 
@@ -3028,10 +3118,12 @@ Object.assign(window, {
     addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
     fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
-    showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile
+    showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
+    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
 });
 
 renderMyProfile();
+updateUsernameHint();
 refreshAll();
 startRealtime(); // a partir daqui tudo se atualiza sozinho
 startPresence();
