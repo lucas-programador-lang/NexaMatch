@@ -7537,3 +7537,152 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 @media (prefers-reduced-motion: reduce) {
     #profile-detail .profile-photo img, #profile-detail .chip, #profiles-grid .card-image-wrapper img { transition: none; }
 }
+
+/* ==========================================================
+   Perfil da pessoa — brilho e animação
+   • borda da foto com luz girando + halo que pulsa
+   • reflexo de luz passando pela foto
+   • entrada em sequência (foto, nome, caixas, chips, botões)
+   • nome com brilho, botões com reflexo e glow
+   ========================================================== */
+@property --pang { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+
+/* ----- foto: borda de luz girando + halo ----- */
+#profile-detail .profile-photo {
+    background: conic-gradient(from var(--pang), #8b5cf6, #ff4fa3, #2de2f5, #8b5cf6) border-box;
+    animation: pvSpin 7s linear infinite;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), 0 0 50px rgba(139, 92, 246, 0.35);
+}
+@keyframes pvSpin { to { --pang: 360deg; } }
+
+#profile-detail .profile-photo-halo { display: none; }
+#profile-detail .profile-layout::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    width: min(520px, 90vw);
+    height: min(520px, 90vw);
+    left: -8%;
+    top: -6%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 79, 163, 0.28), rgba(139, 92, 246, 0.2) 45%, transparent 70%);
+    filter: blur(40px);
+    animation: pvHalo 5s ease-in-out infinite;
+    pointer-events: none;
+}
+#profile-detail .profile-layout { position: relative; }
+@keyframes pvHalo {
+    0%, 100% { opacity: 0.55; transform: scale(0.95); }
+    50%      { opacity: 1;    transform: scale(1.08); }
+}
+
+/* reflexo de luz cruzando a foto */
+#profile-detail .profile-photo::after { overflow: hidden; }
+#profile-detail .profile-photo .pv-shine { display: none; }
+#profile-detail .profile-photo::before { overflow: hidden; }
+#profile-detail .profile-photo img { animation: none; }
+#profile-detail .profile-photo > .location-tag { animation: pvFloat 4s ease-in-out infinite; }
+@keyframes pvFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+/* ----- nome com brilho ----- */
+#profile-detail .profile-name { animation: pvName 4.5s ease-in-out infinite; }
+#profile-detail .profile-name span { animation: pvAge 2.8s ease-in-out infinite; }
+@keyframes pvName {
+    0%, 100% { text-shadow: 0 0 0 rgba(255, 79, 163, 0); }
+    50%      { text-shadow: 0 0 26px rgba(255, 79, 163, 0.55), 0 0 50px rgba(139, 92, 246, 0.35); }
+}
+@keyframes pvAge {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(45, 226, 245, 0.45); }
+    50%      { box-shadow: 0 0 16px 2px rgba(45, 226, 245, 0.35); }
+}
+
+/* selo de match que brilha */
+#profile-detail .match-pill { position: relative; overflow: hidden; animation: pvPillGlow 2.6s ease-in-out infinite; }
+#profile-detail .match-pill::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+    transform: skewX(-20deg);
+    animation: pvSweep 3.2s ease-in-out infinite;
+}
+@keyframes pvPillGlow {
+    0%, 100% { box-shadow: 0 6px 18px -4px rgba(139, 92, 246, 0.8); }
+    50%      { box-shadow: 0 6px 26px -2px rgba(255, 79, 163, 0.9); }
+}
+@keyframes pvSweep { 0%, 55% { left: -60%; } 100% { left: 130%; } }
+
+/* caixas: brilho suave ao passar o mouse */
+#profile-detail .profile-section { transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s; }
+#profile-detail .profile-section:hover {
+    border-color: rgba(139, 92, 246, 0.45);
+    box-shadow: 0 10px 30px -12px rgba(139, 92, 246, 0.55);
+    transform: translateY(-2px);
+}
+#profile-detail .profile-section h3::before { animation: pvBar 3s ease-in-out infinite; }
+@keyframes pvBar { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.6) drop-shadow(0 0 5px #ff4fa3); } }
+
+/* ----- botões: gradiente que flui, reflexo e pulso ----- */
+#profile-detail .btn-like-lg,
+#profile-detail .btn-msg-lg {
+    position: relative;
+    overflow: hidden;
+    background-size: 220% 220%;
+    animation: pvFlow 6s ease-in-out infinite;
+}
+#profile-detail .btn-like-lg:not(.liked) { animation: pvFlow 6s ease-in-out infinite, pvBeat 2.4s ease-in-out infinite; }
+#profile-detail .btn-msg-lg::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: -70%;
+    width: 45%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+    transform: skewX(-20deg);
+    animation: pvSweep 4s 1.2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes pvFlow { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+@keyframes pvBeat {
+    0%, 100% { box-shadow: 0 14px 30px -8px rgba(255, 79, 163, 0.6), 0 0 0 0 rgba(255, 79, 163, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+    50%      { box-shadow: 0 14px 34px -6px rgba(255, 79, 163, 0.8), 0 0 0 10px rgba(255, 79, 163, 0), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+}
+#profile-detail .btn-like-lg:hover,
+#profile-detail .btn-msg-lg:hover { transform: translateY(-3px) scale(1.02); filter: brightness(1.08); }
+#profile-detail .btn-like-lg:active,
+#profile-detail .btn-msg-lg:active { transform: scale(0.97); }
+
+/* ----- entrada animada (a classe .pv-enter é colocada ao abrir o perfil) ----- */
+#profile-detail.pv-enter .btn-back        { animation: pvIn 0.45s 0.00s cubic-bezier(.2, .8, .2, 1) both; }
+#profile-detail.pv-enter .profile-photo   { animation: pvInL 0.7s 0.05s cubic-bezier(.2, .8, .2, 1) both, pvSpin 7s linear infinite; }
+#profile-detail.pv-enter .profile-panel   { animation: pvInR 0.7s 0.12s cubic-bezier(.2, .8, .2, 1) both; }
+#profile-detail.pv-enter .profile-name    { animation: pvIn 0.55s 0.30s cubic-bezier(.2, .8, .2, 1) both, pvName 4.5s 0.9s ease-in-out infinite; }
+#profile-detail.pv-enter .profile-location,
+#profile-detail.pv-enter .match-pill      { animation-name: pvIn; animation-duration: 0.5s; animation-delay: 0.40s; animation-fill-mode: both; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+#profile-detail.pv-enter .profile-section:nth-of-type(1) { animation: pvIn 0.55s 0.48s cubic-bezier(.2, .8, .2, 1) both; }
+#profile-detail.pv-enter .profile-section:nth-of-type(2) { animation: pvIn 0.55s 0.58s cubic-bezier(.2, .8, .2, 1) both; }
+#profile-detail.pv-enter .chip            { animation: pvPop 0.45s cubic-bezier(.3, 1.6, .5, 1) both; }
+#profile-detail.pv-enter .chip:nth-child(1) { animation-delay: 0.70s; }
+#profile-detail.pv-enter .chip:nth-child(2) { animation-delay: 0.78s; }
+#profile-detail.pv-enter .chip:nth-child(3) { animation-delay: 0.86s; }
+#profile-detail.pv-enter .chip:nth-child(4) { animation-delay: 0.94s; }
+#profile-detail.pv-enter .chip:nth-child(n+5) { animation-delay: 1.02s; }
+#profile-detail.pv-enter .profile-actions > * { animation: pvIn 0.5s both cubic-bezier(.2, .8, .2, 1); }
+#profile-detail.pv-enter .profile-actions > :nth-child(1) { animation-delay: 0.80s; }
+#profile-detail.pv-enter .profile-actions > :nth-child(2) { animation-delay: 0.88s; }
+#profile-detail.pv-enter .profile-actions > :nth-child(3) { animation-delay: 0.96s; }
+#profile-detail.pv-enter .profile-actions > :nth-child(4) { animation-delay: 1.04s; }
+
+@keyframes pvIn  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes pvInL { from { opacity: 0; transform: translateX(-30px) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes pvInR { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }
+@keyframes pvPop { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+    #profile-detail .profile-layout::before { left: 50%; margin-left: -45vw; }
+    #profile-detail.pv-enter .profile-photo { animation: pvIn 0.6s 0.05s cubic-bezier(.2, .8, .2, 1) both, pvSpin 7s linear infinite; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #profile-detail *, #profile-detail .profile-photo, #profile-detail .profile-layout::before,
+    #profile-detail .match-pill::after, #profile-detail .btn-msg-lg::before { animation: none !important; }
+}
