@@ -7090,37 +7090,103 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 1.3rem;
-    margin-top: 1.5rem;
+    gap: 1.1rem;
+    margin: 1.7rem auto 0;
+    width: fit-content;
+    padding: 0.7rem 1.2rem;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
-.swipe-bar[hidden], .swipe-end[hidden], .swipe-hint[hidden] { display: none; }
+.swipe-bar[hidden], .swipe-end[hidden], .swipe-hint[hidden], .swipe-count[hidden] { display: none; }
+
 .swipe-act {
-    width: 62px;
-    height: 62px;
+    position: relative;
+    width: 58px;
+    height: 58px;
     border-radius: 50%;
     display: grid;
     place-items: center;
     cursor: pointer;
-    color: #fff;
-    border: 2px solid var(--c);
-    background: color-mix(in srgb, var(--c) 14%, rgba(16, 12, 34, 0.85));
-    box-shadow: 0 10px 28px color-mix(in srgb, var(--c) 35%, transparent);
-    transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+    border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
+    background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--c) 30%, #1a1233), #120d28 75%);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--c) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+    transition: transform 0.25s cubic-bezier(.2, .8, .2, 1), box-shadow 0.25s, background 0.25s;
 }
-.swipe-act svg { width: 28px; height: 28px; fill: none; stroke: var(--c); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; transition: stroke 0.2s, fill 0.2s; }
-.swipe-act:hover:not(:disabled) { transform: translateY(-3px) scale(1.08); background: var(--c); box-shadow: 0 14px 34px color-mix(in srgb, var(--c) 55%, transparent); }
-.swipe-act:hover:not(:disabled) svg { stroke: #fff; }
-.swipe-act:active:not(:disabled) { transform: scale(0.94); }
+.swipe-act svg {
+    width: 26px; height: 26px;
+    fill: none; stroke: var(--c); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+    filter: drop-shadow(0 0 6px color-mix(in srgb, var(--c) 70%, transparent));
+    transition: stroke 0.25s, transform 0.25s;
+}
+.swipe-act:hover:not(:disabled) {
+    transform: translateY(-4px) scale(1.07);
+    background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--c) 85%, #fff), var(--c) 80%);
+    box-shadow: 0 16px 34px color-mix(in srgb, var(--c) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.swipe-act:hover:not(:disabled) svg { stroke: #fff; transform: scale(1.1); }
+.swipe-act:active:not(:disabled) { transform: scale(0.92); }
 .swipe-act:disabled { opacity: 0.35; cursor: default; }
-.swipe-act.pass { --c: #ff5d73; }
-.swipe-act.chat { --c: #38d0ff; width: 52px; height: 52px; }
-.swipe-act.chat svg { width: 24px; height: 24px; }
-.swipe-act.like { --c: #ff4fa3; }
-.swipe-act.like.on svg { fill: #ff4fa3; }
-.swipe-act.like.on:hover:not(:disabled) svg { fill: #fff; }
 
-.swipe-count { text-align: center; margin-top: 0.9rem; font-weight: 700; letter-spacing: 0.04em; opacity: 0.8; font-size: 0.9rem; }
-.swipe-hint { text-align: center; margin-top: 0.3rem; font-size: 0.82rem; opacity: 0.6; }
+.swipe-act.pass { --c: #ff6b81; }
+.swipe-act.chat { --c: #38d0ff; width: 48px; height: 48px; }
+.swipe-act.chat svg { width: 22px; height: 22px; }
+
+/* curtir = botão principal */
+.swipe-act.like {
+    --c: #ff4fa3;
+    width: 74px; height: 74px;
+    border: 0;
+    background: linear-gradient(135deg, #ff4fa3, #a855f7 60%, #7c5cff);
+    box-shadow: 0 12px 32px rgba(255, 79, 163, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    animation: swipeBeat 2.4s ease-in-out infinite;
+}
+.swipe-act.like svg { width: 32px; height: 32px; stroke: #fff; fill: #fff; stroke-width: 1.6; filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3)); }
+.swipe-act.like:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff6bb3, #b86cff 60%, #8f78ff);
+    box-shadow: 0 18px 40px rgba(255, 79, 163, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+@keyframes swipeBeat {
+    0%, 100% { box-shadow: 0 12px 32px rgba(255, 79, 163, 0.45), 0 0 0 0 rgba(255, 79, 163, 0.35); }
+    50%      { box-shadow: 0 12px 32px rgba(255, 79, 163, 0.55), 0 0 0 12px rgba(255, 79, 163, 0); }
+}
+
+.swipe-count {
+    width: fit-content;
+    margin: 1rem auto 0;
+    padding: 0.28rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 700;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    opacity: 0.9;
+}
+.swipe-hint {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.8rem;
+    font-size: 0.78rem;
+}
+.swipe-hint span {
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    color: rgba(255, 255, 255, 0.72);
+}
+.swipe-hint .h-pass b { color: #ff6b81; }
+.swipe-hint .h-like b { color: #ff4fa3; }
+
+#profiles-grid > .card.is-current {
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
 
 /* carimbo que aparece enquanto arrasta */
 .swipe-stamp {
@@ -7149,5 +7215,11 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 #profiles-grid .card .actions .btn-view { flex: 1; }
 
 @media (prefers-reduced-motion: reduce) {
-    #profiles-grid > .card.is-enter { animation: none; }
+    #profiles-grid > .card.is-enter, .swipe-act.like { animation: none; }
+}
+@media (max-width: 420px) {
+    .swipe-bar { gap: 0.8rem; padding: 0.6rem 0.9rem; }
+    .swipe-act { width: 54px; height: 54px; }
+    .swipe-act.like { width: 68px; height: 68px; }
+    .swipe-act.chat { width: 46px; height: 46px; }
 }
