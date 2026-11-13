@@ -230,31 +230,32 @@ function placeholderPhoto(name) {
 
 // Tudo que vem de outras pessoas é escapado aqui, uma vez só,
 // para poder entrar com segurança nos modelos de HTML da tela.
-// ---------- Username (o link do perfil: #/u/username) ----------
+// ---------- Username (o link do perfil: seusite/@username) ----------
 const USERNAME_RE = /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/;      // 3 a 20: letras minúsculas, números, ponto e _
 const RESERVED_USERNAMES = ['admin', 'nexamatch', 'suporte', 'support', 'ajuda', 'perfil', 'login', 'u'];
 function cleanUsername(value) {
     const name = String(value || '').trim().toLowerCase().replace(/^@/, '');
     return USERNAME_RE.test(name) ? name : '';
 }
-// o que vai depois de #/u/ no link da pessoa: username (ou o id, se ela ainda não escolheu)
+// username da pessoa (vazio se ela ainda não escolheu): o link dela é seusite/@username
 function profileKeyOf(id) {
     const p = findProfile(id);
-    return (p && p.username) || id;
+    return (p && p.username) || '';
 }
 // transforma o que veio no link em uma pessoa: { me: true } | { id } | null
 function resolveProfileKey(key) {
     const k = String(key || '').trim().toLowerCase().replace(/^@/, '');
     if (!k) return null;
-    if (key === myId || (myProfile.username && k === myProfile.username)) return { me: true };
-    const p = profiles.find(x => x.username === k) || profiles.find(x => x.id === key);
+    if (myProfile.username && k === myProfile.username) return { me: true };
+    const p = profiles.find(x => x.username === k);
     return p ? { id: p.id } : null;
 }
 function myProfileLink() {
-    return location.origin + location.pathname + '#/u/' + encodeURIComponent(myProfile.username || myId);
+    return myProfile.username ? location.origin + '/@' + myProfile.username : '';
 }
 async function copyMyLink() {
     const url = myProfileLink();
+    if (!url) { showToast('Escolha e salve um username para ter seu link.'); return; }
     try { await navigator.clipboard.writeText(url); }
     catch (e) {
         const t = document.createElement('textarea');
@@ -272,8 +273,8 @@ function updateUsernameHint() {
     const ok = !raw || (USERNAME_RE.test(raw) && !RESERVED_USERNAMES.includes(raw));
     hint.classList.toggle('bad', !ok);
     hint.textContent = !raw
-        ? 'Escolha um username para ter seu link: ' + location.host + '/#/u/seu-username'
-        : ok ? 'Seu link: ' + location.host + location.pathname.replace(/index\.html$/, '') + '#/u/' + raw
+        ? 'Escolha um username para ter seu link: ' + location.host + '/@seu.username'
+        : ok ? 'Seu link: ' + location.host + '/@' + raw
              : 'Use 3 a 20 letras minúsculas, números, ponto ou _ (sem começar ou terminar com ponto/_).';
 }
 
