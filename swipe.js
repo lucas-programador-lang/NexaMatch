@@ -19,7 +19,7 @@
     count.className = 'swipe-count';
     const hint = document.createElement('div');
     hint.className = 'swipe-hint';
-    hint.textContent = 'Arraste para a direita para curtir · para a esquerda para passar';
+    hint.innerHTML = '<span class="h-pass"><b>←</b> Arraste para passar</span><span class="h-like">Arraste para curtir <b>→</b></span>';
     const end = document.createElement('div');
     end.className = 'swipe-end';
     end.hidden = true;
