@@ -12,8 +12,8 @@
     const bar = document.createElement('div');
     bar.className = 'swipe-bar';
     bar.innerHTML =
-        '<button type="button" class="swipe-act pass" aria-label="Não curtir"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
-        '<button type="button" class="swipe-act chat" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.5-4.6A8 8 0 1 1 21 12z"/></svg></button>' +
+        '<button type="button" class="swipe-act pass" aria-label="Não curtir"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>' +
+        '<button type="button" class="swipe-act chat" aria-label="Enviar mensagem"><svg viewBox="0 0 24 24"><path d="M12 3.2c5 0 9 3.5 9 7.9s-4 7.9-9 7.9c-1 0-2-.15-2.9-.4L5 20.6l1.1-3.6C4.2 15.6 3 13.5 3 11.1 3 6.7 7 3.2 12 3.2z"/><circle cx="8.2" cy="11.1" r="1.25"/><circle cx="12" cy="11.1" r="1.25"/><circle cx="15.8" cy="11.1" r="1.25"/></svg></button>' +
         '<button type="button" class="swipe-act like" aria-label="Curtir"><svg viewBox="0 0 24 24"><path d="M12 20.5S3.5 15.4 3.5 9.3A4.8 4.8 0 0 1 12 6.6a4.8 4.8 0 0 1 8.5 2.7c0 6.1-8.5 11.2-8.5 11.2z"/></svg></button>';
     const count = document.createElement('div');
     count.className = 'swipe-count';
