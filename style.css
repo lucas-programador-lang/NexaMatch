@@ -7044,79 +7044,76 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 }
 
 /* ==========================================================
-   Descobrir — cards arrastáveis para o lado (carrossel)
-   Desktop: arraste com o mouse. Celular: deslize com o dedo.
-   Setas ‹ › aparecem no desktop. Só vale para #profiles-grid.
+   Descobrir — 1 card por vez; arraste para o lado e aparece
+   a próxima pessoa (mouse no desktop, dedo no celular).
    ========================================================== */
-.swipe-wrap { position: relative; }
+.swipe-wrap { position: relative; max-width: 440px; margin: 0 auto; }
 
 #profiles-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 1.4rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-padding-inline: 0.25rem;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
-    padding: 0.6rem 0.25rem 1.4rem;
-    scrollbar-width: none;
-    cursor: grab;
+    display: block;
+    position: relative;
+    width: 100%;
+    padding: 0.4rem 0 0;
+    touch-action: pan-y;
     user-select: none;
     -webkit-user-select: none;
+    cursor: grab;
 }
-#profiles-grid::-webkit-scrollbar { display: none; }
-#profiles-grid.is-dragging { cursor: grabbing; scroll-snap-type: none; }
-#profiles-grid.is-dragging .card { transform: scale(0.985); }
+#profiles-grid.is-dragging { cursor: grabbing; }
 #profiles-grid.is-dragging * { pointer-events: none; }
 
-#profiles-grid > .card {
-    flex: 0 0 min(320px, 78vw);
-    scroll-snap-align: center;
+#profiles-grid > .card { display: none; animation: none; will-change: transform; }
+#profiles-grid > .card.is-current {
+    display: flex;
+    position: relative;
+    z-index: 2;
+    touch-action: pan-y;
+}
+#profiles-grid > .card.is-next {
+    display: flex;
+    position: absolute;
+    inset: 0 0 auto 0;
+    z-index: 1;
+    transform: translateY(14px) scale(0.94);
+    opacity: 0.65;
+    pointer-events: none;
+}
+#profiles-grid > .card.is-enter { animation: swipeIn 0.35s cubic-bezier(.2, .8, .2, 1); }
+@keyframes swipeIn {
+    from { transform: translateY(14px) scale(0.94); opacity: 0.65; }
+    to   { transform: none; opacity: 1; }
 }
 #profiles-grid .card img { -webkit-user-drag: none; user-drag: none; }
-#profiles-grid > .empty-state { flex: 1 0 100%; }
+#profiles-grid > .empty-state { display: block; }
 
+.swipe-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.1rem;
+    margin-top: 1.6rem;
+}
+.swipe-count { min-width: 64px; text-align: center; font-weight: 700; letter-spacing: 0.04em; opacity: 0.85; }
 .swipe-arrow {
-    position: absolute;
-    top: 42%;
-    z-index: 5;
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     border: 1px solid rgba(255, 255, 255, 0.25);
     background: rgba(20, 16, 40, 0.72);
     color: #fff;
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     line-height: 1;
     display: grid;
     place-items: center;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     transition: transform 0.2s, background 0.2s, opacity 0.2s;
 }
-.swipe-arrow:hover { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: scale(1.08); }
-.swipe-arrow.prev { left: 6px; }
-.swipe-arrow.next { right: 6px; }
-.swipe-arrow[hidden] { display: none; }
+.swipe-arrow:hover:not(:disabled) { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); transform: scale(1.08); }
+.swipe-arrow:disabled { opacity: 0.3; cursor: default; }
+.swipe-bar[hidden] { display: none; }
+.swipe-hint { text-align: center; margin-top: 0.7rem; font-size: 0.82rem; opacity: 0.6; }
 
-.swipe-hint {
-    text-align: center;
-    margin: -0.4rem 0 0.4rem;
-    font-size: 0.82rem;
-    opacity: 0.65;
-    letter-spacing: 0.02em;
-}
-
-@media (max-width: 700px) {
-    .swipe-arrow { display: none; }
-    #profiles-grid { gap: 1rem; padding-inline: 0.15rem; }
-    #profiles-grid > .card { flex-basis: 82vw; }
-}
-@media (hover: none) { .swipe-arrow { display: none; } }
 @media (prefers-reduced-motion: reduce) {
-    #profiles-grid { scroll-behavior: auto; }
+    #profiles-grid > .card.is-enter { animation: none; }
 }
