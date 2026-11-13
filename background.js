@@ -1,4 +1,5 @@
-// background.js — fundo animado: bolhas de luz e corações subindo devagar.
+// background.js — fundo animado: brilhos em estrela, corações subindo devagar
+// e estrelas cadentes de vez em quando.
 // Independente do script.js. Se falhar, o site continua com o degradê de fundo.
 (function () {
     'use strict';
@@ -19,25 +20,43 @@
 
     const rnd = (min, max) => min + Math.random() * (max - min);
     const small = window.innerWidth < 700;
-    const total = small ? 10 : 18;
+    const total = small ? 9 : 16;
+    const meteors = small ? 1 : 3;
 
+    // brilhos em estrela e corações que sobem
     for (let i = 0; i < total; i++) {
         const isHeart = i % 4 === 3;               // 1 em cada 4 é um coraçãozinho
         const depth = Math.random();                // 0 = longe (pequeno, apagado) · 1 = perto
-        const size = isHeart ? rnd(14, 28) : rnd(34, 150) * (0.55 + depth * 0.6);
+        const size = isHeart ? rnd(14, 28) : rnd(12, 28) * (0.7 + depth * 0.7);
         const [from, to] = palettes[Math.floor(rnd(0, palettes.length))];
 
         const el = document.createElement('i');
-        el.className = isHeart ? 'fx-heart' : 'fx-orb';
+        el.className = isHeart ? 'fx-heart' : 'fx-spark';
         el.style.cssText = [
             `--x:${rnd(0, 100).toFixed(1)}%`,
             `--s:${size.toFixed(0)}px`,
             `--sway:${rnd(-70, 70).toFixed(0)}px`,
             `--dur:${rnd(38, 80).toFixed(0)}s`,
             `--delay:-${rnd(0, 80).toFixed(1)}s`,
-            `--o:${(isHeart ? rnd(0.35, 0.6) : rnd(0.20, 0.38) + depth * 0.10).toFixed(2)}`,
+            `--tw:-${rnd(0, 6).toFixed(1)}s`,
+            `--o:${(isHeart ? rnd(0.35, 0.6) : rnd(0.6, 0.95)).toFixed(2)}`,
             `--c1:${from}`,
             `--c2:${to}`
+        ].join(';');
+        layer.appendChild(el);
+    }
+
+    // estrelas cadentes: cruzam a tela rapidinho, com bastante tempo entre uma e outra
+    for (let i = 0; i < meteors; i++) {
+        const el = document.createElement('i');
+        el.className = 'fx-meteor';
+        el.style.cssText = [
+            `--x:${rnd(4, 75).toFixed(1)}%`,
+            `--y:${rnd(2, 50).toFixed(1)}%`,
+            `--len:${rnd(110, 190).toFixed(0)}px`,
+            `--run:${rnd(380, 560).toFixed(0)}px`,
+            `--dur:${rnd(16, 30).toFixed(1)}s`,
+            `--delay:-${rnd(0, 20).toFixed(1)}s`
         ].join(';');
         layer.appendChild(el);
     }
