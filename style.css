@@ -8,8 +8,8 @@
 
 /* ---------- Variáveis ---------- */
 :root {
-    --bg-color: #060713;
-    --card-bg: rgba(20, 24, 46, 0.62);
+    --bg-color: #070a18;
+    --card-bg: rgba(19, 24, 48, 0.72);
     --surface-solid: #0e1226;
 
     --text-main: #f1f2ff;
@@ -45,7 +45,10 @@ html {
     scroll-behavior: smooth;
 }
 
-/* ---------- Fundo (aurora animada) ---------- */
+/* ---------- Fundo ----------
+   Sem manchas/orbs: um degradê vertical de azul-noite bem escuro, com um
+   véu muito sutil nas cores da marca (ciano no canto de cima, rosa no de baixo)
+   e estrelinhas discretas. Tudo parado, sem animação pesada. */
 body {
     min-height: 100vh;
     color: var(--text-main);
@@ -54,39 +57,39 @@ body {
     line-height: 1.5;
 }
 
-/* Manchas de luz que se movem devagar */
 body::before {
     content: "";
     position: fixed;
-    inset: -15%;
+    inset: 0;
     z-index: -1;
     pointer-events: none;
     background:
-        radial-gradient(22rem 16rem at 50% -4%, rgba(190, 170, 255, 0.30), transparent 70%),
-        radial-gradient(34rem 34rem at 15% 20%, rgba(139, 92, 246, 0.58), transparent 62%),
-        radial-gradient(30rem 30rem at 85% 12%, rgba(45, 226, 245, 0.42), transparent 62%),
-        radial-gradient(36rem 36rem at 78% 88%, rgba(255, 79, 163, 0.40), transparent 62%),
-        radial-gradient(28rem 28rem at 8% 92%, rgba(45, 226, 245, 0.26), transparent 62%);
-    animation: aurora 26s ease-in-out infinite alternate;
+        /* véu de cor em diagonal (sem círculos) */
+        linear-gradient(135deg, rgba(45, 226, 245, 0.07) 0%, transparent 34%, transparent 62%, rgba(255, 79, 163, 0.07) 100%),
+        /* faixa de luz suave no topo, atrás do título e do menu */
+        linear-gradient(180deg, rgba(110, 100, 255, 0.13) 0, rgba(110, 100, 255, 0) 22rem),
+        /* base: azul-noite que escurece para baixo */
+        linear-gradient(180deg, #0b1023 0%, #080b1c 48%, #060713 100%);
 }
 
-/* Vinheta suave (sem grade/quadrados) */
+/* Vinheta bem leve nas bordas, para focar no conteúdo */
 body::after {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 45%, rgba(4, 5, 14, 0.40) 100%);
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(3, 4, 12, 0.35) 100%);
 }
 
-/* Brilhos discretos (estrelinhas) que piscam devagar */
+/* Brilhos discretos (estrelinhas) */
 html::before {
     content: "";
     position: fixed;
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    opacity: 0.55;
     background-repeat: no-repeat;
     background-image:
         radial-gradient(1.5px 1.5px at 8% 14%,  rgba(255, 255, 255, 0.85), transparent),
@@ -101,18 +104,6 @@ html::before {
         radial-gradient(1px 1px at 14% 90%,     rgba(255, 255, 255, 0.60), transparent),
         radial-gradient(1px 1px at 41% 52%,     rgba(255, 255, 255, 0.50), transparent),
         radial-gradient(1.5px 1.5px at 72% 6%,  rgba(255, 255, 255, 0.75), transparent);
-    animation: twinkle 7s ease-in-out infinite alternate;
-}
-
-@keyframes twinkle {
-    0%   { opacity: 0.35; }
-    100% { opacity: 1; }
-}
-
-@keyframes aurora {
-    0%   { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
-    50%  { transform: translate3d(2%, -3%, 0) scale(1.08) rotate(3deg); }
-    100% { transform: translate3d(-3%, 2%, 0) scale(1.15) rotate(-3deg); }
 }
 
 ::selection {
