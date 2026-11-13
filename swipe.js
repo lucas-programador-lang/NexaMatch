@@ -23,7 +23,7 @@
     const end = document.createElement('div');
     end.className = 'swipe-end';
     end.hidden = true;
-    end.innerHTML = '<h2>Você viu todo mundo por agora</h2><p>Quando chegar gente nova ela aparece aqui.</p><button type="button" class="btn-primary">Rever pessoas</button>';
+    end.innerHTML = '<h2>Você viu todo mundo por agora</h2><p>Quem você curtiu aparece em Meus Matches. Gente nova entra aqui sozinha.</p><button type="button" class="btn-primary">Rever quem passei</button>';
     wrap.append(bar, count, hint, end);
 
     const [passBtn, chatBtn, likeBtn] = bar.children;
@@ -34,7 +34,7 @@
         const m = /'([^']+)'/.exec((c.querySelector('.btn-view') || {}).getAttribute?.('onclick') || '');
         return m ? m[1] : '';
     };
-    const cards = () => [...grid.querySelectorAll(':scope > .card')].filter(c => !skipped.has(idOf(c)));
+    const cards = () => [...grid.querySelectorAll(':scope > .card')].filter(c => !skipped.has(idOf(c)) && !c.querySelector('.btn-like.liked'));
     const all = () => [...grid.querySelectorAll(':scope > .card')];
     const cur = () => cards()[index];
 
@@ -54,8 +54,7 @@
         });
         const c = list[index];
         if (enter && c) { void c.offsetWidth; c.classList.add('is-enter'); }
-        likeBtn.classList.toggle('on', !!(c && c.querySelector('.btn-like.liked')));
-        count.textContent = list.length ? (index + 1) + ' / ' + list.length : '';
+                count.textContent = list.length ? (index + 1) + ' / ' + list.length : '';
     }
 
     // o Firebase redesenha a lista sozinho: mantém a pessoa atual
@@ -74,8 +73,7 @@
         const c = cur(); if (!c || busy) return;
         const id = idOf(c);
         if (id && !c.querySelector('.btn-like.liked') && typeof window.handleLike === 'function') window.handleLike(id);
-        const last = index >= cards().length - 1;
-        fly(c, 1, () => { if (!last) index++; });
+        fly(c, 1, () => { if (id) skipped.add(id); });   // curtida sai do baralho; a próxima assume o lugar
     }
     function pass() {
         const c = cur(); if (!c || busy) return;
