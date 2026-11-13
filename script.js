@@ -2913,8 +2913,9 @@ async function saveProfileForm(event) {
     const next = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
 
     try {
-        if (typedUser !== oldUsername) {
-            // reserva o username (um por pessoa) e libera o antigo, tudo junto
+        if (typedUser !== oldUsername || typedUser) {
+            // reserva o username (um por pessoa) e libera o antigo, tudo junto.
+            // Também confere a reserva ao salvar o mesmo username (perfis antigos sem reserva).
             const batch = writeBatch(db);
             if (typedUser) {
                 const taken = await getDoc(doc(db, 'usernames', typedUser));
@@ -2925,7 +2926,7 @@ async function saveProfileForm(event) {
                 }
                 if (!taken.exists()) batch.set(doc(db, 'usernames', typedUser), { uid: myId, createdAt: serverTimestamp() });
             }
-            if (oldUsername) batch.delete(doc(db, 'usernames', oldUsername));
+            if (oldUsername && oldUsername !== typedUser) batch.delete(doc(db, 'usernames', oldUsername));
             batch.set(userRef, { ...next, username: typedUser, gender: myGender, updatedAt: serverTimestamp() }, { merge: true });
             await batch.commit();
         } else {
