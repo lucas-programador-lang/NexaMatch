@@ -8,9 +8,9 @@
 
 /* ---------- Variáveis ---------- */
 :root {
-    --bg-color: #0f0612;
-    --card-bg: rgba(27, 17, 42, 0.72);
-    --surface-solid: #130b1f;
+    --bg-color: #08051a;
+    --card-bg: rgba(24, 17, 52, 0.72);
+    --surface-solid: #0f0a26;
 
     --text-main: #f1f2ff;
     --text-muted: #b0b8d8;
@@ -46,8 +46,8 @@ html {
 }
 
 /* ---------- Fundo ----------
-   Sem manchas/orbs: um degradê vertical vinho/ameixa bem escuro, com um
-   véu muito sutil nas cores da marca (rosa e violeta) e estrelinhas discretas. Tudo parado, sem animação pesada. */
+   Sem manchas/orbs: um degradê vertical de violeta profundo, com um véu
+   muito sutil de ciano e rosa nos cantos (as cores da marca) e estrelinhas discretas. Tudo parado, sem animação pesada. */
 body {
     min-height: 100vh;
     color: var(--text-main);
@@ -63,12 +63,11 @@ body::before {
     z-index: -1;
     pointer-events: none;
     background:
-        /* véu de cor em diagonal (sem círculos) */
-        linear-gradient(135deg, rgba(255, 79, 163, 0.07) 0%, transparent 40%, transparent 65%, rgba(139, 92, 246, 0.07) 100%),
-        /* faixa de luz rosada no topo, atrás do título e do menu */
-        linear-gradient(180deg, rgba(255, 79, 163, 0.12) 0, rgba(255, 79, 163, 0) 22rem),
-        /* base: vinho/ameixa que escurece para baixo */
-        linear-gradient(180deg, #1d0a25 0%, #12071a 50%, #0a040f 100%);
+        /* ciano bem suave no canto de cima à direita e rosa no de baixo à esquerda (degradês lineares, sem manchas) */
+        linear-gradient(225deg, rgba(45, 226, 245, 0.09) 0%, transparent 32%),
+        linear-gradient(45deg, rgba(255, 79, 163, 0.09) 0%, transparent 34%),
+        /* base: violeta profundo que escurece para baixo */
+        linear-gradient(180deg, #1a0e40 0%, #100a2a 45%, #08051a 100%);
 }
 
 /* Vinheta bem leve nas bordas, para focar no conteúdo */
