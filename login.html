@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Entrar - NexaMatch</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="auth.css?v=20261116a">
 </head>
 <body class="auth-page">
   <div class="auth-bg" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b><b></b></div>
@@ -76,9 +76,12 @@
             <p class="af-error" id="password-error" hidden></p>
           </div>
 
-          <label class="check">
-            <input type="checkbox" id="remember" name="remember" /> Manter conectado
-          </label>
+          <div class="af-meta">
+            <label class="check">
+              <input type="checkbox" id="remember" name="remember" /> Manter conectado
+            </label>
+            <button type="button" id="forgot-btn" class="forgot-link">Esqueceu a senha?</button>
+          </div>
 
           <button type="submit" class="btn-primary">Entrar</button>
           <div id="form-message" class="message" role="alert" hidden></div>
@@ -89,6 +92,6 @@
 
   </div>
 
-  <script type="module" src="auth.js"></script>
+  <script type="module" src="auth.js?v=20261116a"></script>
 </body>
 </html>
