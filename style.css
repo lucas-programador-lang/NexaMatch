@@ -7808,3 +7808,157 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     #profile-detail .profile-actions > :nth-child(3),
     #profile-detail .profile-actions > :nth-child(4) { min-height: 3rem; font-size: 0.9rem; padding: 0 0.5rem; }
 }
+
+/* ==========================================================
+   Cards (Descobrir e Matches) — v3
+   • borda de luz girando em volta do card + brilho que pulsa
+   • foto "emoldurada" dentro do card, cantos arredondados
+   • nome grande, idade em etiqueta, cidade com pino
+   • selo de match em vidro, bio em até 2 linhas
+   • botões no mesmo estilo do resto do site
+   ========================================================== */
+#profiles-grid .card,
+#matches-content .grid .card {
+    padding: 0.5rem;
+    border: 0;
+    border-radius: 1.7rem;
+    background:
+        radial-gradient(120% 50% at 100% 0%, rgba(139, 92, 246, 0.14), transparent 60%),
+        rgba(15, 12, 34, 0.9);
+    box-shadow: 0 24px 60px -14px rgba(0, 0, 0, 0.7), 0 0 34px rgba(139, 92, 246, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    animation: cardIn 0.55s ease-out backwards, cdGlow 4.5s ease-in-out infinite;
+}
+@keyframes cdGlow {
+    0%, 100% { box-shadow: 0 24px 60px -14px rgba(0, 0, 0, 0.7), 0 0 26px rgba(139, 92, 246, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+    50%      { box-shadow: 0 24px 60px -14px rgba(0, 0, 0, 0.7), 0 0 46px rgba(255, 79, 163, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+
+/* borda de luz sempre acesa e girando */
+#profiles-grid .card::before,
+#matches-content .grid .card::before {
+    padding: 2px;
+    background: conic-gradient(from var(--pang), #8b5cf6, #ff4fa3 25%, #2de2f5 50%, #ff4fa3 75%, #8b5cf6);
+    opacity: 1;
+    animation: cdSpin 6s linear infinite;
+}
+@keyframes cdSpin { to { --pang: 360deg; } }
+#matches-content .grid .card:nth-child(2n)::before { animation-delay: -2s; }
+#matches-content .grid .card:nth-child(3n)::before { animation-delay: -4s; }
+#profiles-grid .card:hover::before,
+#matches-content .grid .card:hover::before { animation-duration: 2.2s; }
+
+#profiles-grid .card:hover { transform: none; }
+#matches-content .grid .card:hover { transform: translateY(-8px); }
+
+/* foto emoldurada */
+#profiles-grid .card-image-wrapper,
+#matches-content .grid .card-image-wrapper {
+    border-radius: 1.3rem;
+    aspect-ratio: 4 / 4.7;
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+}
+#profiles-grid .card-image-wrapper::after,
+#matches-content .grid .card-image-wrapper::after {
+    background:
+        linear-gradient(to top, rgba(6, 7, 19, 0.96) 0%, rgba(6, 7, 19, 0.55) 26%, rgba(6, 7, 19, 0) 54%),
+        linear-gradient(160deg, rgba(139, 92, 246, 0.18), transparent 42%);
+}
+
+/* nome e idade */
+#profiles-grid .card-head,
+#matches-content .grid .card-head { padding: 1.1rem 1.2rem 1.15rem; }
+#profiles-grid .card-head h2,
+#matches-content .grid .card-head h2 { font-size: 1.85rem; align-items: center; gap: 0.6rem; }
+#profiles-grid .card-head h2 span,
+#matches-content .grid .card-head h2 span {
+    padding: 0.12rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(45, 226, 245, 0.14);
+    border: 1px solid rgba(45, 226, 245, 0.4);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+#profiles-grid .location-tag,
+#matches-content .grid .location-tag { margin-top: 0.45rem; font-size: 0.88rem; color: rgba(240, 242, 255, 0.9); }
+
+/* selo de match em vidro com brilho */
+#profiles-grid .match-badge,
+#matches-content .grid .match-badge {
+    top: 0.9rem;
+    left: 0.9rem;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255, 79, 163, 0.85), rgba(139, 92, 246, 0.85));
+    color: #fff;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: 0 6px 20px -4px rgba(255, 79, 163, 0.8);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    animation: cdBadge 2.6s ease-in-out infinite;
+}
+@keyframes cdBadge { 0%, 100% { box-shadow: 0 6px 18px -4px rgba(255, 79, 163, 0.7); } 50% { box-shadow: 0 6px 28px -2px rgba(255, 79, 163, 1); } }
+
+/* parte de baixo */
+#profiles-grid .card-info,
+#matches-content .grid .card-info { padding: 1rem 0.8rem 0.8rem; }
+#profiles-grid .card-info p,
+#matches-content .grid .card-info p {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.9rem;
+    margin-bottom: 1rem;
+    padding-left: 0.8rem;
+    border-left: 3px solid transparent;
+    border-image: linear-gradient(180deg, #8b5cf6, #ff4fa3) 1;
+    font-size: 0.95rem;
+    line-height: 1.45;
+    color: rgba(215, 220, 245, 0.88);
+}
+
+/* botões */
+#profiles-grid .btn-view,
+#matches-content .grid .btn-view {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(240, 242, 255, 0.95);
+    font-weight: 700;
+    transition: transform 0.2s, background 0.2s, border-color 0.2s;
+}
+#profiles-grid .btn-view:hover,
+#matches-content .grid .btn-view:hover { background: rgba(139, 92, 246, 0.24); border-color: rgba(139, 92, 246, 0.7); transform: translateY(-2px); }
+
+#profiles-grid .btn-like,
+#matches-content .grid .btn-like {
+    border: 0;
+    background: linear-gradient(135deg, #ff4fa3, #a855f7 70%, #7c5cff);
+    color: #fff;
+    box-shadow: 0 10px 24px -6px rgba(255, 79, 163, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#profiles-grid .btn-like:hover,
+#matches-content .grid .btn-like:hover { transform: translateY(-2px) scale(1.08); box-shadow: 0 14px 30px -6px rgba(255, 79, 163, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+#profiles-grid .btn-like.liked,
+#matches-content .grid .btn-like.liked { background: rgba(255, 79, 163, 0.16); border: 1px solid rgba(255, 79, 163, 0.6); color: #ff7ab8; box-shadow: none; }
+
+#matches-content .grid .btn-msg {
+    border: 0;
+    background: linear-gradient(135deg, #2de2f5, #4f8bff 55%, #8b5cf6);
+    color: #fff;
+    font-weight: 700;
+    box-shadow: 0 10px 24px -8px rgba(79, 139, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #profiles-grid .card, #matches-content .grid .card,
+    #profiles-grid .card::before, #matches-content .grid .card::before,
+    #profiles-grid .match-badge, #matches-content .grid .match-badge { animation: none !important; }
+    #profiles-grid .card::before, #matches-content .grid .card::before { --pang: 40deg; }
+}
