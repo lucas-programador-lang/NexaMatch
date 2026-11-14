@@ -836,3 +836,8 @@ body.auth-page {
 .auth-card .forgot-link:hover:not(:disabled) { color: #fff; background-size: 100% 2px; }
 .auth-card .forgot-link:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; border-radius: 4px; }
 .auth-card .forgot-link:disabled { opacity: 0.6; cursor: wait; }
+
+/* "Manter conectado": área de toque maior e longe do botão Entrar */
+.auth-card .af-meta .check { padding: 0.6rem 0.4rem 0.6rem 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.auth-card .af-meta .check input { width: 1.3rem; height: 1.3rem; }
+.auth-card #login-form .btn-primary { margin-top: 1.5rem; }
