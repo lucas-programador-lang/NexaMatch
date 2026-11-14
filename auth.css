@@ -806,3 +806,33 @@ body.auth-page {
 .auth-card .btn-link { margin-top: 0.75rem; background: none; border: 0; padding: 0; color: #b4f4fb; font: inherit; font-size: 0.92rem; text-decoration: underline; cursor: pointer; }
 .auth-card .btn-link[hidden] { display: none; }
 .auth-card .btn-link:disabled { opacity: 0.6; cursor: wait; }
+
+
+/* linha "Manter conectado" + "Esqueceu a senha?" */
+.auth-card .af-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-top: 0.2rem;
+}
+.auth-card .af-meta .check { margin: 0; }
+.auth-card .forgot-link {
+    padding: 0.2rem 0;
+    background: none;
+    border: 0;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #b4f4fb;
+    cursor: pointer;
+    background-image: linear-gradient(90deg, #2de2f5, #ff4fa3);
+    background-size: 0 2px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.3s, color 0.2s;
+}
+.auth-card .forgot-link:hover:not(:disabled) { color: #fff; background-size: 100% 2px; }
+.auth-card .forgot-link:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; border-radius: 4px; }
+.auth-card .forgot-link:disabled { opacity: 0.6; cursor: wait; }
