@@ -490,8 +490,25 @@ async function wirePage() {
       });
     }
 
+    // "Manter conectado": lembra a sua escolha e não deixa um toque nele virar um "Entrar" sem querer
+    const remember = document.getElementById("remember");
+    let lastMetaTouch = 0;
+    try { if (remember && localStorage.getItem("nx_remember") === "1") remember.checked = true; } catch (e) { /* sem localStorage */ }
+    if (remember) {
+      remember.addEventListener("change", function () {
+        try { localStorage.setItem("nx_remember", remember.checked ? "1" : "0"); } catch (e) { /* ok */ }
+      });
+    }
+    const metaRow = loginForm.querySelector(".af-meta");
+    if (metaRow) ["pointerdown", "click"].forEach(function (ev) {
+      metaRow.addEventListener(ev, function () { lastMetaTouch = Date.now(); });
+    });
+
     loginForm.addEventListener("submit", async function (e) {
       e.preventDefault();
+      // só vale se veio do botão Entrar ou da tecla Enter; ignora envio logo após mexer no "Manter conectado"
+      if (e.submitter && !e.submitter.classList.contains("btn-primary")) return;
+      if (Date.now() - lastMetaTouch < 700 && e.submitter) return;
       showMessage(msg, "");
       if (resendBtn) resendBtn.hidden = true;
       if (!validateForm(loginForm, names)) return;
