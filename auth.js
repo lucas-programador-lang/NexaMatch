@@ -13,6 +13,7 @@ import {
   signOut,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail,
   deleteUser,
   setPersistence,
   browserLocalPersistence,
@@ -212,6 +213,22 @@ async function resendVerification({ email, password }) {
   }
 }
 
+// "Esqueci a senha": manda o link para criar uma senha nova.
+// Não revela se o e-mail tem conta (por segurança, a resposta é sempre a mesma).
+async function resetPassword({ email }) {
+  email = normalizeEmail(email);
+  if (!isValidEmail(email)) throw new Error("Digite o seu e-mail para receber o link.");
+  if (!isConfigured) throw new Error(NOT_CONFIGURED);
+  auth.languageCode = "pt-BR";
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (err) {
+    const code = err && err.code ? String(err.code) : "";
+    if (code !== "auth/user-not-found") throw err;
+  }
+  return { email };
+}
+
 // Depois que o Firebase terminou de verificar a sessão, devolve a pessoa logada (ou null)
 async function getCurrentUser() {
   if (!auth) return null;
@@ -247,6 +264,7 @@ export const Auth = {
   register,
   login,
   resendVerification,
+  resetPassword,
   logout,
   getCurrentUser,
   requireAuth,
@@ -443,6 +461,35 @@ async function wirePage() {
         resendBtn.disabled = false;
       });
     }
+    // Esqueceu a senha: usa o e-mail digitado e manda o link de redefinição
+    const forgotBtn = document.getElementById("forgot-btn");
+    if (forgotBtn) {
+      forgotBtn.addEventListener("click", async function () {
+        showMessage(msg, "");
+        if (resendBtn) resendBtn.hidden = true;
+        const emailMsg = fieldMessage(loginForm, "email");
+        setFieldError(loginForm, "email", emailMsg ? (loginForm.email.value.trim() ? emailMsg : "Digite o seu e-mail acima para receber o link.") : "");
+        if (emailMsg) { loginForm.email.focus(); return; }
+        forgotBtn.disabled = true;
+        try {
+          const r = await resetPassword({ email: loginForm.email.value });
+          showMessage(msg, "Se existir uma conta com " + r.email + ", enviamos um link para criar uma nova senha. Confira a caixa de entrada e o spam.", "success");
+          // espera 30 s antes de poder pedir de novo
+          let left = 30;
+          const label = forgotBtn.textContent;
+          const timer = setInterval(function () {
+            left -= 1;
+            if (left <= 0) { clearInterval(timer); forgotBtn.disabled = false; forgotBtn.textContent = label; }
+            else forgotBtn.textContent = "Reenviar em " + left + "s";
+          }, 1000);
+          forgotBtn.textContent = "Reenviar em " + left + "s";
+        } catch (err) {
+          showMessage(msg, friendlyError(err), "error");
+          forgotBtn.disabled = false;
+        }
+      });
+    }
+
     loginForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       showMessage(msg, "");
