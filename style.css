@@ -8141,3 +8141,60 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     #messages-content .chat-header .chat-avatar, #messages-content .chat-send,
     #messages-content .unread-badge, #messages-content .bubble.is-new { animation: none !important; }
 }
+
+/* ----- Mensagens no celular (≤ 860px) ----- */
+@media (max-width: 860px) {
+    /* saldo: valor à esquerda, botão à direita, mais baixo */
+    #messages-content .wallet-bar {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.8rem;
+        padding: 0.8rem 0.9rem 0.8rem 1.1rem;
+    }
+    #messages-content .wallet-bar strong { font-size: 1.45rem; }
+    #messages-content .wallet-bar button {
+        width: auto;
+        flex: none;
+        min-height: 2.7rem;
+        padding: 0 1.1rem;
+        font-size: 0.9rem;
+    }
+
+    /* conversas: alvo de toque maior, avatar maior */
+    #messages-content .chat-item { padding: 0.8rem 0.8rem; gap: 0.85rem; margin: 0.25rem 0; }
+    #messages-content .chat-item .chat-avatar { width: 3.5rem; height: 3.5rem; flex: none; }
+    #messages-content .chat-item-info strong { font-size: 1.02rem; }
+    #messages-content .chat-item:active { transform: scale(0.98); background: rgba(139, 92, 246, 0.18); }
+
+    /* conversa aberta: cabeçalho compacto, uma linha de status limpa */
+    #messages-content .chat-header { padding: 0.75rem 0.8rem; gap: 0.7rem; }
+    #messages-content .chat-header .chat-back {
+        width: 2.5rem;
+        height: 2.5rem;
+        flex: none;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    #messages-content .chat-header .chat-name-row strong { font-size: 1.05rem; }
+    #messages-content .chat-header .btn-view { min-height: 2.3rem; padding: 0 0.85rem; font-size: 0.82rem; flex: none; }
+    #messages-content #chat-sub { font-size: 0.76rem; opacity: 0.85; }
+
+    /* aviso de preço mais enxuto */
+    #messages-content .chat-banner { margin: 0.6rem 0.7rem 0; padding: 0.7rem 0.8rem; font-size: 0.82rem; border-radius: 1rem; }
+    #messages-content .chat-banner button { min-height: 2.3rem; padding: 0 1rem; font-size: 0.85rem; }
+
+    /* bolhas e campo de envio */
+    #messages-content .chat-thread { padding: 0.9rem 0.8rem 0.6rem; }
+    #messages-content .bubble { max-width: 84%; font-size: 0.96rem; }
+    #messages-content .thread-day span { font-size: 0.72rem; padding: 0.25rem 0.8rem; }
+    #messages-content .chat-form { gap: 0.4rem; padding: 0.4rem; }
+    #messages-content .chat-form input { font-size: 1rem; }   /* 16px: o iPhone não dá zoom ao tocar */
+    #messages-content .chat-attach { width: 2.6rem; height: 2.6rem; flex: none; }
+    #messages-content .chat-send { width: 2.8rem; height: 2.8rem; flex: none; }
+}
+@media (max-width: 380px) {
+    #messages-content .chat-header .btn-view { display: none; }   /* o avatar já abre o perfil */
+    #messages-content .wallet-bar strong { font-size: 1.3rem; }
+}
