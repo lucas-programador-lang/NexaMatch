@@ -32,6 +32,7 @@ export const {
     signOut,
     updateProfile,
     sendEmailVerification,
+    sendPasswordResetEmail,
     deleteUser,
     setPersistence,
     browserLocalPersistence,
