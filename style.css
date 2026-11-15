@@ -8198,3 +8198,99 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     #messages-content .chat-header .btn-view { display: none; }   /* o avatar já abre o perfil */
     #messages-content .wallet-bar strong { font-size: 1.3rem; }
 }
+
+/* ==========================================================
+   Mensagens — cabeçalho organizado + bolhas refinadas (v10)
+   Desktop: nome + selo na 1ª linha; cidade · visto na 2ª.
+   Celular: nome + selo / cidade / visto, cada um na sua linha.
+   ========================================================== */
+#messages-content .chat-header-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 0.22rem; }
+#messages-content .chat-name-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 0.5rem; min-width: 0; }
+#messages-content .chat-name-row strong {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+#messages-content .chat-presence { flex: none; font-size: 0.7rem; padding: 0.14rem 0.6rem; }
+
+#messages-content #chat-sub {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.1rem 0.7rem;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+    font-size: 0.82rem;
+    line-height: 1.3;
+}
+#messages-content #chat-sub::before { display: none; }          /* o pino agora fica na cidade */
+#messages-content #chat-sub .sub-loc,
+#messages-content #chat-sub .sub-seen { font-style: normal; font-weight: 500; }
+#messages-content #chat-sub .sub-loc {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    color: rgba(214, 220, 247, 0.9);
+}
+#messages-content #chat-sub .sub-loc::before {
+    content: "";
+    flex: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    background: linear-gradient(135deg, #2de2f5, #8b5cf6);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z'/><circle cx='12' cy='10' r='3'/></svg>") center / contain no-repeat;
+    mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z'/><circle cx='12' cy='10' r='3'/></svg>") center / contain no-repeat;
+}
+#messages-content #chat-sub .sub-seen { color: rgba(176, 184, 216, 0.75); font-size: 0.78rem; }
+#messages-content #chat-sub .sub-seen::before { content: "·"; margin-right: 0.7rem; opacity: 0.6; }
+
+@media (max-width: 600px) {
+    #messages-content .chat-header { align-items: center; }
+    #messages-content .chat-name-row { flex-wrap: nowrap; gap: 0.45rem; }
+    #messages-content .chat-name-row strong { flex: 0 1 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; font-size: 1.05rem; }
+    #messages-content #chat-sub { flex-direction: column; align-items: flex-start; gap: 0.12rem; font-size: 0.78rem; }
+    #messages-content #chat-sub .sub-seen { font-size: 0.74rem; padding-left: 1.28rem; }   /* alinha com o texto da cidade */
+    #messages-content #chat-sub .sub-seen::before { display: none; }
+}
+
+/* ----- bolhas refinadas ----- */
+#messages-content .chat-thread { display: flex; flex-direction: column; gap: 0.5rem; }
+#messages-content .bubble {
+    padding: 0.55rem 0.85rem 0.45rem;
+    border-radius: 1.2rem;
+    column-gap: 0.65rem;
+    line-height: 1.4;
+}
+#messages-content .bubble > span { padding-bottom: 0.05rem; }
+#messages-content .bubble small {
+    align-self: flex-end;
+    margin-left: auto;
+    padding: 0 0 0.12rem;
+    font-size: 0.66rem;
+    letter-spacing: 0.02em;
+    opacity: 0.72;
+}
+#messages-content .bubble .tick { width: 0.95rem; height: 0.95rem; margin-left: 0.22rem; vertical-align: -0.15rem; }
+#messages-content .bubble.me {
+    background: linear-gradient(145deg, #7c5cf0 0%, #a64fe0 55%, #e84fa3 100%);
+    box-shadow: 0 10px 22px -12px rgba(168, 85, 247, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+}
+#messages-content .bubble.them {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.115), rgba(255, 255, 255, 0.055));
+    border: 1px solid rgba(255, 255, 255, 0.11);
+}
+/* grupos: espaçamento curto entre mensagens seguidas, cantos que se encaixam */
+#messages-content .bubble.grp-cont { margin-top: -0.38rem; }
+#messages-content .bubble.me.grp-first { border-top-right-radius: 1.2rem; }
+#messages-content .bubble.me.grp-cont { border-top-right-radius: 0.35rem; }
+#messages-content .bubble.me:not(.grp-last) { border-bottom-right-radius: 0.35rem; }
+#messages-content .bubble.me.grp-last { border-bottom-right-radius: 0.35rem; }
+#messages-content .bubble.them.grp-cont { border-top-left-radius: 0.35rem; }
+#messages-content .bubble.them:not(.grp-last) { border-bottom-left-radius: 0.35rem; }
+#messages-content .bubble.them.grp-last { border-bottom-left-radius: 0.35rem; }
+@media (max-width: 860px) {
+    #messages-content .bubble { padding: 0.5rem 0.8rem 0.4rem; font-size: 0.95rem; }
+}
