@@ -8518,3 +8518,43 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     #messages-content #chat-sub .sub-loc,
     #messages-content #chat-sub .sub-seen { font-size: 0.74rem; padding: 0 0.6rem; }
 }
+
+/* ----- cabeçalho no celular: mais baixo, chips numa linha só ----- */
+@media (max-width: 600px) {
+    #messages-content .chat-header { gap: 0.55rem 0.5rem; padding: 0.65rem 0.75rem 0.7rem; }
+    #messages-content .chat-status {
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+        padding-top: 0.55rem;
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        scrollbar-width: none;
+        -webkit-mask: linear-gradient(90deg, #000 calc(100% - 1.4rem), transparent);
+        mask: linear-gradient(90deg, #000 calc(100% - 1.4rem), transparent);
+    }
+    #messages-content .chat-status::-webkit-scrollbar { display: none; }
+    #messages-content .chat-status .chat-presence,
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen {
+        flex: none;
+        height: 1.55rem;
+        padding: 0 0.6rem;
+        gap: 0.3rem;
+        font-size: 0.72rem;
+    }
+    #messages-content #chat-sub .sub-loc::before,
+    #messages-content #chat-sub .sub-seen::after { width: 0.75rem; height: 0.75rem; }
+    #messages-content .chat-header .chat-avatar .presence-dot { width: 0.5rem; height: 0.5rem; }
+}
+
+@media (max-width: 600px) {
+    #messages-content .chat-name-row strong { overflow-wrap: break-word; word-break: normal; }
+    #messages-content .chat-status {
+        gap: 0.3rem;
+        -webkit-mask: linear-gradient(90deg, #000 calc(100% - 0.8rem), transparent);
+        mask: linear-gradient(90deg, #000 calc(100% - 0.8rem), transparent);
+    }
+    #messages-content .chat-status .chat-presence,
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen { padding: 0 0.5rem; font-size: 0.7rem; gap: 0.25rem; }
+}
