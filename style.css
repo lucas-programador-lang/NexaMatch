@@ -8762,3 +8762,61 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     border: 1px solid rgba(255, 79, 163, 0.35);
 }
 .modal-discard:hover { background: rgba(255, 79, 163, 0.12); border-color: rgba(255, 79, 163, 0.6); }
+
+/* Aviso de alterações não salvas / rascunho recuperado */
+.nx-unsaved {
+    position: fixed;
+    top: 5.2rem;
+    left: 50%;
+    z-index: 290;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: max-content;
+    max-width: calc(100% - 2rem);
+    padding: 0.75rem 0.75rem 0.75rem 0.85rem;
+    background: linear-gradient(135deg, rgba(26, 24, 54, 0.96), rgba(14, 17, 38, 0.96));
+    border: 1px solid rgba(245, 185, 74, 0.4);
+    border-radius: 1.4rem;
+    box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.85), 0 0 34px rgba(245, 185, 74, 0.18);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    opacity: 0;
+    transform: translate(-50%, -16px);
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+}
+.nx-unsaved.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.nx-unsaved-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    color: #f5b94a;
+    background: rgba(245, 185, 74, 0.14);
+    border: 1px solid rgba(245, 185, 74, 0.35);
+}
+.nx-unsaved-icon svg { width: 1.2rem; height: 1.2rem; }
+.nx-unsaved-text { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.nx-unsaved-text strong { font-size: 0.92rem; color: var(--text-main); }
+.nx-unsaved-text small { font-size: 0.78rem; color: var(--text-muted, rgba(255, 255, 255, 0.65)); }
+.nx-unsaved-actions { display: flex; gap: 0.45rem; flex: none; }
+.nx-unsaved-btn {
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    color: var(--text-main);
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.nx-unsaved-btn.primary { background: var(--grad-brand); border-color: transparent; color: #fff; }
+.nx-unsaved-btn:hover { filter: brightness(1.12); }
+@media (max-width: 860px) {
+    .nx-unsaved { top: calc(0.8rem + env(safe-area-inset-top, 0px)); flex-wrap: wrap; justify-content: flex-end; width: calc(100% - 1.6rem); }
+    .nx-unsaved-text { flex: 1 1 10rem; }
+}
