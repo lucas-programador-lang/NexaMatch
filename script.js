@@ -81,10 +81,18 @@ const readHiddenLikes = raw => {
     }
     return out;
 };
+// ---------- Constantes usadas já no carregamento do perfil ----------
+// (precisam ficar ANTES dele: const só existe depois da linha em que é declarada)
+const MAX_EXTRA_PHOTOS = 5; // fotos extras do perfil (galeria)
+const isOwnPhoto = url => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(url) && url.length <= 200000;
+const USERNAME_RE = /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/;      // 3 a 20: letras minúsculas, números, ponto e _
+const RESERVED_USERNAMES = ['admin', 'nexamatch', 'suporte', 'support', 'ajuda', 'perfil', 'login', 'u'];
+
 let profileLoaded = false; // só deixa salvar se o perfil foi lido do Firebase (evita apagar dados por erro de rede/regras)
 let myProfile = { username: '', name: '', age: '', location: '', bio: '', interests: [], photo: '', photos: [], interestedIn: [...ALL_GENDER_IDS] };
 
-try {
+async function loadMyProfile() {
+  try {
     const [userSnap, accountSnap] = await Promise.all([getDoc(userRef), getDoc(accountRef)]);
     const publicData = userSnap.exists() ? userSnap.data() : {};
     const privateData = accountSnap.exists() ? accountSnap.data() : {};
@@ -114,6 +122,26 @@ try {
 } catch (error) {
     console.error('Não consegui carregar seu perfil:', error);
     myProfile.name = String(currentUser.name || '').slice(0, 40);
+}
+}
+await loadMyProfile();
+
+// Se o perfil não tinha carregado (rede/Firebase), tenta de novo. Se conseguir, a tela é refeita com os
+// dados salvos e a gravação atual é cancelada, para nunca gravar campos em branco por cima do perfil.
+async function ensureProfileLoaded(say) {
+    if (profileLoaded) return true;
+    await loadMyProfile();
+    if (!profileLoaded) {
+        say('Sem conexão com o Firebase agora. Tente de novo em instantes.');
+        return false;
+    }
+    draftInterests = [...myProfile.interests];
+    draftPhoto = myProfile.photo;
+    draftPhotos = [...myProfile.photos];
+    renderMyProfile();
+    updateUsernameHint();
+    say('Seu perfil foi carregado. Confira os dados e salve de novo.');
+    return false;
 }
 
 let draftInterests = [...myProfile.interests]; // interesses em edição
@@ -206,9 +234,6 @@ const safePhoto = url =>
         ? url
         : '';
 
-// Fotos extras do perfil (galeria): até 5, só imagem embutida gerada pelo app
-const MAX_EXTRA_PHOTOS = 5;
-const isOwnPhoto = url => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(url) && url.length <= 200000;
 
 // Sem foto: fundo em gradiente (cor muda conforme o nome) com a inicial num círculo
 const PLACEHOLDER_COLORS = [
@@ -239,8 +264,6 @@ function placeholderPhoto(name) {
 // Tudo que vem de outras pessoas é escapado aqui, uma vez só,
 // para poder entrar com segurança nos modelos de HTML da tela.
 // ---------- Username (o link do perfil: seusite/@username) ----------
-const USERNAME_RE = /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/;      // 3 a 20: letras minúsculas, números, ponto e _
-const RESERVED_USERNAMES = ['admin', 'nexamatch', 'suporte', 'support', 'ajuda', 'perfil', 'login', 'u'];
 function cleanUsername(value) {
     const name = String(value || '').trim().toLowerCase().replace(/^@/, '');
     return USERNAME_RE.test(name) ? name : '';
@@ -3043,10 +3066,7 @@ function removeMyPhoto() {
 // Fotos são gravadas no Firebase na hora (sem depender do botão "Salvar perfil"),
 // para aparecerem em qualquer aparelho em que a pessoa entrar.
 async function persistPhotos() {
-    if (!profileLoaded) {
-        showToast('Não consegui carregar seu perfil salvo. Recarregue a página e tente de novo.');
-        return false;
-    }
+    if (!(await ensureProfileLoaded(showToast))) return false;
     const extras = draftPhotos.filter(isOwnPhoto).slice(0, MAX_EXTRA_PHOTOS);
     if (draftPhoto.length > 700000 || draftPhoto.length + extras.reduce((sum, p) => sum + p.length, 0) > 900000) {
         showToast('As fotos somam peso demais. Remova uma delas.');
@@ -3109,10 +3129,7 @@ function scheduleAutoSave() {
 async function doSaveProfile(auto) {
     const say = text => { if (!auto) showToast(text); };
 
-    if (!profileLoaded) {
-        say('Não consegui carregar seu perfil salvo. Recarregue a página antes de salvar.');
-        return;
-    }
+    if (!(await ensureProfileLoaded(say))) return;
 
     const name = document.getElementById('me-name-input').value.trim();
     const age = parseInt(document.getElementById('me-age-input').value, 10);
