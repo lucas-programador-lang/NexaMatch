@@ -1459,7 +1459,32 @@ function goToNotifications() {
 }
 
 // Controla a navegação entre as telas no Menu
+// Trocar de aba com alterações do perfil não salvas: janela do próprio app (no lugar do aviso do navegador)
 function changePage(pageId, element) {
+    const profilePage = document.getElementById('page-perfil');
+    const leavingDirtyProfile = pageId !== 'perfil'
+        && profilePage && profilePage.style.display === 'block'
+        && document.getElementById('me-name-input') && isProfileDirty();
+    if (!leavingDirtyProfile) { goToPage(pageId, element); return; }
+
+    askConfirm({
+        title: 'Sair sem salvar?',
+        message: 'Você mudou algo no seu perfil e ainda não salvou. Se sair agora, essas alterações serão perdidas.',
+        confirmText: 'Sair sem salvar',
+        cancelText: 'Continuar editando',
+        danger: true
+    }).then(ok => {
+        if (!ok) return;
+        draftInterests = [...myProfile.interests];
+        draftPhoto = myProfile.photo;
+        draftPhotos = [...myProfile.photos];
+        renderMyProfile();
+        updateUsernameHint();
+        goToPage(pageId, element);
+    });
+}
+
+function goToPage(pageId, element) {
     currentProfileId = null;
 
     document.querySelectorAll('nav a').forEach(link => {
@@ -2550,7 +2575,7 @@ function renderMyProfile() {
             <!-- ===== Corpo: formulário + prévia ===== -->
             <div class="me-grid">
                 <div class="me-col">
-                    <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview(); scheduleAutoSave()">
+                    <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview()">
 
                         <section class="me-step" id="me-step-1">
                             <div class="me-step-head">
@@ -2804,12 +2829,8 @@ function updateSaveState() {
     const status = document.getElementById('me-save-status');
     if (!status || savingProfile) return;
     const dirty = isProfileDirty();
-    const typed = (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
-    const usernameChanged = typed !== String(myProfile.username || '');
     status.classList.toggle('dirty', dirty);
-    status.textContent = !dirty
-        ? 'Tudo salvo'
-        : usernameChanged ? 'Clique em Salvar perfil para trocar o username' : 'Salvando automaticamente...';
+    status.textContent = dirty ? 'Alterações não salvas' : 'Tudo salvo';
 }
 
 // Foto (ou a inicial do nome, enquanto não há foto)
@@ -2927,7 +2948,6 @@ function addInterest() {
     if (!draftInterests.some(item => item.toLowerCase() === value.toLowerCase())) {
         draftInterests.push(value);
         renderInterestChips();
-        scheduleAutoSave();
     }
     input.value = '';
     input.focus();
@@ -2936,7 +2956,6 @@ function addInterest() {
 function removeInterest(index) {
     draftInterests.splice(index, 1);
     renderInterestChips();
-    scheduleAutoSave();
 }
 
 // Enter no campo adiciona o interesse (e não envia o formulário)
@@ -2974,7 +2993,7 @@ function handlePhotoUpload(event) {
 
             draftPhoto = canvas.toDataURL('image/jpeg', 0.82);
             renderMyAvatar();
-            persistPhotos().then(ok => { if (ok) showToast('Foto salva!'); });
+            showToast('Foto pronta. Clique em Salvar perfil.');
         };
         image.onerror = () => showToast('Não consegui abrir essa imagem.');
         image.src = reader.result;
@@ -3046,53 +3065,28 @@ async function handleExtraPhotos(event) {
         } catch (error) { failed++; }
     }
     renderMyPhotos();
-    const saved = await persistPhotos();
     if (failed) showToast('Algumas imagens não puderam ser usadas.');
-    else if (saved) showToast('Foto salva!');
+    else showToast('Foto adicionada. Clique em Salvar perfil.');
 }
 
 function removeExtraPhoto(index) {
     draftPhotos.splice(index, 1);
     renderMyPhotos();
-    persistPhotos();
 }
 
 function removeMyPhoto() {
     draftPhoto = '';
     renderMyAvatar();
-    persistPhotos();
 }
 
-// Fotos são gravadas no Firebase na hora (sem depender do botão "Salvar perfil"),
-// para aparecerem em qualquer aparelho em que a pessoa entrar.
-async function persistPhotos() {
-    if (!(await ensureProfileLoaded(showToast))) return false;
-    const extras = draftPhotos.filter(isOwnPhoto).slice(0, MAX_EXTRA_PHOTOS);
-    if (draftPhoto.length > 700000 || draftPhoto.length + extras.reduce((sum, p) => sum + p.length, 0) > 900000) {
-        showToast('As fotos somam peso demais. Remova uma delas.');
-        return false;
+// Avisa antes de fechar ou recarregar a aba com alterações do perfil ainda não salvas
+// (a janela é do navegador: o texto e o visual dela não podem ser mudados)
+window.addEventListener('beforeunload', event => {
+    if (document.getElementById('me-name-input') && isProfileDirty()) {
+        event.preventDefault();
+        event.returnValue = '';
     }
-    try {
-        await setDoc(userRef, { photo: draftPhoto, photos: extras, updatedAt: serverTimestamp() }, { merge: true });
-    } catch (error) {
-        console.error(error);
-        showToast('Não deu para salvar a foto agora. Confira a internet e tente de novo.');
-        return false;
-    }
-    myProfile = { ...myProfile, photo: draftPhoto, photos: extras };
-    updateProfileSummary();
-    return true;
-}
-
-// Sem janela de aviso do navegador: ao fechar, recarregar ou sair da aba, o que estiver pendente
-// é salvo na hora (o salvamento automático também roda a cada alteração).
-function flushProfileSave() {
-    if (!document.getElementById('me-name-input') || !isProfileDirty()) return;
-    clearTimeout(autoSaveTimer);
-    saveProfileForm(null, true);
-}
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushProfileSave(); });
-window.addEventListener('pagehide', flushProfileSave);
+});
 
 // ----- Salvar -----
 // Botão "Salvar perfil" fica verde por um instante quando salva
@@ -3120,13 +3114,6 @@ async function saveProfileForm(event, auto = false) {
     }
 }
 
-// Salva sozinho 1,5 s depois da última alteração (o username só muda pelo botão Salvar perfil,
-// para não reservar nomes pela metade enquanto a pessoa digita)
-let autoSaveTimer = null;
-function scheduleAutoSave() {
-    clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(() => { if (isProfileDirty()) saveProfileForm(null, true); }, 1500);
-}
 
 async function doSaveProfile(auto) {
     const say = text => { if (!auto) showToast(text); };
@@ -3380,7 +3367,7 @@ Object.assign(window, {
     fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, handleExtraPhotos, removeExtraPhoto, openGallery, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
-    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint, scheduleAutoSave
+    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
 });
 
 renderMyProfile();
