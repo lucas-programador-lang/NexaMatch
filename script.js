@@ -1477,6 +1477,7 @@ function changePage(pageId, element) {
 
 function goToPage(pageId, element) {
     currentProfileId = null;
+    setTimeout(() => syncUnsavedBar(Boolean(document.getElementById('me-name-input')) && isProfileDirty()), 0);
 
     document.querySelectorAll('nav a').forEach(link => {
         link.classList.remove('active');
@@ -2831,6 +2832,8 @@ function updateSaveState() {
     status.classList.toggle('dirty', dirty);
     status.textContent = dirty ? 'Alterações não salvas' : 'Tudo salvo';
     if (dirty) armBackGuard();
+    syncUnsavedBar(dirty);
+    scheduleDraftSave();
 }
 
 // Foto (ou a inicial do nome, enquanto não há foto)
@@ -3079,15 +3082,7 @@ function removeMyPhoto() {
     renderMyAvatar();
 }
 
-// Avisa antes de fechar ou recarregar a aba com alterações do perfil ainda não salvas
-// (a janela é do navegador: o texto e o visual dela não podem ser mudados)
-let skipUnloadWarning = false;
-window.addEventListener('beforeunload', event => {
-    if (!skipUnloadWarning && document.getElementById('me-name-input') && isProfileDirty()) {
-        event.preventDefault();
-        event.returnValue = '';
-    }
-});
+let skipUnloadWarning = false; // (sem aviso nativo: o rascunho fica guardado no aparelho)
 
 // ----- Salvar -----
 // Botão "Salvar perfil" fica verde por um instante quando salva
@@ -3191,6 +3186,146 @@ async function doSaveProfile(auto) {
     if (!auto) { showToast('Perfil salvo!'); flashSaved(); }
     updateProfileSummary();
 }
+
+// ----- Aviso bonito de "alterações não salvas" + rascunho guardado no aparelho -----
+// O rascunho fica só neste navegador (localStorage), nunca vai para o Firebase sozinho:
+// o perfil só é gravado de verdade em "Salvar perfil".
+const DRAFT_KEY = 'nexamatch:perfil-rascunho:' + myId;
+let draftSaveTimer = null;
+let unsavedBar = null;
+
+function buildNxToast({ title, text, buttons }) {
+    const box = document.createElement('div');
+    box.className = 'nx-unsaved';
+    box.setAttribute('role', 'status');
+    box.setAttribute('aria-live', 'polite');
+    box.innerHTML = `
+        <span class="nx-unsaved-icon">${meIcon('alert')}</span>
+        <span class="nx-unsaved-text"><strong>${escapeHtml(title)}</strong><small>${escapeHtml(text)}</small></span>
+        <span class="nx-unsaved-actions"></span>`;
+    const actions = box.querySelector('.nx-unsaved-actions');
+    buttons.forEach(({ label, primary, onClick }) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = primary ? 'nx-unsaved-btn primary' : 'nx-unsaved-btn';
+        button.textContent = label;
+        button.addEventListener('click', onClick);
+        actions.appendChild(button);
+    });
+    document.body.appendChild(box);
+    return box;
+}
+
+function syncUnsavedBar(dirty) {
+    const onProfile = Boolean(document.getElementById('me-name-input'))
+        && document.getElementById('page-perfil')?.style.display === 'block';
+    const visible = Boolean(dirty && onProfile);
+    if (visible && !unsavedBar) {
+        unsavedBar = buildNxToast({
+            title: 'Alterações não salvas',
+            text: 'Toque em salvar para guardar seu perfil.',
+            buttons: [{ label: 'Salvar perfil', primary: true, onClick: () => saveProfileForm(null) }]
+        });
+    }
+    if (unsavedBar) requestAnimationFrame(() => unsavedBar.classList.toggle('show', visible));
+}
+
+function readDraft() {
+    try {
+        const raw = localStorage.getItem(DRAFT_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+function writeDraftNow() {
+    if (!profileLoaded) return;
+    try {
+        if (!document.getElementById('me-name-input') || !isProfileDirty()) {
+            localStorage.removeItem(DRAFT_KEY);
+            return;
+        }
+        const val = id => document.getElementById(id)?.value || '';
+        const draft = {
+            name: val('me-name-input'), age: val('me-age-input'), username: val('me-username-input'),
+            location: val('me-location-input'), bio: val('me-bio-input'),
+            interests: draftInterests, photo: draftPhoto, photos: draftPhotos, at: Date.now()
+        };
+        try {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch (error) {
+            // espaço cheio: guarda o texto sem as fotos
+            localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...draft, photo: '', photos: [] }));
+        }
+    } catch (error) { /* navegador bloqueou o armazenamento: segue sem rascunho */ }
+}
+
+function scheduleDraftSave() {
+    clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(writeDraftNow, 400);
+}
+
+function discardDraft() {
+    clearTimeout(draftSaveTimer);
+    try { localStorage.removeItem(DRAFT_KEY); } catch (error) { /* ok */ }
+}
+
+// Devolve true se havia rascunho diferente do perfil salvo e ele foi recolocado na tela
+function restoreDraft(draft) {
+    if (!draft || typeof draft !== 'object' || !document.getElementById('me-name-input')) return false;
+
+    const put = (id, value) => {
+        const el = document.getElementById(id);
+        if (el && !el.readOnly && typeof value === 'string') el.value = value;
+    };
+    put('me-name-input', draft.name);
+    put('me-age-input', draft.age);
+    put('me-username-input', draft.username);
+    put('me-location-input', draft.location);
+    put('me-bio-input', draft.bio);
+    if (Array.isArray(draft.interests)) draftInterests = draft.interests.filter(item => typeof item === 'string').slice(0, 8);
+    if (typeof draft.photo === 'string' && draft.photo.length <= 700000) draftPhoto = draft.photo;
+    if (Array.isArray(draft.photos)) draftPhotos = draft.photos.filter(photo => typeof photo === 'string' && isOwnPhoto(photo)).slice(0, MAX_EXTRA_PHOTOS);
+
+    renderInterestChips();
+    renderMyPhotos();
+    renderMyAvatar();
+    updateMePreview();
+    updateUsernameHint();
+    const bio = document.getElementById('me-bio-input');
+    if (bio) updateBioCount(bio);
+    return isProfileDirty();
+}
+
+function showDraftRestoredNotice() {
+    const notice = buildNxToast({
+        title: 'Rascunho recuperado',
+        text: 'Você saiu sem salvar. Colocamos de volta o que estava escrito.',
+        buttons: [
+            { label: 'Ver e salvar', primary: true, onClick: () => { close(); document.querySelector('nav a[onclick*="perfil"]')?.click(); } },
+            { label: 'Descartar', onClick: () => {
+                close();
+                discardDraft();
+                draftInterests = [...myProfile.interests];
+                draftPhoto = myProfile.photo;
+                draftPhotos = [...myProfile.photos];
+                renderMyProfile();
+                updateUsernameHint();
+            } }
+        ]
+    });
+    function close() {
+        notice.classList.remove('show');
+        setTimeout(() => notice.remove(), 300);
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => notice.classList.add('show')));
+    setTimeout(() => { if (document.body.contains(notice)) close(); }, 12000);
+}
+
+// fechar a aba / minimizar: grava o rascunho na hora (sem esperar o intervalo)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') writeDraftNow(); });
+window.addEventListener('pagehide', writeDraftNow);
 
 // ----- Janela "alterações não salvas" (visual do app, com 3 opções) -----
 // Devolve 'save', 'discard' ou 'stay'
@@ -3486,8 +3621,10 @@ Object.assign(window, {
     profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
 });
 
+const pendingDraft = readDraft();
 renderMyProfile();
 updateUsernameHint();
+if (restoreDraft(pendingDraft)) showDraftRestoredNotice();
 refreshAll();
 startRealtime(); // a partir daqui tudo se atualiza sozinho
 startPresence();
