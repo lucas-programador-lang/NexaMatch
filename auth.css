@@ -870,28 +870,95 @@ body.auth-page {
 }
 .af-help:empty { display: none; }
 
-/* botão de localização com a mesma altura e cantos dos campos */
+/* ==========================================================
+   CADASTRO (v8): formulário em duas colunas, mais baixo e mais limpo
+   ========================================================== */
+.auth-card:has(#register-form) { max-width: 33rem; container-type: inline-size; }
+
+.af-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 0.9rem; }
+.af-grid > * { min-width: 0; }
+
+@container (min-width: 28rem) {
+    .af-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .af-grid > .af-span { grid-column: 1 / -1; }
+}
+
+/* campos mais compactos */
+#register-form .af-field { margin-bottom: 0.9rem; }
+#register-form .af-field > label,
+#register-form .af-label { margin-bottom: 0.35rem; font-size: 0.8rem; letter-spacing: 0.01em; }
+#register-form .af-label { display: block; font-weight: 600; color: var(--text-main); }
+#register-form .af-control input { height: 3rem; font-size: 0.95rem; }
+#register-form .af-row select { height: 3rem; font-size: 0.9rem; padding-left: 0.7rem; }
+#register-form .af-row { gap: 0.4rem; }
+#register-form .choice span { height: 3rem; font-size: 0.9rem; }
+#register-form .af-choices { gap: 0.4rem; }
+#register-form .af-error { margin-top: 0.35rem; font-size: 0.78rem; }
+#register-form .strength { margin-top: 0.45rem; }
+
+/* @ dentro do campo de username */
+.af-control > .af-at {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.2s;
+}
+.af-control:focus-within > .af-at { color: var(--cyan); }
+.af-field.is-invalid .af-control > .af-at { color: var(--pink); }
+
+/* texto de ajuda simples (sem caixa) */
+.af-help { margin: 0.4rem 0 0; font-size: 0.74rem; line-height: 1.35; color: var(--text-muted); }
+.af-help:empty { display: none; }
+
+/* aviso dos 18 anos: uma faixa discreta, ocupa a linha toda */
+#register-form .af-note.af-span { margin: 0 0 0.9rem; padding: 0.55rem 0.8rem; font-size: 0.76rem; }
+
+/* botão de localização: ícone redondo dentro do campo de cidade */
+.af-control.has-action input { padding-right: 3.4rem; }
 .af-geo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.55rem;
-    width: 100%;
-    height: 2.9rem;
-    margin-top: 0.55rem;
-    padding: 0 1rem;
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
+    position: absolute;
+    right: 0.4rem;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    padding: 0;
+    transform: translateY(-50%);
     color: #7eeeff;
-    background: rgba(45, 226, 245, 0.07);
-    border: 1px solid rgba(45, 226, 245, 0.32);
-    border-radius: 0.95rem;
+    background: rgba(45, 226, 245, 0.1);
+    border: 1px solid rgba(45, 226, 245, 0.35);
+    border-radius: 0.7rem;
     cursor: pointer;
     transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
-.af-geo svg { width: 1.1rem; height: 1.1rem; flex: none; }
-.af-geo:hover { background: rgba(45, 226, 245, 0.13); border-color: rgba(45, 226, 245, 0.55); }
-.af-geo:active { transform: scale(0.98); }
-.af-geo:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
-.af-geo:disabled { opacity: 0.6; cursor: wait; }
+.af-geo svg { width: 1.15rem; height: 1.15rem; }
+.af-geo:hover { background: rgba(45, 226, 245, 0.2); border-color: rgba(45, 226, 245, 0.6); }
+.af-geo:active { transform: translateY(-50%) scale(0.94); }
+.af-geo:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.af-geo:disabled { opacity: 0.55; cursor: wait; animation: afGeoPulse 1s ease-in-out infinite; }
+@keyframes afGeoPulse { 50% { box-shadow: 0 0 0 5px rgba(45, 226, 245, 0.18); } }
+
+/* título e botão do cadastro */
+.auth-card:has(#register-form) h1 { font-size: clamp(1.55rem, 4.6vw, 1.85rem); }
+.auth-card:has(#register-form) .sub { margin-bottom: 1.2rem; font-size: 0.92rem; }
+#register-form .btn-primary { margin-top: 0.4rem; height: 3.2rem; }
+
+@media (max-width: 900px) {
+    .auth-card:has(#register-form) { max-width: 30rem; }
+}
+
+@media (max-width: 380px) {
+    #register-form .af-row { grid-template-columns: 0.8fr 1.3fr 1fr; gap: 0.3rem; }
+    #register-form .af-row select { padding-left: 0.55rem; font-size: 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .af-geo:disabled { animation: none; }
+}
