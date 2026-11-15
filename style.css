@@ -9409,3 +9409,160 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     box-shadow: 0 14px 28px -12px rgba(45, 226, 245, 0.9);
 }
 .acct-btn:not(.acct-btn-danger):hover svg { color: #fff; transform: translateX(2px); }
+
+/* ==========================================================
+   INTERESSES (v8) — medidor, campo único, chips coloridos e sugestões
+   ========================================================== */
+.int-progress { display: flex; align-items: center; gap: 0.9rem; }
+.int-meter { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.28rem; flex: 1; min-width: 0; }
+.int-meter i {
+    position: relative;
+    height: 0.42rem;
+    background: rgba(255, 255, 255, 0.09);
+    border-radius: 999px;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+.int-meter i.on { background: linear-gradient(90deg, #8b5cf6, #ff4fa3); box-shadow: 0 0 10px rgba(255, 79, 163, 0.5); }
+/* marca onde fica o mínimo (3º segmento) */
+.int-meter i.goal::after {
+    content: "";
+    position: absolute;
+    right: -0.2rem;
+    top: -0.28rem;
+    bottom: -0.28rem;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.28);
+    border-radius: 2px;
+}
+.int-meter-text { flex: none; margin: 0; font-size: 0.78rem; font-weight: 600; color: #ffc857; }
+.int-meter-text.ok { color: #34f5a1; }
+
+/* campo único: # + texto + botão dentro da mesma caixa */
+.int-field {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 3.5rem;
+    padding: 0 0.45rem 0 1rem;
+    background: rgba(4, 6, 20, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.int-field:focus-within { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.22); }
+.int-hash { font-size: 1.15rem; font-weight: 800; color: #8b5cf6; line-height: 1; }
+.me-page .int-field input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 0.3rem;
+    font-size: 1rem;
+    color: #fff;
+    background: none;
+    border: 0;
+    outline: none;
+    box-shadow: none;
+}
+.me-page .int-field input::placeholder { color: rgba(176, 184, 216, 0.5); }
+.me-page .int-field .btn-add {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: auto;
+    height: 2.6rem;
+    padding: 0 1.1rem 0 0.9rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #fff;
+    border-radius: 0.85rem;
+}
+.me-page .int-field .btn-add svg { width: 1.05rem; height: 1.05rem; }
+.me-page .int-field .btn-add:hover { transform: translateY(-1px); filter: brightness(1.12); }
+.me-page .int-field .btn-add:disabled { opacity: 0.45; filter: none; transform: none; cursor: not-allowed; }
+.int-field:has(input:disabled) { opacity: 0.7; }
+
+/* chips */
+.me-page .chips { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.me-page .chip-edit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(var(--c), 0.3), rgba(var(--c), 0.1));
+    border: 1px solid rgba(var(--c), 0.7);
+    border-radius: 999px;
+    box-shadow: 0 10px 20px -12px rgba(var(--c), 0.95);
+}
+.me-page .chip-edit::before { content: "#"; margin-right: -0.2rem; opacity: 0.55; font-weight: 800; }
+.me-page .chip-edit button {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    padding: 0;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border: 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.me-page .chip-edit button:hover { background: rgba(255, 79, 163, 0.85); transform: rotate(90deg); }
+
+/* ainda sem interesses */
+.int-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    width: 100%;
+    padding: 1rem 1.1rem;
+    background: rgba(139, 92, 246, 0.06);
+    border: 1.5px dashed rgba(139, 92, 246, 0.4);
+    border-radius: 1.1rem;
+}
+.int-empty > svg { flex: none; width: 2.6rem; height: 2.6rem; padding: 0.65rem; color: #c9b6ff; background: rgba(139, 92, 246, 0.15); border-radius: 0.9rem; }
+.int-empty span { display: flex; flex-direction: column; gap: 0.15rem; }
+.int-empty strong { font-size: 0.92rem; color: #fff; }
+.int-empty small { font-size: 0.8rem; color: #a9b2d6; }
+
+/* sugestões */
+.me-page .me-suggest { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.me-page .me-suggest button {
+    min-height: 2.3rem;
+    padding: 0 0.95rem;
+    font-size: 0.84rem;
+    font-weight: 600;
+    color: #c9d0ee;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    cursor: pointer;
+}
+.me-page .me-suggest button:hover {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(45, 226, 245, 0.22), rgba(139, 92, 246, 0.3));
+    border-color: rgba(45, 226, 245, 0.7);
+}
+
+@media (max-width: 860px) {
+    .int-progress { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+    .int-meter-text { font-size: 0.76rem; }
+    .int-field { height: 3.3rem; }
+    .me-page .int-field .btn-add { height: 2.5rem; }
+    .me-page .me-suggest button { min-height: 2.6rem; padding: 0 1rem; }
+    .me-page .chip-edit button { width: 1.8rem; height: 1.8rem; }
+}
+@media (max-width: 420px) {
+    /* telas bem estreitas: só o ícone + dentro do campo */
+    .me-page .int-field .btn-add { width: 2.5rem; padding: 0; justify-content: center; }
+    .me-page .int-field .btn-add span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .int-meter i, .me-page .chip-edit button { transition: none; }
+}
