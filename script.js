@@ -2692,23 +2692,35 @@ function renderMyProfile() {
                         </div>
                     </form>
 
-                    <section class="me-account">
-                        <div class="me-account-row">
-                            <div class="me-account-icon">${meIcon('mail')}</div>
-                            <div class="me-account-text">
-                                <strong>Conta</strong>
-                                <p>${escapeHtml(currentUser ? currentUser.email : '')}</p>
+                    <section class="me-account me-acct" aria-label="Conta">
+                        <article class="acct-card">
+                            <div class="acct-main">
+                                <span class="acct-icon">${meIcon('mail')}</span>
+                                <div class="acct-text">
+                                    <span class="acct-eyebrow"><i class="acct-dot"></i>Conta conectada</span>
+                                    <strong class="acct-email">${escapeHtml(currentUser ? currentUser.email : '')}</strong>
+                                </div>
                             </div>
-                            <button type="button" class="btn-ghost" onclick="logoutUser()">Sair da conta</button>
-                        </div>
-                        <div class="me-account-row danger">
-                            <div class="me-account-icon">${meIcon('trash')}</div>
-                            <div class="me-account-text">
-                                <strong>Zona de perigo</strong>
-                                <p>Apaga sua conta, perfil, curtidas, matches e mensagens. Não dá para desfazer.</p>
+                            <button type="button" class="acct-btn" onclick="logoutUser()">${meIcon('logout')}<span>Sair da conta</span></button>
+                        </article>
+
+                        <article class="acct-card danger">
+                            <div class="acct-main">
+                                <span class="acct-icon">${meIcon('alert')}</span>
+                                <div class="acct-text">
+                                    <span class="acct-eyebrow">Zona de perigo</span>
+                                    <strong>Apagar minha conta</strong>
+                                    <p>Some tudo de uma vez e não dá para desfazer:</p>
+                                    <ul class="acct-loses">
+                                        <li>Perfil e fotos</li>
+                                        <li>Curtidas</li>
+                                        <li>Matches</li>
+                                        <li>Mensagens</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <button type="button" class="btn-ghost btn-danger" onclick="deleteMyAccount()">Apagar minha conta</button>
-                        </div>
+                            <button type="button" class="acct-btn acct-btn-danger" onclick="deleteMyAccount()">${meIcon('trash')}<span>Apagar minha conta</span></button>
+                        </article>
                     </section>
                 </div>
 
