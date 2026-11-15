@@ -2684,6 +2684,7 @@ function renderMyProfile() {
                                 <small class="me-count" id="me-photos-count">${draftPhotos.length}/${MAX_EXTRA_PHOTOS}</small>
                             </div>
                             <div class="me-photos" id="me-photos"></div>
+                            <p class="me-photos-hint">As fotos só aparecem para as outras pessoas depois que você tocar em <strong>Salvar perfil</strong>.</p>
                         </section>
 
                         <div class="me-save-bar">
@@ -3063,20 +3064,61 @@ function resizeToJpeg(file, max = 720, quality = 0.72) {
 function renderMyPhotos() {
     const box = document.getElementById('me-photos');
     if (!box) return;
-    const tiles = draftPhotos.map((src, i) => `
-        <div class="me-photo-tile">
-            <img src="${escapeHtml(src)}" alt="Foto extra ${i + 1}">
-            <button type="button" class="me-photo-x" onclick="removeExtraPhoto(${i})" aria-label="Remover foto ${i + 1}">${meIcon('trash')}</button>
-        </div>`).join('');
-    const add = draftPhotos.length < MAX_EXTRA_PHOTOS
-        ? `<label class="me-photo-add" title="Adicionar fotos">
-               ${meIcon('plus')}<span>Adicionar</span>
-               <input type="file" accept="image/*" multiple hidden onchange="handleExtraPhotos(event)">
-           </label>`
-        : '';
-    box.innerHTML = tiles + add;
+
+    const fileInput = '<input type="file" accept="image/*" multiple hidden onchange="handleExtraPhotos(event)">';
+
+    if (!draftPhotos.length) {
+        // nada ainda: uma área grande para arrastar ou tocar
+        box.className = 'me-photos is-empty';
+        box.innerHTML = `
+            <label class="me-drop" title="Adicionar fotos">
+                <span class="me-drop-ico">${meIcon('image')}</span>
+                <strong>Adicione suas melhores fotos</strong>
+                <small>Toque para escolher ou arraste para cá. Cabem até ${MAX_EXTRA_PHOTOS}.</small>
+                <span class="me-drop-btn">${meIcon('plus')}Escolher fotos</span>
+                ${fileInput}
+            </label>`;
+    } else {
+        box.className = 'me-photos';
+        const tiles = draftPhotos.map((src, i) => `
+            <div class="me-photo-tile">
+                <img src="${escapeHtml(src)}" alt="Foto extra ${i + 1}">
+                <span class="me-photo-n" aria-hidden="true">${i + 1}</span>
+                <button type="button" class="me-photo-x" onclick="removeExtraPhoto(${i})" aria-label="Remover foto ${i + 1}">${meIcon('trash')}</button>
+            </div>`).join('');
+
+        const full = draftPhotos.length >= MAX_EXTRA_PHOTOS;
+        const add = full ? '' : `
+            <label class="me-photo-add" title="Adicionar fotos">
+                <span class="me-photo-add-ico">${meIcon('plus')}</span><span>Adicionar</span>
+                ${fileInput}
+            </label>`;
+
+        // vagas que ainda restam (mostram quantas fotos cabem)
+        const ghosts = Array.from({ length: Math.max(0, MAX_EXTRA_PHOTOS - draftPhotos.length - (full ? 0 : 1)) },
+            (_, k) => `<div class="me-photo-slot" aria-hidden="true"><span>${draftPhotos.length + 2 + k}</span></div>`).join('');
+
+        box.innerHTML = tiles + add + ghosts;
+    }
+
+    // arrastar e soltar imagens
+    box.querySelectorAll('.me-drop, .me-photo-add').forEach(zone => {
+        ['dragenter', 'dragover'].forEach(type => zone.addEventListener(type, event => {
+            event.preventDefault();
+            zone.classList.add('is-drag');
+        }));
+        ['dragleave', 'drop'].forEach(type => zone.addEventListener(type, () => zone.classList.remove('is-drag')));
+        zone.addEventListener('drop', event => {
+            event.preventDefault();
+            handleExtraPhotos({ target: { files: event.dataTransfer ? event.dataTransfer.files : [], value: '' } });
+        });
+    });
+
     const count = document.getElementById('me-photos-count');
-    if (count) count.textContent = `${draftPhotos.length}/${MAX_EXTRA_PHOTOS}`;
+    if (count) {
+        count.textContent = `${draftPhotos.length}/${MAX_EXTRA_PHOTOS}`;
+        count.classList.toggle('full', draftPhotos.length >= MAX_EXTRA_PHOTOS);
+    }
     updateSaveState();
 }
 
