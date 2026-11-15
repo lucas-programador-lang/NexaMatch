@@ -26,7 +26,7 @@
     const pageEl = () => document.getElementById('page-perfil-pessoa');
     const profileOpen = () => { const p = pageEl(); return !!p && p.style.display === 'block'; };
     const clearKey = () => { try { sessionStorage.removeItem(KEY); } catch (e) {} };
-    const cleanUrl = () => history.replaceState(null, '', '/' + location.search);
+    const cleanUrl = () => history.replaceState(null, '', (window.nxRoutePath ? window.nxRoutePath() : '/') + location.search);
 
     let orig = null;
 
