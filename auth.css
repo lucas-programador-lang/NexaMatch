@@ -841,3 +841,9 @@ body.auth-page {
 .auth-card .af-meta .check { padding: 0.6rem 0.4rem 0.6rem 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .auth-card .af-meta .check input { width: 1.3rem; height: 1.3rem; }
 .auth-card #login-form .btn-primary { margin-top: 1.5rem; }
+
+/* Username e cidade no cadastro */
+.af-at{display:inline-flex;align-items:center;padding-left:14px;font-weight:700;color:#2de2f5;}
+.af-hint{font-weight:400;opacity:.65;font-size:.8em;margin-left:4px;}
+.af-geo{margin-top:8px;width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(45,226,245,.35);background:rgba(45,226,245,.08);color:#7ff1ff;font:inherit;font-weight:600;cursor:pointer;}
+.af-geo:disabled{opacity:.6;cursor:wait;}
