@@ -8744,3 +8744,9 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     #messages-content .chat-status .chat-presence { padding: 0 0.5rem 0 0.45rem; font-size: 0.7rem; gap: 0.32rem; }
     #messages-content .chat-status .chat-presence::before { width: 0.5rem; height: 0.5rem; }
 }
+
+/* Informações básicas bloqueadas (vieram do cadastro) */
+.input-wrap.is-locked{opacity:.72;cursor:not-allowed;}
+.input-wrap.is-locked input{cursor:not-allowed;pointer-events:none;}
+.input-wrap.is-locked:focus-within{box-shadow:none;}
+.me-locked-note{margin:0 0 14px;font-size:.82rem;opacity:.7;}
