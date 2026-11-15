@@ -2919,9 +2919,9 @@ function updateProfileStats() {
 
     stats.innerHTML = items
         .map(([icon, tone, value, label]) => `
-            <div class="me-stat ${tone}">
+            <div class="me-stat ${tone}${value === 0 ? ' is-zero' : ''}">
                 <i>${meIcon(icon)}</i>
-                <div><strong>${value}</strong><span>${label}</span></div>
+                <div class="me-stat-body"><strong>${value}</strong><span>${label}</span></div>
             </div>`)
         .join('');
 }
