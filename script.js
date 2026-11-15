@@ -2527,7 +2527,7 @@ function renderMyProfile() {
             <!-- ===== Corpo: formulário + prévia ===== -->
             <div class="me-grid">
                 <div class="me-col">
-                    <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview()">
+                    <form class="me-form" onsubmit="saveProfileForm(event)" oninput="updateMePreview(); scheduleAutoSave()">
 
                         <section class="me-step" id="me-step-1">
                             <div class="me-step-head">
@@ -2779,10 +2779,14 @@ function isProfileDirty() {
 
 function updateSaveState() {
     const status = document.getElementById('me-save-status');
-    if (!status) return;
+    if (!status || savingProfile) return;
     const dirty = isProfileDirty();
+    const typed = (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
+    const usernameChanged = typed !== String(myProfile.username || '');
     status.classList.toggle('dirty', dirty);
-    status.textContent = dirty ? 'Alterações não salvas' : 'Tudo salvo';
+    status.textContent = !dirty
+        ? 'Tudo salvo'
+        : usernameChanged ? 'Clique em Salvar perfil para trocar o username' : 'Salvando automaticamente...';
 }
 
 // Foto (ou a inicial do nome, enquanto não há foto)
@@ -2900,6 +2904,7 @@ function addInterest() {
     if (!draftInterests.some(item => item.toLowerCase() === value.toLowerCase())) {
         draftInterests.push(value);
         renderInterestChips();
+        scheduleAutoSave();
     }
     input.value = '';
     input.focus();
@@ -2908,6 +2913,7 @@ function addInterest() {
 function removeInterest(index) {
     draftInterests.splice(index, 1);
     renderInterestChips();
+    scheduleAutoSave();
 }
 
 // Enter no campo adiciona o interesse (e não envia o formulário)
@@ -3077,11 +3083,34 @@ function flashSaved() {
     setTimeout(() => button.classList.remove('saved'), 1600);
 }
 
-async function saveProfileForm(event) {
-    event.preventDefault();
+let savingProfile = false;
+async function saveProfileForm(event, auto = false) {
+    if (event && event.preventDefault) event.preventDefault();
+    if (savingProfile) return;
+    savingProfile = true;
+    const status = document.getElementById('me-save-status');
+    if (auto && status) status.textContent = 'Salvando...';
+    try {
+        await doSaveProfile(auto);
+    } finally {
+        savingProfile = false;
+        updateSaveState();
+    }
+}
+
+// Salva sozinho 1,5 s depois da última alteração (o username só muda pelo botão Salvar perfil,
+// para não reservar nomes pela metade enquanto a pessoa digita)
+let autoSaveTimer = null;
+function scheduleAutoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => { if (isProfileDirty()) saveProfileForm(null, true); }, 1500);
+}
+
+async function doSaveProfile(auto) {
+    const say = text => { if (!auto) showToast(text); };
 
     if (!profileLoaded) {
-        showToast('Não consegui carregar seu perfil salvo. Recarregue a página antes de salvar.');
+        say('Não consegui carregar seu perfil salvo. Recarregue a página antes de salvar.');
         return;
     }
 
@@ -3091,31 +3120,33 @@ async function saveProfileForm(event) {
     const bio = document.getElementById('me-bio-input').value.trim();
 
     if (!name) {
-        showToast('Coloque seu nome.');
-        document.getElementById('me-name-input').focus();
+        say('Coloque seu nome.');
+        if (!auto) document.getElementById('me-name-input').focus();
         return;
     }
 
     if (!(age >= 18 && age <= 99)) {
-        showToast('A idade precisa estar entre 18 e 99 anos.');
-        document.getElementById('me-age-input').focus();
+        say('A idade precisa estar entre 18 e 99 anos.');
+        if (!auto) document.getElementById('me-age-input').focus();
         return;
     }
 
     if (draftPhoto.length > 700000) {
-        showToast('A foto ficou grande demais. Escolha outra imagem.');
+        say('A foto ficou grande demais. Escolha outra imagem.');
         return;
     }
 
     if (draftPhoto.length + draftPhotos.reduce((sum, p) => sum + p.length, 0) > 900000) {
-        showToast('As fotos somam peso demais. Remova uma das fotos extras.');
+        say('As fotos somam peso demais. Remova uma das fotos extras.');
         return;
     }
 
-    const typedUser = (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
+    const typedUser = auto
+        ? String(myProfile.username || '')
+        : (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
     if (typedUser && (!USERNAME_RE.test(typedUser) || RESERVED_USERNAMES.includes(typedUser))) {
-        showToast('Username inválido. Use 3 a 20 letras minúsculas, números, ponto ou _.');
-        document.getElementById('me-username-input').focus();
+        say('Username inválido. Use 3 a 20 letras minúsculas, números, ponto ou _.');
+        if (!auto) document.getElementById('me-username-input').focus();
         return;
     }
     const oldUsername = myProfile.username || '';
@@ -3130,8 +3161,8 @@ async function saveProfileForm(event) {
             if (typedUser) {
                 const taken = await getDoc(doc(db, 'usernames', typedUser));
                 if (taken.exists() && taken.data().uid !== myId) {
-                    showToast('Esse username já está em uso. Escolha outro.');
-                    document.getElementById('me-username-input').focus();
+                    say('Esse username já está em uso. Escolha outro.');
+                    if (!auto) document.getElementById('me-username-input').focus();
                     return;
                 }
                 if (!taken.exists()) batch.set(doc(db, 'usernames', typedUser), { uid: myId, createdAt: serverTimestamp() });
@@ -3144,14 +3175,13 @@ async function saveProfileForm(event) {
         }
     } catch (error) {
         console.error(error);
-        showToast('Não deu para salvar agora. Confira a internet e tente de novo.');
+        say('Não deu para salvar agora. Confira a internet e tente de novo.');
         return;
     }
 
     myProfile = { ...next, username: typedUser, interestedIn: [...myProfile.interestedIn] };
     updateUsernameHint();
-    showToast('Perfil salvo!');
-    flashSaved();
+    if (!auto) { showToast('Perfil salvo!'); flashSaved(); }
     updateProfileSummary();
 }
 
@@ -3331,7 +3361,7 @@ Object.assign(window, {
     fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, handleExtraPhotos, removeExtraPhoto, openGallery, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
-    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
+    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint, scheduleAutoSave
 });
 
 renderMyProfile();
