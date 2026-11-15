@@ -8976,3 +8976,125 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
     .acct-dot { animation: none; }
     .acct-btn { transition: none; }
 }
+
+/* ==========================================================
+   BARRA DE SALVAR (v8) — selo de estado, texto em 2 linhas,
+   botão que "acende" quando há mudanças
+   ========================================================== */
+.me-page .me-save-bar {
+    gap: 1rem;
+    padding: 0.7rem 0.7rem 0.7rem 0.9rem;
+    background:
+        radial-gradient(18rem 6rem at 0% 0%, rgba(52, 245, 161, 0.1), transparent 70%),
+        linear-gradient(180deg, rgba(20, 25, 52, 0.94), rgba(10, 13, 32, 0.96));
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 1.4rem;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 20px 40px -18px rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(18px) saturate(1.2);
+    -webkit-backdrop-filter: blur(18px) saturate(1.2);
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.3s;
+}
+
+.me-page .me-save-bar:has(.dirty) {
+    background:
+        radial-gradient(18rem 6rem at 0% 0%, rgba(255, 200, 87, 0.16), transparent 70%),
+        linear-gradient(180deg, rgba(28, 25, 46, 0.96), rgba(12, 13, 30, 0.97));
+    border-color: rgba(255, 200, 87, 0.55);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 0 0 3px rgba(255, 200, 87, 0.1), 0 20px 40px -18px rgba(0, 0, 0, 0.95), 0 0 32px -6px rgba(255, 200, 87, 0.3);
+}
+
+.me-save-info { display: flex; align-items: center; gap: 0.85rem; min-width: 0; flex: 1; }
+
+.me-save-badge {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.7rem;
+    height: 2.7rem;
+    border-radius: 50%;
+    color: #34f5a1;
+    background: rgba(52, 245, 161, 0.12);
+    border: 1px solid rgba(52, 245, 161, 0.4);
+    box-shadow: 0 0 18px rgba(52, 245, 161, 0.3);
+    transition: color 0.3s, background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.me-save-badge svg { width: 1.25rem; height: 1.25rem; }
+.me-save-badge .sv-ok, .me-save-badge .sv-warn { display: grid; place-items: center; }
+.me-save-badge .sv-warn { display: none; }
+
+.me-save-bar:has(.dirty) .me-save-badge {
+    color: #ffc857;
+    background: rgba(255, 200, 87, 0.14);
+    border-color: rgba(255, 200, 87, 0.5);
+    box-shadow: 0 0 18px rgba(255, 200, 87, 0.4);
+}
+.me-save-bar:has(.dirty) .me-save-badge::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 50%;
+    animation: nxDirty 1.6s ease-out infinite;
+}
+.me-save-bar:has(.dirty) .sv-ok { display: none; }
+.me-save-bar:has(.dirty) .sv-warn { display: grid; }
+
+.me-save-copy { display: flex; flex-direction: column; gap: 0.12rem; min-width: 0; }
+
+.me-page .me-save-bar .me-save-copy .me-save-status {
+    display: block;
+    margin: 0;
+    color: #fff;
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.me-page .me-save-bar .me-save-copy .me-save-status::before { display: none; }
+.me-page .me-save-bar .me-save-copy .me-save-status.dirty { color: #ffe3a3; }
+
+.me-save-sub { font-size: 0.8rem; color: #a9b2d6; line-height: 1.25; }
+.me-save-bar:has(.dirty) .me-save-sub { color: #d9c28b; }
+
+/* botão: calmo quando está tudo salvo, vivo quando há mudanças */
+.me-page .btn-save { gap: 0.55rem; border-radius: 1rem; letter-spacing: 0.01em; }
+
+.me-page .me-save-bar:not(:has(.dirty)) .btn-save {
+    color: #d7dcf5;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: none;
+    animation: none;
+}
+.me-page .me-save-bar:not(:has(.dirty)) .btn-save::after { display: none; }
+.me-page .me-save-bar:not(:has(.dirty)) .btn-save:hover { background: rgba(255, 255, 255, 0.11); filter: none; }
+.me-page .me-save-bar:not(:has(.dirty)) .btn-save.saved {
+    color: #04241a;
+    background: linear-gradient(135deg, #34f5a1, #14b8a6);
+    border-color: transparent;
+    box-shadow: 0 14px 30px -10px rgba(52, 245, 161, 0.9);
+}
+
+.me-page .btn-save:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* celular */
+@media (max-width: 860px) {
+    .me-page .me-save-bar { gap: 0.7rem; padding: 0.6rem 0.6rem 0.6rem 0.75rem; border-radius: 1.3rem; }
+    .me-save-info { gap: 0.65rem; }
+    .me-save-badge { width: 2.4rem; height: 2.4rem; }
+    .me-save-badge svg { width: 1.1rem; height: 1.1rem; }
+    .me-page .me-save-bar .me-save-copy .me-save-status { font-size: 0.9rem; }
+    .me-save-sub { display: none; }
+    .me-page .btn-save { flex: none; min-width: 9.5rem; min-height: 3rem; padding: 0.8rem 1.2rem; }
+}
+
+@media (max-width: 380px) {
+    .me-page .btn-save { min-width: 0; padding: 0.8rem 1rem; }
+    .me-page .me-save-bar .me-save-copy .me-save-status { font-size: 0.84rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .me-save-bar:has(.dirty) .me-save-badge::after { animation: none; }
+}
