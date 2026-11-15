@@ -2520,7 +2520,7 @@ function meIcon(name) {
     return `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ME_ICONS[name] || ''}</svg>`;
 }
 
-const INTEREST_SUGGESTIONS = ['Música', 'Viagens', 'Filmes', 'Games', 'Academia', 'Pets', 'Culinária', 'Livros'];
+const INTEREST_SUGGESTIONS = ['Música', 'Viagens', 'Filmes', 'Games', 'Academia', 'Pets', 'Culinária', 'Livros', 'Séries', 'Fotografia', 'Dança', 'Café', 'Esportes', 'Tecnologia', 'Natureza', 'Arte'];
 
 function quickInterest(text) {
     const input = document.getElementById('me-interest-input');
@@ -2664,12 +2664,16 @@ function renderMyProfile() {
                                 <span class="me-step-state" aria-hidden="true">${meIcon('check')}</span>
                             </div>
 
-                            <div class="interest-add">
-                                <div class="input-wrap no-icon">
-                                    <input id="me-interest-input" type="text" maxlength="20" placeholder="Digite e aperte Enter"
-                                           onkeydown="interestKey(event)">
-                                </div>
-                                <button type="button" class="btn-add" onclick="addInterest()" aria-label="Adicionar interesse">${meIcon('plus')}</button>
+                            <div class="int-progress">
+                                <div class="int-meter" id="me-int-meter" aria-hidden="true"></div>
+                                <p class="int-meter-text" id="me-int-meter-text" aria-live="polite"></p>
+                            </div>
+
+                            <div class="int-field">
+                                <span class="int-hash" aria-hidden="true">#</span>
+                                <input id="me-interest-input" type="text" maxlength="20" placeholder="Digite um interesse e aperte Enter"
+                                       autocomplete="off" onkeydown="interestKey(event)" aria-label="Novo interesse">
+                                <button type="button" class="btn-add" onclick="addInterest()" aria-label="Adicionar interesse">${meIcon('plus')}<span>Adicionar</span></button>
                             </div>
 
                             <div class="chips" id="me-interests"></div>
@@ -2953,13 +2957,29 @@ function renderInterestChips() {
             <span class="chip chip-edit">${escapeHtml(item)}
                 <button type="button" onclick="removeInterest(${index})" aria-label="Remover ${escapeHtml(item)}">×</button>
             </span>`).join('')
-        : '<p class="field-hint">Adicione pelo menos 3 interesses para completar o perfil.</p>';
+        : `<div class="int-empty">${meIcon('sparkle')}<span><strong>Seus interesses aparecem aqui</strong><small>Adicione pelo menos 3 para completar o perfil.</small></span></div>`;
+
+    // medidor de 8 segmentos (os 3 primeiros são o mínimo)
+    const meter = document.getElementById('me-int-meter');
+    if (meter) {
+        meter.innerHTML = Array.from({ length: 8 }, (_, i) =>
+            `<i class="${i < draftInterests.length ? 'on' : ''}${i === 2 ? ' goal' : ''}"></i>`).join('');
+    }
+    const meterText = document.getElementById('me-int-meter-text');
+    if (meterText) {
+        const n = draftInterests.length;
+        meterText.textContent = n < 3
+            ? `Faltam ${3 - n} para completar esta parte`
+            : n < 8 ? `Muito bem! Cabem mais ${8 - n}.` : 'Limite de 8 atingido';
+        meterText.classList.toggle('ok', n >= 3);
+    }
 
     const suggest = document.getElementById('me-suggest');
     if (suggest) {
         const taken = draftInterests.map(item => item.toLowerCase());
         suggest.innerHTML = draftInterests.length >= 8 ? '' : INTEREST_SUGGESTIONS
             .filter(item => !taken.includes(item.toLowerCase()))
+            .slice(0, 10)
             .map(item => `<button type="button" onclick="quickInterest('${item}')">+ ${item}</button>`)
             .join('');
     }
