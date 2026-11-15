@@ -843,7 +843,55 @@ body.auth-page {
 .auth-card #login-form .btn-primary { margin-top: 1.5rem; }
 
 /* Username e cidade no cadastro */
-.af-at{display:inline-flex;align-items:center;padding-left:14px;font-weight:700;color:#2de2f5;}
-.af-hint{font-weight:400;opacity:.65;font-size:.8em;margin-left:4px;}
-.af-geo{margin-top:8px;width:100%;padding:11px 14px;border-radius:12px;border:1px solid rgba(45,226,245,.35);background:rgba(45,226,245,.08);color:#7ff1ff;font:inherit;font-weight:600;cursor:pointer;}
-.af-geo:disabled{opacity:.6;cursor:wait;}
+/* o @ fica DENTRO do campo, no mesmo lugar dos ícones dos outros campos */
+.af-control > .af-at {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.1rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-muted);
+    pointer-events: none;
+    transition: color 0.2s;
+}
+.af-control:focus-within > .af-at { color: var(--cyan); }
+.af-field.is-invalid .af-control > .af-at { color: var(--pink); }
+
+.af-hint { margin-left: 0.35rem; font-size: 0.78rem; font-weight: 400; color: var(--text-muted); opacity: 0.8; }
+
+/* texto de ajuda simples (sem caixa) */
+.af-help {
+    margin: 0.45rem 0 0;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+.af-help:empty { display: none; }
+
+/* botão de localização com a mesma altura e cantos dos campos */
+.af-geo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    width: 100%;
+    height: 2.9rem;
+    margin-top: 0.55rem;
+    padding: 0 1rem;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #7eeeff;
+    background: rgba(45, 226, 245, 0.07);
+    border: 1px solid rgba(45, 226, 245, 0.32);
+    border-radius: 0.95rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+.af-geo svg { width: 1.1rem; height: 1.1rem; flex: none; }
+.af-geo:hover { background: rgba(45, 226, 245, 0.13); border-color: rgba(45, 226, 245, 0.55); }
+.af-geo:active { transform: scale(0.98); }
+.af-geo:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.af-geo:disabled { opacity: 0.6; cursor: wait; }
