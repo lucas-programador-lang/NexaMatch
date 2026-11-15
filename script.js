@@ -1467,21 +1467,12 @@ function changePage(pageId, element) {
         && document.getElementById('me-name-input') && isProfileDirty();
     if (!leavingDirtyProfile) { goToPage(pageId, element); return; }
 
-    askConfirm({
-        title: 'Sair sem salvar?',
-        message: 'Você mudou algo no seu perfil e ainda não salvou. Se sair agora, essas alterações serão perdidas.',
-        confirmText: 'Sair sem salvar',
-        cancelText: 'Continuar editando',
-        danger: true
-    }).then(ok => {
-        if (!ok) return;
-        draftInterests = [...myProfile.interests];
-        draftPhoto = myProfile.photo;
-        draftPhotos = [...myProfile.photos];
-        renderMyProfile();
-        updateUsernameHint();
-        goToPage(pageId, element);
-    });
+    runWithUnsavedGuard({
+        title: 'Salvar antes de sair?',
+        message: 'Você mudou algo no seu perfil e ainda não salvou.',
+        saveText: 'Salvar e continuar',
+        discardText: 'Descartar alterações'
+    }, () => goToPage(pageId, element));
 }
 
 function goToPage(pageId, element) {
@@ -2502,6 +2493,7 @@ const ME_ICONS = {
     pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+    alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
@@ -3088,8 +3080,9 @@ function removeMyPhoto() {
 
 // Avisa antes de fechar ou recarregar a aba com alterações do perfil ainda não salvas
 // (a janela é do navegador: o texto e o visual dela não podem ser mudados)
+let skipUnloadWarning = false;
 window.addEventListener('beforeunload', event => {
-    if (document.getElementById('me-name-input') && isProfileDirty()) {
+    if (!skipUnloadWarning && document.getElementById('me-name-input') && isProfileDirty()) {
         event.preventDefault();
         event.returnValue = '';
     }
@@ -3198,8 +3191,95 @@ async function doSaveProfile(auto) {
     updateProfileSummary();
 }
 
+// ----- Janela "alterações não salvas" (visual do app, com 3 opções) -----
+// Devolve 'save', 'discard' ou 'stay'
+function askUnsaved({ title, message, saveText = 'Salvar e continuar', discardText = 'Descartar alterações', stayText = 'Continuar editando' }) {
+    return new Promise(resolve => {
+        const previousFocus = document.activeElement;
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = `
+            <div class="modal unsaved" role="alertdialog" aria-modal="true" aria-labelledby="unsaved-title" aria-describedby="unsaved-text">
+                <div class="modal-icon">${meIcon('alert')}</div>
+                <h3 id="unsaved-title">${escapeHtml(title)}</h3>
+                <p id="unsaved-text">${escapeHtml(message)}</p>
+                <div class="modal-actions">
+                    <button type="button" class="modal-ok" data-choice="save">${escapeHtml(saveText)}</button>
+                    <button type="button" class="modal-cancel" data-choice="stay">${escapeHtml(stayText)}</button>
+                    <button type="button" class="modal-discard" data-choice="discard">${escapeHtml(discardText)}</button>
+                </div>
+            </div>`;
+
+        function close(result) {
+            document.removeEventListener('keydown', onKey, true);
+            overlay.classList.remove('show');
+            setTimeout(() => {
+                overlay.remove();
+                document.body.style.overflow = '';
+                if (previousFocus && previousFocus.focus) previousFocus.focus();
+            }, 180);
+            resolve(result);
+        }
+        function onKey(event) { if (event.key === 'Escape') close('stay'); }
+
+        overlay.addEventListener('click', event => { if (event.target === overlay) close('stay'); });
+        overlay.querySelectorAll('button[data-choice]').forEach(btn =>
+            btn.addEventListener('click', () => close(btn.dataset.choice)));
+        document.addEventListener('keydown', onKey, true);
+
+        document.body.appendChild(overlay);
+        document.body.style.overflow = 'hidden';
+        requestAnimationFrame(() => overlay.classList.add('show'));
+        overlay.querySelector('[data-choice="save"]').focus();
+    });
+}
+
+// Se o perfil tem alterações não salvas, pergunta antes de seguir; senão segue direto
+async function runWithUnsavedGuard(options, proceed) {
+    const dirty = document.getElementById('me-name-input') && isProfileDirty();
+    if (!dirty) { proceed(); return; }
+
+    const choice = await askUnsaved(options);
+    if (choice === 'stay') return;
+
+    if (choice === 'save') {
+        await saveProfileForm(null);
+        if (isProfileDirty()) return;       // não salvou (campo inválido, sem conexão...): fica na tela
+    } else {
+        draftInterests = [...myProfile.interests];
+        draftPhoto = myProfile.photo;
+        draftPhotos = [...myProfile.photos];
+        renderMyProfile();
+        updateUsernameHint();
+    }
+    proceed();
+}
+
+// F5 / Ctrl+R / Cmd+R com alterações pendentes: usa a janela do app em vez da do navegador
+document.addEventListener('keydown', event => {
+    const reload = event.key === 'F5' || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r');
+    if (!reload) return;
+    if (!(document.getElementById('me-name-input') && isProfileDirty())) return;
+    event.preventDefault();
+    runWithUnsavedGuard({
+        title: 'Atualizar a página?',
+        message: 'Você mudou algo no seu perfil e ainda não salvou.',
+        saveText: 'Salvar e atualizar',
+        discardText: 'Atualizar sem salvar'
+    }, () => { skipUnloadWarning = true; location.reload(); });
+});
+
 // ----- Sair da conta -----
 function logoutUser() {
+    runWithUnsavedGuard({
+        title: 'Sair da conta?',
+        message: 'Você mudou algo no seu perfil e ainda não salvou.',
+        saveText: 'Salvar e sair',
+        discardText: 'Sair sem salvar'
+    }, () => { skipUnloadWarning = true; doLogout(); });
+}
+
+function doLogout() {
     stopPresence();
     unsubscribers.forEach(unsubscribe => unsubscribe());
     unsubscribers.length = 0;
