@@ -3084,13 +3084,15 @@ async function persistPhotos() {
     return true;
 }
 
-// Avisa antes de fechar a aba com alterações do perfil ainda não salvas
-window.addEventListener('beforeunload', event => {
-    if (document.getElementById('me-name-input') && isProfileDirty()) {
-        event.preventDefault();
-        event.returnValue = '';
-    }
-});
+// Sem janela de aviso do navegador: ao fechar, recarregar ou sair da aba, o que estiver pendente
+// é salvo na hora (o salvamento automático também roda a cada alteração).
+function flushProfileSave() {
+    if (!document.getElementById('me-name-input') || !isProfileDirty()) return;
+    clearTimeout(autoSaveTimer);
+    saveProfileForm(null, true);
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushProfileSave(); });
+window.addEventListener('pagehide', flushProfileSave);
 
 // ----- Salvar -----
 // Botão "Salvar perfil" fica verde por um instante quando salva
