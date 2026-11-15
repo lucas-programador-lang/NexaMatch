@@ -2830,6 +2830,7 @@ function updateSaveState() {
     const dirty = isProfileDirty();
     status.classList.toggle('dirty', dirty);
     status.textContent = dirty ? 'Alterações não salvas' : 'Tudo salvo';
+    if (dirty) armBackGuard();
 }
 
 // Foto (ou a inicial do nome, enquanto não há foto)
@@ -3267,6 +3268,34 @@ document.addEventListener('keydown', event => {
         saveText: 'Salvar e atualizar',
         discardText: 'Atualizar sem salvar'
     }, () => { skipUnloadWarning = true; location.reload(); });
+});
+
+// Botão Voltar do navegador com alterações pendentes: também usa a janela do app.
+// Quando surge a 1ª alteração, entra uma entrada extra no histórico; o Voltar "gasta" essa entrada
+// e, em vez de sair, o app pergunta o que fazer.
+let backGuardArmed = false;
+function armBackGuard() {
+    if (backGuardArmed) return;
+    history.pushState({ nxGuard: true }, '', location.href);
+    backGuardArmed = true;
+}
+window.addEventListener('popstate', () => {
+    if (!backGuardArmed) return;
+    backGuardArmed = false;
+    if (!(document.getElementById('me-name-input') && isProfileDirty())) { history.back(); return; }
+    history.pushState({ nxGuard: true }, '', location.href);   // continua na página enquanto a pessoa decide
+    backGuardArmed = true;
+    runWithUnsavedGuard({
+        title: 'Salvar antes de voltar?',
+        message: 'Você mudou algo no seu perfil e ainda não salvou.',
+        saveText: 'Salvar e voltar',
+        discardText: 'Voltar sem salvar'
+    }, () => {
+        backGuardArmed = false;
+        skipUnloadWarning = true;
+        setTimeout(() => { skipUnloadWarning = false; }, 1500);
+        history.go(-2);
+    });
 });
 
 // ----- Sair da conta -----
