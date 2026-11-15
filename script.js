@@ -677,7 +677,7 @@ function updateChatPresence() {
     if (!state) {
         pill.hidden = true;
         if (dot) dot.className = 'presence-dot';
-        if (sub && profile) sub.textContent = profile.location;
+        if (sub && profile) sub.innerHTML = `<b class="sub-loc">${profile.location}</b>`;
         return;
     }
 
@@ -686,7 +686,9 @@ function updateChatPresence() {
     pill.textContent = state.typing ? 'digitando' : state.online ? 'Online' : 'Offline';
     if (dot) dot.className = `presence-dot ${state.online ? 'on' : 'off'}`;
     if (sub && profile) {
-        sub.textContent = profile.location + (!state.online && state.lastSeen ? ` · ${formatLastSeen(state.lastSeen)}` : '');
+        // cidade e "visto por último" em partes separadas: o celular mostra uma linha para cada
+        sub.innerHTML = `<b class="sub-loc">${profile.location}</b>` +
+            (!state.online && state.lastSeen ? `<i class="sub-seen">${formatLastSeen(state.lastSeen)}</i>` : '');
     }
 }
 
@@ -1917,7 +1919,7 @@ function renderChatWindow() {
                     <strong>${profile.name}</strong>
                     <em class="chat-presence" id="chat-presence" hidden></em>
                 </div>
-                <span id="chat-sub">${profile.location}</span>
+                <span id="chat-sub"><b class="sub-loc">${profile.location}</b></span>
             </div>
             <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
         </div>
