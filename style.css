@@ -8294,3 +8294,99 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 @media (max-width: 860px) {
     #messages-content .bubble { padding: 0.5rem 0.8rem 0.4rem; font-size: 0.95rem; }
 }
+
+/* ==========================================================
+   Mensagens — v11
+   • sem pontinhos no fundo da conversa (fundo limpo, com aurora suave)
+   • nome completo no celular (quebra em até 2 linhas)
+   • "Ver perfil" vira botão redondo com ícone no celular
+   • bolhas nítidas, sem aquele brilho borrado embaixo
+   ========================================================== */
+
+/* fundo da conversa limpo */
+#messages-content .chat-thread {
+    background:
+        radial-gradient(70% 45% at 90% 0%, rgba(139, 92, 246, 0.14), transparent 70%),
+        radial-gradient(60% 40% at 0% 100%, rgba(45, 226, 245, 0.07), transparent 70%);
+}
+/* a mancha azul embaixo da janela some (ficava "suja" perto do campo de envio) */
+#messages-content .chat-window::after { display: none; }
+
+/* ----- bolhas ----- */
+#messages-content .chat-thread { gap: 0.22rem; padding: 1.1rem 1.3rem 1rem; }
+#messages-content .bubble.grp-first { margin-top: 0.55rem; }
+#messages-content .bubble.grp-cont { margin-top: 0; }
+#messages-content .bubble {
+    padding: 0.6rem 0.9rem 0.5rem;
+    font-size: 0.98rem;
+    line-height: 1.42;
+}
+#messages-content .bubble.me {
+    background: linear-gradient(150deg, #7d5df5 0%, #b052e6 52%, #ef52a6 100%);
+    border: 0;
+    box-shadow: 0 2px 10px -2px rgba(139, 92, 246, 0.55);   /* sombra curta e nítida */
+}
+#messages-content .bubble.them {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
+#messages-content .bubble small { font-size: 0.64rem; opacity: 0.7; }
+
+/* ----- cabeçalho (desktop) ----- */
+#messages-content .chat-header .chat-name-row strong { font-size: 1.2rem; }
+
+/* ----- cabeçalho (celular): nome completo ----- */
+@media (max-width: 600px) {
+    #messages-content .chat-header { padding: 0.75rem 0.8rem; align-items: center; }
+    #messages-content .chat-header-info { gap: 0.3rem; }
+    #messages-content .chat-name-row { flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
+    #messages-content .chat-name-row strong {
+        flex: 0 1 auto;
+        max-width: 100%;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        overflow-wrap: anywhere;
+        line-height: 1.2;
+        font-size: 1.08rem;
+    }
+    /* "Ver perfil" → círculo com ícone de pessoa */
+    #messages-content .chat-header .btn-view {
+        display: grid !important;
+        place-items: center;
+        flex: none;
+        width: 2.6rem;
+        height: 2.6rem;
+        min-height: 0;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 0;
+        position: relative;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    #messages-content .chat-header .btn-view::before {
+        content: "";
+        width: 1.25rem;
+        height: 1.25rem;
+        background: linear-gradient(135deg, #2de2f5, #ff4fa3);
+        -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>") center / contain no-repeat;
+        mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>") center / contain no-repeat;
+    }
+    #messages-content .chat-header .btn-view:active { transform: scale(0.92); }
+}
+
+/* acertos finos do v11 */
+#messages-content .bubble { justify-content: flex-start; }
+#messages-content .bubble > span { text-align: left; }
+#messages-content .bubble small { margin-left: auto; }
+@media (max-width: 600px) {
+    #messages-content .chat-header { gap: 0.5rem; }
+    #messages-content .chat-header .chat-back { width: 2.3rem; height: 2.3rem; }
+    #messages-content .chat-header .chat-avatar { width: 2.6rem; height: 2.6rem; }
+    #messages-content .chat-header .btn-view { width: 2.4rem; height: 2.4rem; }
+    #messages-content .chat-name-row strong { font-size: 1rem; }
+}
