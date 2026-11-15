@@ -9392,3 +9392,20 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 @media (prefers-reduced-motion: reduce) {
     .me-drop, .me-page .me-photo-add, .me-photo-add-ico, .me-page .me-photo-tile img { transition: none; }
 }
+
+/* Botão "Sair da conta" colorido (ciano → roxo) */
+.acct-btn:not(.acct-btn-danger) {
+    color: #e9fbff;
+    background:
+        linear-gradient(135deg, rgba(45, 226, 245, 0.2), rgba(139, 92, 246, 0.28));
+    border-color: rgba(45, 226, 245, 0.55);
+    box-shadow: 0 10px 22px -14px rgba(45, 226, 245, 0.8);
+}
+.acct-btn:not(.acct-btn-danger) svg { color: #7eeeff; transition: color 0.18s, transform 0.18s; }
+.acct-btn:not(.acct-btn-danger):hover {
+    color: #fff;
+    background: linear-gradient(135deg, #2de2f5, #8b5cf6);
+    border-color: transparent;
+    box-shadow: 0 14px 28px -12px rgba(45, 226, 245, 0.9);
+}
+.acct-btn:not(.acct-btn-danger):hover svg { color: #fff; transform: translateX(2px); }
