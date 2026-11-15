@@ -19,12 +19,29 @@ import {
   browserLocalPersistence,
   browserSessionPersistence,
   doc,
+  getDoc,
   setDoc,
+  deleteDoc,
+  writeBatch,
   serverTimestamp,
 } from "./firebase.js";
 
 const MIN_AGE = 18;
 const GENDERS = ["mulher", "homem", "outro"];
+// Username = o link do perfil (seusite/@username). Mesmas regras do Meu Perfil.
+const USERNAME_RE = /^[a-z0-9][a-z0-9._]{1,18}[a-z0-9]$/;
+const RESERVED_USERNAMES = ["admin", "nexamatch", "suporte", "support", "ajuda", "perfil", "login", "u"];
+function cleanUsernameInput(value) {
+  return String(value || "").trim().toLowerCase().replace(/^@/, "");
+}
+function usernameProblem(value) {
+  const u = cleanUsernameInput(value);
+  if (!u) return "Escolha um username.";
+  if (!USERNAME_RE.test(u)) return "Use 3 a 20 letras minúsculas, números, ponto ou _.";
+  if (RESERVED_USERNAMES.includes(u)) return "Esse username não está disponível. Escolha outro.";
+  return "";
+}
+
 const NOT_CONFIGURED =
   "O Firebase ainda não foi configurado. Preencha o arquivo firebase-config.js (veja o README).";
 
@@ -65,6 +82,8 @@ function friendlyError(err) {
       return "Sem conexão com a internet. Tente de novo.";
     case "nexa/email-not-verified":
       return "Confirme seu e-mail para entrar. Enviamos um link quando você se cadastrou (veja também o spam).";
+    case "nexa/username-taken":
+      return "Esse username já está em uso. Escolha outro.";
     case "auth/user-disabled":
       return "Esta conta foi desativada.";
     case "auth/operation-not-allowed":
@@ -115,9 +134,11 @@ function toSessionUser(user) {
   };
 }
 
-async function register({ name, email, password, confirmPassword, gender, birthDay, birthMonth, birthYear }) {
+async function register({ name, email, password, confirmPassword, gender, birthDay, birthMonth, birthYear, username, city }) {
   name = String(name || "").trim();
   email = normalizeEmail(email);
+  username = cleanUsernameInput(username);
+  city = String(city || "").trim().slice(0, 60);
 
   if (name.length < 2) throw new Error("Informe seu nome.");
   if (!isValidEmail(email)) throw new Error("E-mail inválido.");
@@ -127,6 +148,9 @@ async function register({ name, email, password, confirmPassword, gender, birthD
   const age = ageFromBirthDate(birthDate);
   if (age < MIN_AGE) throw new Error("O NexaMatch é só para maiores de " + MIN_AGE + " anos.");
   if (!GENDERS.includes(gender)) throw new Error("Escolha seu gênero.");
+  const userProblem = usernameProblem(username);
+  if (userProblem) throw new Error(userProblem);
+  if (city.length < 2) throw new Error("Informe sua cidade.");
 
   if (!password || password.length < 6)
     throw new Error("A senha deve ter pelo menos 6 caracteres.");
@@ -137,20 +161,34 @@ async function register({ name, email, password, confirmPassword, gender, birthD
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   const user = credential.user;
 
+  let reservedUsername = false;
   try {
     await updateProfile(user, { displayName: name });
 
-    // perfil público: o que as outras pessoas veem
-    await setDoc(doc(db, "users", user.uid), {
+    // o username é único: confere (já logado, por causa das regras) antes de gravar
+    const taken = await getDoc(doc(db, "usernames", username));
+    if (taken.exists() && taken.data().uid !== user.uid) {
+      const err = new Error("Esse username já está em uso.");
+      err.code = "nexa/username-taken";
+      throw err;
+    }
+
+    // perfil público + reserva do username, juntos (mesmo formato usado em Meu Perfil)
+    const batch = writeBatch(db);
+    batch.set(doc(db, "usernames", username), { uid: user.uid, createdAt: serverTimestamp() });
+    batch.set(doc(db, "users", user.uid), {
       name,
+      username,
       age,
       gender,
-      location: "",
+      location: city,
       bio: "",
       interests: [],
       photo: "",
       createdAt: serverTimestamp(),
     });
+    await batch.commit();
+    reservedUsername = true;
 
     // dados privados: só você lê (nem e-mail nem data de nascimento ficam públicos)
     await setDoc(doc(db, "accounts", user.uid), {
@@ -160,6 +198,10 @@ async function register({ name, email, password, confirmPassword, gender, birthD
     });
   } catch (err) {
     // não deixa uma conta "pela metade" no Firebase
+    if (reservedUsername) {
+      try { await deleteDoc(doc(db, "usernames", username)); } catch (e) { /* ok */ }
+      try { await deleteDoc(doc(db, "users", user.uid)); } catch (e) { /* ok */ }
+    }
     try { await deleteUser(user); } catch (e) { /* segue com o erro original */ }
     throw err;
   }
@@ -303,6 +345,10 @@ function fieldMessage(form, name) {
     }
     case "gender":
       return form.gender.value ? "" : "Escolha uma opção.";
+    case "username":
+      return usernameProblem(form.username.value);
+    case "city":
+      return form.city.value.trim().length < 2 ? "Informe sua cidade." : "";
     case "password": {
       const v = form.password.value;
       if (!v) return "Informe a senha.";
@@ -531,8 +577,47 @@ async function wirePage() {
   }
 
   if (registerForm) {
-    const names = ["name", "email", "birth", "gender", "password", "confirmPassword"];
+    const names = ["name", "email", "username", "birth", "gender", "city", "password", "confirmPassword"];
     liveValidate(registerForm, names);
+
+    // username: só letras minúsculas, números, ponto e _
+    registerForm.username.addEventListener("input", function () {
+      this.value = this.value.toLowerCase().replace(/[^a-z0-9._@]/g, "");
+    });
+
+    // cidade pela localização (só roda quando a pessoa toca no botão)
+    const geoBtn = document.getElementById("geo-btn");
+    const cityStatus = document.getElementById("city-status");
+    if (geoBtn) geoBtn.addEventListener("click", async function () {
+      const say = (t) => { if (cityStatus) cityStatus.textContent = t; };
+      if (!("geolocation" in navigator)) { say("Seu navegador não informa a localização. Digite a cidade."); return; }
+      geoBtn.disabled = true;
+      say("Procurando sua cidade...");
+      try {
+        const pos = await new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 600000 })
+        );
+        const url = "https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=" + pos.coords.latitude +
+          "&longitude=" + pos.coords.longitude + "&localityLanguage=pt";
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) throw new Error("geocode");
+        const data = await res.json();
+        const cityName = String(data.city || data.locality || "").trim();
+        if (!cityName) throw new Error("geocode");
+        const uf = String(data.principalSubdivisionCode || "").split("-")[1] || String(data.principalSubdivision || "").trim();
+        registerForm.city.value = [cityName, uf].filter(Boolean).join(", ").slice(0, 60);
+        setFieldError(registerForm, "city", "");
+        say("Cidade preenchida. Confira se está certo.");
+      } catch (error) {
+        if (error && error.code === 1) say("Permissão negada. Libere a localização no navegador ou digite a cidade.");
+        else say("Não consegui descobrir sua cidade agora. Digite manualmente.");
+      } finally {
+        geoBtn.disabled = false;
+      }
+    });
     registerForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       showMessage(msg, "");
@@ -546,6 +631,8 @@ async function wirePage() {
           password: registerForm.password.value,
           confirmPassword: registerForm.confirmPassword.value,
           gender: registerForm.gender.value,
+          username: registerForm.username.value,
+          city: registerForm.city.value,
           birthDay: registerForm.birthDay.value,
           birthMonth: registerForm.birthMonth.value,
           birthYear: registerForm.birthYear.value,
