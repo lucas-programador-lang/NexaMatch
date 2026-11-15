@@ -1917,9 +1917,11 @@ function renderChatWindow() {
             <div class="chat-header-info">
                 <div class="chat-name-row">
                     <strong>${profile.name}</strong>
-                    <em class="chat-presence" id="chat-presence" hidden></em>
                 </div>
-                <span id="chat-sub"><b class="sub-loc">${profile.location}</b></span>
+                <div class="chat-status">
+                    <em class="chat-presence" id="chat-presence" hidden></em>
+                    <span id="chat-sub"><b class="sub-loc">${profile.location}</b></span>
+                </div>
             </div>
             <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
         </div>
