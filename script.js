@@ -38,6 +38,13 @@ const formatMoney = cents => (cents / 100).toLocaleString('pt-BR', { style: 'cur
 
 // ---------- Quem está logado ----------
 // Sem login, vai para a tela de entrada e o resto do arquivo nem chega a rodar
+// Rota do navegador: se a pessoa abrir /perfil, /matches... sem estar logada, o login devolve para lá
+try {
+    if (['/perfil', '/matches', '/mensagens', '/avisos'].includes(location.pathname.replace(/\/+$/, ''))) {
+        sessionStorage.setItem('nx_after_login', location.pathname.replace(/\/+$/, ''));
+    }
+} catch (error) { /* sem sessionStorage: só não volta sozinho depois do login */ }
+
 const currentUser = await Auth.requireAuth('login.html');
 const myId = currentUser.uid;
 const userRef = doc(db, 'users', myId);
@@ -1461,6 +1468,7 @@ function goToNotifications() {
 // Controla a navegação entre as telas no Menu
 // Trocar de aba com alterações do perfil não salvas: janela do próprio app (no lugar do aviso do navegador)
 function changePage(pageId, element) {
+    if (window.event && window.event.preventDefault) window.event.preventDefault(); // link do menu não navega sozinho
     const profilePage = document.getElementById('page-perfil');
     const leavingDirtyProfile = pageId !== 'perfil'
         && profilePage && profilePage.style.display === 'block'
@@ -1475,7 +1483,7 @@ function changePage(pageId, element) {
     }, () => goToPage(pageId, element));
 }
 
-function goToPage(pageId, element) {
+function goToPage(pageId, element, fromHistory = false) {
     currentProfileId = null;
     setTimeout(() => syncUnsavedBar(Boolean(document.getElementById('me-name-input')) && isProfileDirty()), 0);
 
@@ -1485,6 +1493,8 @@ function goToPage(pageId, element) {
 
     element.classList.add('active');
     showPage(pageId);
+    lastMainPage = pageId;
+    updateRoute(pageId, fromHistory);
 
     if (pageId === 'matches') markMatchesSeen();
 
@@ -3187,6 +3197,61 @@ async function doSaveProfile(auto) {
     updateProfileSummary();
 }
 
+// ----- Rotas do navegador (endereço de cada página, Voltar/Avançar e recarregar funcionam) -----
+// /  → Descobrir   /matches   /mensagens   /avisos   /perfil   |   /@username → perfil de alguém (profile-link.js)
+const NAV_ORDER = ['descobrir', 'matches', 'mensagens', 'notificacoes', 'perfil'];
+const ROUTES = { descobrir: '/', matches: '/matches', mensagens: '/mensagens', notificacoes: '/avisos', perfil: '/perfil' };
+const PAGE_TITLES = { descobrir: 'Descobrir', matches: 'Matches', mensagens: 'Mensagens', notificacoes: 'Avisos', perfil: 'Meu Perfil' };
+let lastMainPage = 'descobrir';
+
+const normalizePath = path => (String(path || '/').replace(/\/index\.html$/, '/').replace(/\/+$/, '') || '/');
+function pageFromPath(path) {
+    const clean = normalizePath(path);
+    return NAV_ORDER.find(id => ROUTES[id] === clean) || null;
+}
+const navLinkFor = pageId => document.querySelectorAll('nav a')[NAV_ORDER.indexOf(pageId)];
+window.nxRoutePath = () => ROUTES[lastMainPage] || '/';   // usado pelo profile-link.js ao fechar um perfil
+
+function updateRoute(pageId, fromHistory) {
+    const path = ROUTES[pageId] || '/';
+    document.title = pageId === 'descobrir' ? 'NexaMatch' : PAGE_TITLES[pageId] + ' · NexaMatch';
+    if (fromHistory) return;
+    if (normalizePath(location.pathname) !== path) history.pushState({ nxRoute: pageId }, '', path + location.search);
+}
+
+function startRouting() {
+    // links reais no menu (abrir em nova aba, ver o endereço ao passar o mouse)
+    NAV_ORDER.forEach((id, index) => {
+        const link = document.querySelectorAll('nav a')[index];
+        if (link) link.setAttribute('href', ROUTES[id]);
+    });
+
+    let stored = null;
+    try {
+        stored = sessionStorage.getItem('nx_after_login');
+        sessionStorage.removeItem('nx_after_login');
+    } catch (error) { /* ok */ }
+
+    const path = normalizePath(location.pathname);
+    let start = pageFromPath(path);
+    if (!start && path === '/' && stored) start = pageFromPath(stored);   // voltou do login
+
+    if (start && start !== 'descobrir') {
+        goToPage(start, navLinkFor(start), true);
+        history.replaceState({ nxRoute: start }, '', ROUTES[start] + location.search);
+    } else if (!path.startsWith('/@')) {
+        // "/", "/index.html" ou endereço desconhecido: volta para a página inicial
+        history.replaceState({ nxRoute: 'descobrir' }, '', '/' + location.search);
+    }
+
+    // Voltar / Avançar do navegador
+    window.addEventListener('popstate', () => {
+        if (backGuardArmed) return;                 // a janela de "não salvo" está decidindo
+        const page = pageFromPath(location.pathname);
+        if (page) goToPage(page, navLinkFor(page), true);
+    });
+}
+
 // ----- Aviso bonito de "alterações não salvas" + rascunho guardado no aparelho -----
 // O rascunho fica só neste navegador (localStorage), nunca vai para o Firebase sozinho:
 // o perfil só é gravado de verdade em "Salvar perfil".
@@ -3629,3 +3694,4 @@ refreshAll();
 startRealtime(); // a partir daqui tudo se atualiza sozinho
 startPresence();
 document.body.classList.remove('auth-pending');
+startRouting();
