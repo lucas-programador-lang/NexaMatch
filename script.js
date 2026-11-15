@@ -81,7 +81,7 @@ const readHiddenLikes = raw => {
     }
     return out;
 };
-let myProfile = { username: '', name: '', age: '', location: '', bio: '', interests: [], photo: '', interestedIn: [...ALL_GENDER_IDS] };
+let myProfile = { username: '', name: '', age: '', location: '', bio: '', interests: [], photo: '', photos: [], interestedIn: [...ALL_GENDER_IDS] };
 
 try {
     const [userSnap, accountSnap] = await Promise.all([getDoc(userRef), getDoc(accountRef)]);
@@ -100,6 +100,7 @@ try {
         bio: String(publicData.bio || ''),
         interests: Array.isArray(publicData.interests) ? publicData.interests.map(String).slice(0, 8) : [],
         photo: String(publicData.photo || ''),
+        photos: Array.isArray(publicData.photos) ? publicData.photos.map(String).filter(isOwnPhoto).slice(0, MAX_EXTRA_PHOTOS) : [],
         interestedIn: normalizeInterestedIn(privateData.interestedIn)
     };
 
@@ -115,6 +116,7 @@ try {
 
 let draftInterests = [...myProfile.interests]; // interesses em edição
 let draftPhoto = myProfile.photo;              // foto em edição
+let draftPhotos = [...myProfile.photos];       // fotos extras em edição
 
 // ---------- Estado em tempo real ----------
 let profiles = [];                  // outras pessoas cadastradas
@@ -201,6 +203,10 @@ const safePhoto = url =>
     /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(url) || /^https:\/\/[^\s"'<>]+$/.test(url)
         ? url
         : '';
+
+// Fotos extras do perfil (galeria): até 5, só imagem embutida gerada pelo app
+const MAX_EXTRA_PHOTOS = 5;
+const isOwnPhoto = url => /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(url) && url.length <= 200000;
 
 // Sem foto: fundo em gradiente (cor muda conforme o nome) com a inicial num círculo
 const PLACEHOLDER_COLORS = [
@@ -291,7 +297,10 @@ function normalizeProfile(id, data) {
         interests: Array.isArray(data.interests)
             ? data.interests.slice(0, 8).map(item => escapeHtml(String(item).slice(0, 20)))
             : [],
-        photo: escapeHtml(safePhoto(String(data.photo || '')) || placeholderPhoto(name))
+        photo: escapeHtml(safePhoto(String(data.photo || '')) || placeholderPhoto(name)),
+        photos: Array.isArray(data.photos)
+            ? data.photos.slice(0, MAX_EXTRA_PHOTOS).map(String).filter(isOwnPhoto)
+            : []
     };
 }
 
@@ -1324,7 +1333,7 @@ function renderProfileDetail(id) {
 
         <div class="profile-layout">
             <div class="profile-photo">
-                <img src="${profile.photo}" alt="Foto de ${profile.name}">
+                <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="openGallery('${profile.id}', 0)">
                 <div class="location-tag">${profile.location}</div>
             </div>
 
@@ -1342,6 +1351,17 @@ function renderProfileDetail(id) {
                     <h3>Interesses</h3>
                     <div class="chips">${interests}</div>
                 </div>
+
+                ${profile.photos && profile.photos.length ? `
+                <div class="profile-section">
+                    <h3>Fotos <small class="gal-count">${profile.photos.length + 1}</small></h3>
+                    <div class="profile-gallery">
+                        ${[profile.photo, ...profile.photos].map((src, i) => `
+                            <button type="button" class="gal-thumb" onclick="openGallery('${profile.id}', ${i})" aria-label="Ver foto ${i + 1}">
+                                <img src="${src}" alt="Foto ${i + 1} de ${profile.name}" loading="lazy">
+                            </button>`).join('')}
+                    </div>
+                </div>` : ''}
 
                 <div class="profile-actions">
                     <button class="btn-like btn-like-lg ${isLiked ? 'liked' : ''}" onclick="handleLike('${profile.id}')">
@@ -2277,6 +2297,61 @@ function openPhoto(src) {
     requestAnimationFrame(() => overlay.classList.add('show'));
 }
 
+// Galeria: foto principal + extras, com setas, teclado e arrastar
+function openGallery(id, start = 0) {
+    const profile = findProfile(id);
+    if (!profile) return;
+    const list = [profile.photo, ...(profile.photos || [])].filter(Boolean);
+    let index = Math.min(Math.max(start, 0), list.length - 1);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay photo-viewer gallery-viewer';
+    overlay.innerHTML = `
+        <img alt="Foto de ${profile.name}">
+        <button type="button" class="gv-close" aria-label="Fechar">×</button>
+        ${list.length > 1 ? `
+            <button type="button" class="gv-nav gv-prev" aria-label="Foto anterior">‹</button>
+            <button type="button" class="gv-nav gv-next" aria-label="Próxima foto">›</button>
+            <span class="gv-count"></span>` : ''}`;
+    const img = overlay.querySelector('img');
+    const count = overlay.querySelector('.gv-count');
+    const show = n => {
+        index = (n + list.length) % list.length;
+        img.src = list[index];
+        if (count) count.textContent = `${index + 1} / ${list.length}`;
+    };
+    const close = () => {
+        document.removeEventListener('keydown', onKey);
+        overlay.classList.remove('show');
+        setTimeout(() => { overlay.remove(); document.body.style.overflow = ''; }, 180);
+    };
+    const onKey = event => {
+        if (event.key === 'Escape') close();
+        else if (event.key === 'ArrowRight') show(index + 1);
+        else if (event.key === 'ArrowLeft') show(index - 1);
+    };
+    overlay.addEventListener('click', event => {
+        if (event.target.closest('.gv-prev')) show(index - 1);
+        else if (event.target.closest('.gv-next')) show(index + 1);
+        else close();
+    });
+    let startX = null;
+    overlay.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+    overlay.addEventListener('touchend', e => {
+        if (startX === null || list.length < 2) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        startX = null;
+        if (Math.abs(dx) > 50) { show(index + (dx < 0 ? 1 : -1)); overlay.dataset.swiped = '1'; setTimeout(() => delete overlay.dataset.swiped, 50); }
+    }, { passive: true });
+    overlay.addEventListener('click', e => { if (overlay.dataset.swiped) e.stopImmediatePropagation(); }, true);
+
+    show(index);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(overlay);
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => overlay.classList.add('show'));
+}
+
 // ---------- Saldo ----------
 // MODO DE TESTE: o saldo é de mentira (nenhum dinheiro real). Para cobrar de verdade,
 // troque addCredits() por um pagamento (Pix, cartão...) confirmado pelo servidor.
@@ -2542,6 +2617,15 @@ function renderMyProfile() {
                             <div class="me-suggest" id="me-suggest"></div>
                         </section>
 
+                        <section class="me-step me-step-photos" id="me-step-4">
+                            <div class="me-step-head">
+                                <i>${meIcon('camera')}</i>
+                                <div><h3>Mais fotos</h3><p>Opcional. Mostre seu jeito: até ${MAX_EXTRA_PHOTOS} fotos além da principal.</p></div>
+                                <small class="me-count" id="me-photos-count">${draftPhotos.length}/${MAX_EXTRA_PHOTOS}</small>
+                            </div>
+                            <div class="me-photos" id="me-photos"></div>
+                        </section>
+
                         <div class="me-save-bar">
                             <p class="me-save-status" id="me-save-status">Tudo salvo</p>
                             <button type="submit" class="btn-primary btn-save">${meIcon('check')}Salvar perfil</button>
@@ -2582,6 +2666,7 @@ function renderMyProfile() {
     `;
 
     renderMyAvatar();
+    renderMyPhotos();
     renderInterestChips();
     updateProfileSummary();
     updateProfileStats();
@@ -2685,6 +2770,8 @@ function isProfileDirty() {
         || val('me-location-input') !== String(myProfile.location || '')
         || val('me-bio-input') !== String(myProfile.bio || '')
         || draftPhoto !== (myProfile.photo || '')
+        || draftPhotos.length !== (myProfile.photos || []).length
+        || draftPhotos.some((p, i) => p !== myProfile.photos[i])
         || !sameList;
 }
 
@@ -2865,6 +2952,78 @@ function handlePhotoUpload(event) {
     reader.readAsDataURL(file);
 }
 
+// Reduz uma imagem (lado maior 720px, JPEG) para caber no Firestore
+function resizeToJpeg(file, max = 720, quality = 0.72) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('read'));
+        reader.onload = () => {
+            const image = new Image();
+            image.onerror = () => reject(new Error('image'));
+            image.onload = () => {
+                const scale = Math.min(1, max / Math.max(image.width, image.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.width * scale));
+                canvas.height = Math.max(1, Math.round(image.height * scale));
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+            image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function renderMyPhotos() {
+    const box = document.getElementById('me-photos');
+    if (!box) return;
+    const tiles = draftPhotos.map((src, i) => `
+        <div class="me-photo-tile">
+            <img src="${escapeHtml(src)}" alt="Foto extra ${i + 1}">
+            <button type="button" class="me-photo-x" onclick="removeExtraPhoto(${i})" aria-label="Remover foto ${i + 1}">${meIcon('trash')}</button>
+        </div>`).join('');
+    const add = draftPhotos.length < MAX_EXTRA_PHOTOS
+        ? `<label class="me-photo-add" title="Adicionar fotos">
+               ${meIcon('plus')}<span>Adicionar</span>
+               <input type="file" accept="image/*" multiple hidden onchange="handleExtraPhotos(event)">
+           </label>`
+        : '';
+    box.innerHTML = tiles + add;
+    const count = document.getElementById('me-photos-count');
+    if (count) count.textContent = `${draftPhotos.length}/${MAX_EXTRA_PHOTOS}`;
+    updateSaveState();
+}
+
+async function handleExtraPhotos(event) {
+    const files = [...(event.target.files || [])];
+    event.target.value = '';
+    if (!files.length) return;
+
+    const room = MAX_EXTRA_PHOTOS - draftPhotos.length;
+    if (files.length > room) showToast(`Cabem só mais ${room} foto${room === 1 ? '' : 's'}. As outras foram ignoradas.`);
+
+    let failed = 0;
+    for (const file of files.slice(0, room)) {
+        if (!file.type.startsWith('image/')) { failed++; continue; }
+        try {
+            const data = await resizeToJpeg(file);
+            if (data.length > 200000) { failed++; continue; }
+            draftPhotos.push(data);
+        } catch (error) { failed++; }
+    }
+    renderMyPhotos();
+    if (failed) showToast('Algumas imagens não puderam ser usadas.');
+    else showToast('Foto adicionada. Clique em Salvar perfil.');
+}
+
+function removeExtraPhoto(index) {
+    draftPhotos.splice(index, 1);
+    renderMyPhotos();
+}
+
 function removeMyPhoto() {
     draftPhoto = '';
     renderMyAvatar();
@@ -2906,6 +3065,11 @@ async function saveProfileForm(event) {
         return;
     }
 
+    if (draftPhoto.length + draftPhotos.reduce((sum, p) => sum + p.length, 0) > 900000) {
+        showToast('As fotos somam peso demais. Remova uma das fotos extras.');
+        return;
+    }
+
     const typedUser = (document.getElementById('me-username-input')?.value || '').trim().toLowerCase().replace(/^@/, '');
     if (typedUser && (!USERNAME_RE.test(typedUser) || RESERVED_USERNAMES.includes(typedUser))) {
         showToast('Username inválido. Use 3 a 20 letras minúsculas, números, ponto ou _.');
@@ -2914,7 +3078,7 @@ async function saveProfileForm(event) {
     }
     const oldUsername = myProfile.username || '';
 
-    const next = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto };
+    const next = { name, age, location, bio, interests: [...draftInterests], photo: draftPhoto, photos: draftPhotos.filter(isOwnPhoto).slice(0, MAX_EXTRA_PHOTOS) };
 
     try {
         if (typedUser !== oldUsername || typedUser) {
@@ -3122,7 +3286,7 @@ async function fillLocation() {
 // precisam ser publicadas no window.
 Object.assign(window, {
     addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
-    fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, interestKey, logoutUser, openChat, quickInterest, removeInterest,
+    fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, handleExtraPhotos, removeExtraPhoto, openGallery, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
     profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
