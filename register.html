@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Criar conta - NexaMatch</title>
   <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="auth.css">
+  <link rel="stylesheet" href="auth.css?v=20261116c">
 </head>
 <body class="auth-page">
   <div class="auth-bg" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b><b></b></div>
@@ -79,7 +79,7 @@
               <span class="af-at" aria-hidden="true">@</span>
               <input type="text" id="username" name="username" placeholder="seu.username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="20" required/>
             </div>
-            <p class="af-note"><span id="username-hint">3 a 20 caracteres: letras minúsculas, números, ponto ou _. Você pode mudar depois em Meu Perfil.</span></p>
+            <p class="af-help" id="username-hint">3 a 20 caracteres: letras minúsculas, números, ponto ou _. Escolha com carinho: depois do cadastro ele não muda.</p>
             <p class="af-error" id="username-error" hidden></p>
           </div>
 
@@ -110,8 +110,8 @@
               <svg class="af-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
               <input type="text" id="city" name="city" placeholder="Ex.: Porto Velho, RO" autocomplete="address-level2" maxlength="60" required/>
             </div>
-            <button type="button" class="af-geo" id="geo-btn">Usar minha localização</button>
-            <p class="af-note" id="city-status" aria-live="polite"></p>
+            <button type="button" class="af-geo" id="geo-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="8"/></svg><span>Usar minha localização</span></button>
+            <p class="af-help" id="city-status" aria-live="polite"></p>
             <p class="af-error" id="city-error" hidden></p>
           </div>
 
@@ -149,6 +149,6 @@
 
   </div>
 
-  <script type="module" src="auth.js"></script>
+  <script type="module" src="auth.js?v=20261116c"></script>
 </body>
 </html>
