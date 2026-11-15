@@ -2687,7 +2687,13 @@ function renderMyProfile() {
                         </section>
 
                         <div class="me-save-bar">
-                            <p class="me-save-status" id="me-save-status">Tudo salvo</p>
+                            <div class="me-save-info">
+                                <span class="me-save-badge" aria-hidden="true"><span class="sv-ok">${meIcon('check')}</span><span class="sv-warn">${meIcon('alert')}</span></span>
+                                <div class="me-save-copy">
+                                    <p class="me-save-status" id="me-save-status" aria-live="polite">Tudo salvo</p>
+                                    <small class="me-save-sub" id="me-save-sub">Seu perfil está atualizado</small>
+                                </div>
+                            </div>
                             <button type="submit" class="btn-primary btn-save">${meIcon('check')}Salvar perfil</button>
                         </div>
                     </form>
@@ -2853,6 +2859,8 @@ function updateSaveState() {
     const dirty = isProfileDirty();
     status.classList.toggle('dirty', dirty);
     status.textContent = dirty ? 'Alterações não salvas' : 'Tudo salvo';
+    const sub = document.getElementById('me-save-sub');
+    if (sub) sub.textContent = dirty ? 'Toque em salvar para guardar' : 'Seu perfil está atualizado';
     if (dirty) armBackGuard();
     syncUnsavedBar(dirty);
     scheduleDraftSave();
