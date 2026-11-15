@@ -74,6 +74,16 @@
           </div>
 
           <div class="af-field">
+            <label for="username">Username <small class="af-hint">(o seu link no NexaMatch)</small></label>
+            <div class="af-control">
+              <span class="af-at" aria-hidden="true">@</span>
+              <input type="text" id="username" name="username" placeholder="seu.username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="20" required/>
+            </div>
+            <p class="af-note"><span id="username-hint">3 a 20 caracteres: letras minúsculas, números, ponto ou _. Você pode mudar depois em Meu Perfil.</span></p>
+            <p class="af-error" id="username-error" hidden></p>
+          </div>
+
+          <div class="af-field">
             <label for="birthDay" id="birth-label">Data de nascimento</label>
             <div class="af-row" role="group" aria-labelledby="birth-label">
               <select id="birthDay" name="birthDay" aria-label="Dia" autocomplete="bday-day"></select>
@@ -92,6 +102,17 @@
               <label class="choice"><input type="radio" name="gender" value="outro"><span>Outro</span></label>
             </div>
             <p class="af-error" id="gender-error" hidden></p>
+          </div>
+
+          <div class="af-field">
+            <label for="city">Cidade</label>
+            <div class="af-control">
+              <svg class="af-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              <input type="text" id="city" name="city" placeholder="Ex.: Porto Velho, RO" autocomplete="address-level2" maxlength="60" required/>
+            </div>
+            <button type="button" class="af-geo" id="geo-btn">Usar minha localização</button>
+            <p class="af-note" id="city-status" aria-live="polite"></p>
+            <p class="af-error" id="city-error" hidden></p>
           </div>
 
                     <div class="af-field">
