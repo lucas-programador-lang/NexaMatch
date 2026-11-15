@@ -8750,3 +8750,15 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 .input-wrap.is-locked input{cursor:not-allowed;pointer-events:none;}
 .input-wrap.is-locked:focus-within{box-shadow:none;}
 .me-locked-note{margin:0 0 14px;font-size:.82rem;opacity:.7;}
+
+/* Janela "alterações não salvas" */
+.modal.unsaved { --accent: #f5b94a; max-width: 26rem; }
+.modal.unsaved .modal-icon { color: #f5b94a; }
+.modal.unsaved .modal-actions { flex-direction: column; gap: 0.6rem; margin-top: 1.5rem; }
+.modal.unsaved .modal-actions button { width: 100%; }
+.modal-discard {
+    color: #ff8fc0;
+    background: transparent;
+    border: 1px solid rgba(255, 79, 163, 0.35);
+}
+.modal-discard:hover { background: rgba(255, 79, 163, 0.12); border-color: rgba(255, 79, 163, 0.6); }
