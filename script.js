@@ -2530,6 +2530,12 @@ function renderMyProfile() {
     const root = document.getElementById('my-profile');
     if (!root) return;
 
+    // Informações básicas vêm do cadastro e não são editadas aqui.
+    // (Se algum campo ainda estiver vazio, como em contas antigas, ele continua liberado para preencher.)
+    const lockOf = value => value ? 'readonly tabindex="-1" aria-readonly="true"' : '';
+    const lockClass = value => value ? ' is-locked' : '';
+    const hasLocked = Boolean(myProfile.name || myProfile.age || myProfile.username || myProfile.location);
+
     root.innerHTML = `
         <div class="me-page">
 
@@ -2583,21 +2589,22 @@ function renderMyProfile() {
                                 <div><h3>Informações básicas</h3><p>Quem você é e de onde fala.</p></div>
                                 <span class="me-step-state" aria-hidden="true">${meIcon('check')}</span>
                             </div>
+                            ${hasLocked ? '<p class="me-locked-note">Estas informações vieram do seu cadastro e não podem ser alteradas.</p>' : ''}
 
                             <div class="field-row">
                                 <label class="field">
                                     <span>Nome</span>
-                                    <div class="input-wrap">
+                                    <div class="input-wrap${lockClass(myProfile.name)}">
                                         ${meIcon('user')}
-                                        <input id="me-name-input" type="text" maxlength="40" autocomplete="given-name"
+                                        <input id="me-name-input" ${lockOf(myProfile.name)} type="text" maxlength="40" autocomplete="given-name"
                                                placeholder="Como você quer ser chamado" value="${escapeHtml(myProfile.name)}"
                                                oninput="renderMyAvatar()">
                                     </div>
                                 </label>
                                 <label class="field field-small">
                                     <span>Idade</span>
-                                    <div class="input-wrap no-icon has-suffix" id="me-age-wrap">
-                                        <input id="me-age-input" type="number" min="18" max="99" inputmode="numeric"
+                                    <div class="input-wrap no-icon has-suffix${lockClass(myProfile.age)}" id="me-age-wrap">
+                                        <input id="me-age-input" ${lockOf(myProfile.age)} type="number" min="18" max="99" inputmode="numeric"
                                                placeholder="18+" value="${escapeHtml(myProfile.age)}">
                                         <em class="input-suffix" aria-hidden="true">anos</em>
                                     </div>
@@ -2607,9 +2614,9 @@ function renderMyProfile() {
 
                             <label class="field">
                                 <span>Username <small>(o seu link no NexaMatch)</small></span>
-                                <div class="input-wrap no-icon me-username-wrap">
+                                <div class="input-wrap no-icon me-username-wrap${lockClass(myProfile.username)}">
                                     <em class="at" aria-hidden="true">@</em>
-                                    <input id="me-username-input" type="text" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false"
+                                    <input id="me-username-input" ${lockOf(myProfile.username)} type="text" maxlength="20" autocomplete="off" autocapitalize="none" spellcheck="false"
                                            placeholder="seu.username" value="${escapeHtml(myProfile.username || '')}"
                                            oninput="this.value = this.value.toLowerCase().replace(/[^a-z0-9._@]/g, ''); updateUsernameHint()">
                                     <button type="button" class="me-copy-link" onclick="copyMyLink()" title="Copiar meu link">${meIcon('link') || 'Copiar'}</button>
@@ -2619,13 +2626,13 @@ function renderMyProfile() {
 
                             <label class="field">
                                 <span>Cidade</span>
-                                <div class="input-wrap">
+                                <div class="input-wrap${lockClass(myProfile.location)}">
                                     ${meIcon('pin')}
-                                    <input id="me-location-input" type="text" maxlength="60" autocomplete="address-level2"
+                                    <input id="me-location-input" ${lockOf(myProfile.location)} type="text" maxlength="60" autocomplete="address-level2"
                                            placeholder="Ex.: Porto Velho, RO" value="${escapeHtml(myProfile.location)}">
                                 </div>
                             </label>
-                            <button type="button" class="btn-ghost me-geo" id="me-location-btn" onclick="fillLocation()">${meIcon('pin')}Usar minha localização</button>
+                            ${myProfile.location ? '' : `<button type="button" class="btn-ghost me-geo" id="me-location-btn" onclick="fillLocation()">${meIcon('pin')}Usar minha localização</button>`}
                             <p class="section-hint" id="me-location-status" aria-live="polite"></p>
                         </section>
 
