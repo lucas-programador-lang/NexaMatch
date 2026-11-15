@@ -81,6 +81,7 @@ const readHiddenLikes = raw => {
     }
     return out;
 };
+let profileLoaded = false; // só deixa salvar se o perfil foi lido do Firebase (evita apagar dados por erro de rede/regras)
 let myProfile = { username: '', name: '', age: '', location: '', bio: '', interests: [], photo: '', photos: [], interestedIn: [...ALL_GENDER_IDS] };
 
 try {
@@ -109,6 +110,7 @@ try {
         const accountAge = Auth.ageFromBirthDate(privateData.birthDate);
         if (accountAge >= 18 && accountAge <= 99) myProfile.age = accountAge;
     }
+    profileLoaded = true;
 } catch (error) {
     console.error('Não consegui carregar seu perfil:', error);
     myProfile.name = String(currentUser.name || '').slice(0, 40);
@@ -2943,7 +2945,7 @@ function handlePhotoUpload(event) {
 
             draftPhoto = canvas.toDataURL('image/jpeg', 0.82);
             renderMyAvatar();
-            showToast('Foto pronta. Clique em Salvar perfil.');
+            persistPhotos().then(ok => { if (ok) showToast('Foto salva!'); });
         };
         image.onerror = () => showToast('Não consegui abrir essa imagem.');
         image.src = reader.result;
@@ -3015,19 +3017,54 @@ async function handleExtraPhotos(event) {
         } catch (error) { failed++; }
     }
     renderMyPhotos();
+    const saved = await persistPhotos();
     if (failed) showToast('Algumas imagens não puderam ser usadas.');
-    else showToast('Foto adicionada. Clique em Salvar perfil.');
+    else if (saved) showToast('Foto salva!');
 }
 
 function removeExtraPhoto(index) {
     draftPhotos.splice(index, 1);
     renderMyPhotos();
+    persistPhotos();
 }
 
 function removeMyPhoto() {
     draftPhoto = '';
     renderMyAvatar();
+    persistPhotos();
 }
+
+// Fotos são gravadas no Firebase na hora (sem depender do botão "Salvar perfil"),
+// para aparecerem em qualquer aparelho em que a pessoa entrar.
+async function persistPhotos() {
+    if (!profileLoaded) {
+        showToast('Não consegui carregar seu perfil salvo. Recarregue a página e tente de novo.');
+        return false;
+    }
+    const extras = draftPhotos.filter(isOwnPhoto).slice(0, MAX_EXTRA_PHOTOS);
+    if (draftPhoto.length > 700000 || draftPhoto.length + extras.reduce((sum, p) => sum + p.length, 0) > 900000) {
+        showToast('As fotos somam peso demais. Remova uma delas.');
+        return false;
+    }
+    try {
+        await setDoc(userRef, { photo: draftPhoto, photos: extras, updatedAt: serverTimestamp() }, { merge: true });
+    } catch (error) {
+        console.error(error);
+        showToast('Não deu para salvar a foto agora. Confira a internet e tente de novo.');
+        return false;
+    }
+    myProfile = { ...myProfile, photo: draftPhoto, photos: extras };
+    updateProfileSummary();
+    return true;
+}
+
+// Avisa antes de fechar a aba com alterações do perfil ainda não salvas
+window.addEventListener('beforeunload', event => {
+    if (document.getElementById('me-name-input') && isProfileDirty()) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+});
 
 // ----- Salvar -----
 // Botão "Salvar perfil" fica verde por um instante quando salva
@@ -3042,6 +3079,11 @@ function flashSaved() {
 
 async function saveProfileForm(event) {
     event.preventDefault();
+
+    if (!profileLoaded) {
+        showToast('Não consegui carregar seu perfil salvo. Recarregue a página antes de salvar.');
+        return;
+    }
 
     const name = document.getElementById('me-name-input').value.trim();
     const age = parseInt(document.getElementById('me-age-input').value, 10);
