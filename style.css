@@ -10452,3 +10452,68 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     #messages-content #chat-sub .sub-seen svg { width: 0.85rem; height: 0.85rem; }
 }
 @media (prefers-reduced-motion: reduce) { #messages-content .chat-header .chat-block-btn, .banner-unblock { transition: none; } }
+
+/* ==========================================================
+   CHAT — cabeçalho premium (computador/tablet): cápsula única de informações
+   ========================================================== */
+@media (min-width: 601px) {
+    #messages-content .chat-header { gap: 1rem; padding: 0.9rem 1.2rem; }
+    #messages-content .chat-header .chat-avatar { width: 3.4rem; height: 3.4rem; }
+    #messages-content .chat-name-row strong { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.01em; }
+    #messages-content .chat-header-info { gap: 0.4rem; }
+
+    /* presença + cidade + visto dentro de UMA cápsula, separados por linhas finas */
+    #messages-content .chat-status {
+        display: inline-flex; flex-wrap: nowrap; align-items: stretch; gap: 0; align-self: flex-start;
+        height: 2rem; padding: 0; overflow: hidden; max-width: 100%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 999px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 8px 20px -14px rgba(0, 0, 0, 0.9);
+    }
+    #messages-content #chat-sub { display: contents; }
+    #messages-content .chat-status .chat-presence,
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen {
+        height: auto; border: 0; border-radius: 0; background: transparent !important;
+        padding: 0 0.95rem !important; font-size: 0.8rem; align-self: stretch;
+    }
+    #messages-content .chat-status .chat-presence { padding: 0 0.95rem 0 0.85rem !important; }
+    #messages-content .chat-status .chat-presence.on { background: rgba(46, 230, 140, 0.14) !important; }
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+    #messages-content #chat-sub .sub-seen { color: #aab2da; }
+    #messages-content #chat-sub .sub-loc > span,
+    #messages-content #chat-sub .sub-seen > span { white-space: nowrap; }
+
+    /* botões à direita */
+    #messages-content .chat-header .btn-view {
+        display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.6rem; padding: 0 1.15rem 0 1rem;
+        font-weight: 700; border-radius: 999px;
+        background: linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(255, 79, 163, 0.2));
+        border: 1px solid rgba(167, 139, 250, 0.45);
+    }
+    #messages-content .chat-header .btn-view::before {
+        content: ''; display: block; width: 1.05rem; height: 1.05rem; flex: none;
+        background: currentColor;
+        -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>") center / contain no-repeat;
+                mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'/><path d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/></svg>") center / contain no-repeat;
+    }
+    #messages-content .chat-header .btn-view:hover { background: linear-gradient(135deg, #8b5cf6, #ff4fa3); border-color: transparent; }
+}
+
+@media (min-width: 601px) and (max-width: 900px) {
+    #messages-content .chat-header .btn-view { width: 2.6rem; height: 2.6rem; min-height: 0; padding: 0; justify-content: center; font-size: 0; gap: 0; }
+    #messages-content .chat-header .btn-view::before { width: 1.15rem; height: 1.15rem; }
+    #messages-content .chat-status .chat-presence,
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen { padding: 0 0.7rem !important; font-size: 0.76rem; }
+    #messages-content .chat-status .chat-presence { padding: 0 0.7rem 0 0.65rem !important; }
+}
+
+@media (min-width: 601px) and (max-width: 720px) {
+    #messages-content .chat-status { flex-wrap: wrap; height: auto; border-radius: 1.1rem; }
+    #messages-content .chat-status .chat-presence,
+    #messages-content #chat-sub .sub-loc,
+    #messages-content #chat-sub .sub-seen { min-height: 2rem; }
+}
