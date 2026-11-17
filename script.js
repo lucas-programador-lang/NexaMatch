@@ -2582,13 +2582,13 @@ function renderMyProfile() {
             </section>
 
             <!-- ===== Atalhos das seções ===== -->
-            <nav class="me-tabs" aria-label="Seções do perfil">
+            <div class="me-tabs" role="navigation" aria-label="Seções do perfil">
                 <button type="button" class="me-tab" data-target="me-step-1" onclick="meJump('me-step-1')"><i>${meIcon('user')}</i><span>Básico</span><b class="dot"></b></button>
                 <button type="button" class="me-tab" data-target="me-step-2" onclick="meJump('me-step-2')"><i>${meIcon('edit')}</i><span>Sobre você</span><b class="dot"></b></button>
                 <button type="button" class="me-tab" data-target="me-step-3" onclick="meJump('me-step-3')"><i>${meIcon('sparkle')}</i><span>Interesses</span><b class="dot"></b></button>
                 <button type="button" class="me-tab" data-target="me-step-4" onclick="meJump('me-step-4')"><i>${meIcon('camera')}</i><span>Fotos</span></button>
                 <button type="button" class="me-tab" data-target="me-account" onclick="meJump('me-account')"><i>${meIcon('mail')}</i><span>Conta</span></button>
-            </nav>
+            </div>
 
             <!-- ===== Corpo: formulário + prévia ===== -->
             <div class="me-grid">
