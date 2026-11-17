@@ -156,10 +156,10 @@ let draftPhoto = myProfile.photo;              // foto em edição
 let draftPhotos = [...myProfile.photos];       // fotos extras em edição
 
 // ---------- Estado em tempo real ----------
-let profiles = [];                  // outras pessoas cadastradas (sem quem foi bloqueado nem quem me bloqueou)
+let profiles = [];                  // outras pessoas cadastradas (sem quem EU bloqueei; quem me bloqueou fica só nas conversas antigas)
 let rawProfiles = [];               // todas as pessoas, inclusive bloqueadas (usado na lista de bloqueados)
 const blockedByMe = new Map();      // quem eu bloqueei -> quando
-const blockedMe = new Set();        // quem me bloqueou (não aparece nada para essa pessoa saber disso)
+const blockedMe = new Set();        // quem me bloqueou: some do Descobrir/Matches/Avisos, e a conversa antiga fica travada
 const likedProfiles = new Set();    // quem você curtiu
 const incomingLikes = new Map();    // quem curtiu você -> quando
 let matchByUser = new Map();        // id da pessoa -> { id, createdAt, lastMessage, unread }
@@ -191,13 +191,16 @@ const findProfile = id => profiles.find(p => p.id === id);
 // Bloqueio vale nos dois sentidos: quem bloqueia e quem foi bloqueado deixam de se ver
 const isBlocked = id => blockedByMe.has(id) || blockedMe.has(id);
 function rebuildProfiles() {
-    profiles = rawProfiles.filter(p => !isBlocked(p.id));
+    profiles = rawProfiles.filter(p => !blockedByMe.has(p.id));
 }
+// Pessoas que aparecem em Descobrir, contagens etc. (quem me bloqueou fica de fora)
+const publicProfiles = () => profiles.filter(p => !blockedMe.has(p.id));
+const hasConversation = id => matchByUser.has(id) || chatByUser.has(id);
 // A pessoa curte você
 const likesYouNow = profile => Boolean(profile && incomingLikes.has(profile.id));
 // Match = as duas curtidas existem e o documento do match já foi criado
 const isMatch = id => likedProfiles.has(id) && incomingLikes.has(id) && matchByUser.has(id);
-const getMatches = () => [...matchByUser.keys()].filter(isMatch).map(findProfile).filter(Boolean);
+const getMatches = () => [...matchByUser.keys()].filter(id => isMatch(id) && !isBlocked(id)).map(findProfile).filter(Boolean);
 const getPending = () => [...likedProfiles].filter(id => !incomingLikes.has(id)).map(findProfile).filter(Boolean);
 
 // ---------- Quem pode conversar e quem paga ----------
@@ -227,6 +230,9 @@ function conversationFor(otherId) {
 }
 
 function canChat(otherId) {
+    if (blockedByMe.has(otherId)) return false;
+    // quem me bloqueou: a conversa antiga continua na lista, só que travada (ver chatLocked)
+    if (blockedMe.has(otherId)) return hasConversation(otherId);
     if (isMatch(otherId)) return true;
     if (!chatPair(otherId)) return false;
     if (chatByUser.has(otherId)) return true;
@@ -237,6 +243,7 @@ function canChat(otherId) {
 // Conversas da lista: matches + conversas sem match (+ a que está aberta e ainda não tem mensagem)
 function getConversations() {
     const ids = new Set(getMatches().map(profile => profile.id));
+    matchByUser.forEach((m, id) => { if (blockedMe.has(id) && findProfile(id)) ids.add(id); });
     chatByUser.forEach((chat, id) => { if (findProfile(id) && canChat(id)) ids.add(id); });
     if (currentChatId && findProfile(currentChatId) && canChat(currentChatId)) ids.add(currentChatId);
     return [...ids].map(findProfile).filter(Boolean);
@@ -783,7 +790,7 @@ function tickIcon(seen, pop = false) {
 // Depois que a lista de bloqueios muda: some com a pessoa de todas as telas
 function applyBlockChanges() {
     rebuildProfiles();
-    if (currentChatId && isBlocked(currentChatId)) {
+    if (currentChatId && blockedByMe.has(currentChatId)) {
         stopThread();
         currentChatId = null;
     }
@@ -983,7 +990,7 @@ function matchesLocation(profile) {
     return cityFilter === 'all' || normalizeText(place.city) === cityFilter;
 }
 
-const visibleProfiles = () => profiles.filter(profile =>
+const visibleProfiles = () => publicProfiles().filter(profile =>
     myProfile.interestedIn.includes(profile.gender) && matchesLocation(profile));
 
 // Monta os seletores só com estados e cidades que têm gente cadastrada
@@ -992,7 +999,7 @@ function updateLocationFilter() {
     const citySelect = document.getElementById('city-filter');
     if (!stateSelect || !citySelect) return;
 
-    const places = profiles.map(profile => parseLocation(profile.location)).filter(place => place.uf);
+    const places = publicProfiles().map(profile => parseLocation(profile.location)).filter(place => place.uf);
 
     const states = [...new Set(places.map(place => place.uf))]
         .sort((a, b) => UF_NAMES[a].localeCompare(UF_NAMES[b], 'pt-BR'));
@@ -1085,7 +1092,7 @@ function renderProfiles() {
         return;
     }
 
-    if (!profiles.length) {
+    if (!publicProfiles().length) {
         grid.innerHTML = `
             <div class="empty-state">
                 <div class="empty-ico">${meIcon('user')}</div>
@@ -1461,6 +1468,7 @@ function renderProfileDetail(id) {
 function viewProfile(id) {
     const profile = findProfile(id);
     if (!profile) return;
+    if (blockedMe.has(id)) { showToast('Esse perfil não está disponível.'); return; }
 
     // descobre a página atual antes de abrir o perfil
     const open = [...document.querySelectorAll('.page-content')].find(p => p.style.display !== 'none' && p.id !== 'page-perfil-pessoa');
@@ -1981,7 +1989,12 @@ function renderChatList() {
 }
 
 // Faixa com a regra da conversa (quem paga, quanto custa, saldo)
+const chatLocked = id => blockedMe.has(id);
+
 function chatBannerHtml(profile) {
+    if (profile && chatLocked(profile.id)) {
+        return `<div class="chat-banner locked"><span>${meIcon('ban')}Não é possível enviar mensagens para esta pessoa.</span></div>`;
+    }
     if (!profile || !chatPair(profile.id) || isMatch(profile.id)) return '';
 
     if (manPays(profile.id)) {
@@ -2035,7 +2048,7 @@ function renderChatWindow() {
         <div class="chat-header">
             <button class="chat-back" onclick="closeChat()" aria-label="Voltar para as conversas"></button>
             <span class="chat-avatar">
-                <img src="${profile.photo}" alt="Foto de ${profile.name}" onclick="viewProfile('${profile.id}')">
+                <img src="${profile.photo}" alt="Foto de ${profile.name}" ${chatLocked(profile.id) ? '' : `onclick="viewProfile('${profile.id}')"`}>
                 <i class="presence-dot" id="chat-avatar-dot"></i>
             </span>
             <div class="chat-header-info">
@@ -2047,13 +2060,15 @@ function renderChatWindow() {
                     <span id="chat-sub"><b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b></span>
                 </div>
             </div>
-            <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
+            ${chatLocked(profile.id) ? '' : `<button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>`}
         </div>
 
         <div id="chat-banner">${chatBannerHtml(profile)}</div>
 
         <div class="chat-thread" id="chat-thread"></div>
 
+        ${chatLocked(profile.id) ? `
+        <div class="chat-form chat-form-locked" role="note">${meIcon('ban')}<span>Conversa indisponível</span></div>` : `
         <form class="chat-form" onsubmit="sendMessage(event)">
             <label class="chat-attach" title="Enviar foto" aria-label="Enviar foto">
                 ${meIcon('image')}
@@ -2061,13 +2076,15 @@ function renderChatWindow() {
             </label>
             <input id="chat-input" type="text" placeholder="${price ? `Mensagem · ${formatMoney(price)}` : `Escreva uma mensagem para ${profile.name}`}" autocomplete="off" maxlength="500">
             <button type="submit" class="chat-send" aria-label="Enviar mensagem"></button>
-        </form>
+        </form>`}
     `;
 
     const chatInput = document.getElementById('chat-input');
-    chatInput.value = typed;
-    chatInput.addEventListener('input', () => handleTypingInput(chatInput));
-    chatInput.addEventListener('blur', () => setTyping(null));
+    if (chatInput) {
+        chatInput.value = typed;
+        chatInput.addEventListener('input', () => handleTypingInput(chatInput));
+        chatInput.addEventListener('blur', () => setTyping(null));
+    }
     updateThread();
     updateChatPresence();
 }
@@ -2198,6 +2215,10 @@ let sendingNow = false;
 async function deliverMessage(otherId, { text = '', image = '' }) {
     if (sendingNow) return false;
     if (!text && !image) return false;
+    if (chatLocked(otherId)) {
+        showToast('Não é possível enviar mensagens para esta pessoa.');
+        return false;
+    }
     if (!canChat(otherId)) {
         showToast('Você só pode enviar mensagem depois do match.');
         return false;
@@ -3022,7 +3043,7 @@ function updateProfileStats() {
         ['heart', 'pink', likedProfiles.size, 'Curtidas enviadas'],
         ['sparkle', 'violet', getMatches().length, 'Matches'],
         ['clock', 'gold', getPending().length, 'Aguardando'],
-        ['eye', 'cyan', profiles.filter(likesYouNow).length, 'Curtiram você']
+        ['eye', 'cyan', publicProfiles().filter(likesYouNow).length, 'Curtiram você']
     ];
 
     stats.innerHTML = items
