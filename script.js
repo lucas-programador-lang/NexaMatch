@@ -718,7 +718,7 @@ function updateChatPresence() {
     if (!state) {
         pill.hidden = true;
         if (dot) dot.className = 'presence-dot';
-        if (sub && profile) sub.innerHTML = `<b class="sub-loc">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>`;
+        if (sub && profile) sub.innerHTML = `<b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>`;
         return;
     }
 
@@ -728,8 +728,8 @@ function updateChatPresence() {
     if (dot) dot.className = `presence-dot ${state.online ? 'on' : 'off'}`;
     if (sub && profile) {
         // cidade e "visto por último" em partes separadas: o celular mostra uma linha para cada
-        sub.innerHTML = `<b class="sub-loc">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>` +
-            (!state.online && state.lastSeen ? `<i class="sub-seen">${meIcon('clock')}<span>${escapeHtml(formatLastSeen(state.lastSeen))}</span></i>` : '');
+        sub.innerHTML = `<b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>` +
+            (!state.online && state.lastSeen ? `<i class="sub-seen" style="background-image:none;padding:0 .85rem">${meIcon('clock')}<span>${escapeHtml(formatLastSeen(state.lastSeen))}</span></i>` : '');
     }
 }
 
@@ -1998,7 +1998,7 @@ function renderChatWindow() {
                 </div>
                 <div class="chat-status">
                     <em class="chat-presence" id="chat-presence" hidden></em>
-                    <span id="chat-sub"><b class="sub-loc">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b></span>
+                    <span id="chat-sub"><b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b></span>
                 </div>
             </div>
             <button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>
