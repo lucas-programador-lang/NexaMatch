@@ -10609,3 +10609,64 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     #messages-content #chat-sub .sub-loc,
     #messages-content #chat-sub .sub-seen { padding: 0 0.75rem !important; }
 }
+
+/* ==========================================================
+   CHAT — cabeçalho estilo WhatsApp
+   nome em cima; embaixo UMA linha: "online" / "digitando…" /
+   "visto por último hoje às 21:57" e, discreta, a cidade.
+   ========================================================== */
+#messages-content .chat-status {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.5rem;
+    height: auto; min-height: 0; padding: 0; overflow: visible; max-width: 100%;
+    background: none; border: 0; border-radius: 0; box-shadow: none;
+    -webkit-mask: none; mask: none;
+}
+#messages-content #chat-sub { display: contents; }
+
+#messages-content .chat-status .cs-state {
+    font-style: normal; font-size: 0.86rem; font-weight: 600; line-height: 1.3; color: #9aa3c7;
+}
+#messages-content .chat-status .cs-state[hidden] { display: none; }
+#messages-content .chat-status .cs-state.on { color: #4ff0a2; }
+#messages-content .chat-status .cs-state.typing { color: #4ff0a2; font-style: italic; }
+
+#messages-content .chat-status .cs-city {
+    font-size: 0.8rem; font-weight: 500; line-height: 1.3; color: #7f88b0;
+}
+/* separador "·" só quando há linha de estado antes da cidade */
+#messages-content .chat-status .cs-state:not([hidden]) + #chat-sub .cs-city::before { content: '·'; margin-right: 0.5rem; color: #5d6690; }
+
+@media (max-width: 600px) {
+    #messages-content .chat-status { grid-column: 3 / -1; grid-row: 2; padding: 0; border: 0; }
+    #messages-content .chat-status .cs-state { font-size: 0.8rem; }
+    #messages-content .chat-status .cs-city { font-size: 0.76rem; }
+}
+@media (max-width: 600px) {
+    #messages-content .chat-header { row-gap: 0.05rem; }
+    #messages-content .chat-header .chat-back,
+    #messages-content .chat-header .chat-avatar,
+    #messages-content .chat-header .btn-view,
+    #messages-content .chat-header .chat-block-btn { grid-row: 1 / span 2; align-self: center; }
+    #messages-content .chat-name-row { align-self: end; }
+    #messages-content .chat-status { align-self: start; }
+}
+@media (max-width: 600px) {
+    #messages-content .chat-status { grid-column: 3; min-width: 0; }
+    #messages-content .chat-status .cs-state:not([hidden]) + #chat-sub .cs-city::before { content: none; }
+    #messages-content .chat-status .cs-city { flex-basis: 100%; }
+}
+@media (max-width: 600px) {
+    /* status ocupa a largura toda, numa linha abaixo (o nome fica ao lado do avatar) */
+    #messages-content .chat-header { row-gap: 0.45rem; }
+    #messages-content .chat-header .chat-back,
+    #messages-content .chat-header .chat-avatar,
+    #messages-content .chat-header .btn-view,
+    #messages-content .chat-header .chat-block-btn { grid-row: 1; align-self: center; }
+    #messages-content .chat-name-row { align-self: center; }
+    #messages-content .chat-status { grid-column: 1 / -1; grid-row: 2; align-self: auto; padding-top: 0.15rem; }
+    #messages-content .chat-status .cs-city { flex-basis: auto; }
+    #messages-content .chat-status .cs-state:not([hidden]) + #chat-sub .cs-city::before { content: '·'; margin-right: 0.45rem; color: #5d6690; }
+}
+@media (max-width: 359px) {
+    #messages-content .chat-status .cs-state:not([hidden]) + #chat-sub .cs-city::before { content: none; }
+}
