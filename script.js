@@ -1046,6 +1046,7 @@ function renderProfiles() {
     if (!profiles.length) {
         grid.innerHTML = `
             <div class="empty-state">
+                <div class="empty-ico">${meIcon('user')}</div>
                 <h2>Ainda não tem mais ninguém por aqui</h2>
                 <p>Quando outras pessoas criarem conta, elas aparecem aqui sozinhas, sem precisar atualizar a página.</p>
             </div>
@@ -1058,6 +1059,7 @@ function renderProfiles() {
     if (!visible.length) {
         grid.innerHTML = `
             <div class="empty-state">
+                <div class="empty-ico">${meIcon('compass')}</div>
                 <h2>Nenhum perfil para esse filtro</h2>
                 <p>Ainda não há ninguém disponível para esse filtro.</p>
                 <button class="btn-primary" onclick="selectAllGenders(); clearLocationFilter()">Mostrar todos</button>
@@ -1107,6 +1109,7 @@ function renderMatches() {
     if (!matches.length && !pending.length) {
         matchesContent.innerHTML = `
             <div class="empty-state">
+                <div class="empty-ico">${meIcon('heart')}</div>
                 <h2>Nenhum match por enquanto</h2>
                 <p>Curte perfis no Descobrir. Quando a pessoa também curtir você, o match aparece aqui.</p>
                 <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
@@ -1596,6 +1599,7 @@ function renderNotifications() {
     if (!items.length) {
         notificationsContent.innerHTML = `
             <div class="empty-state">
+                <div class="empty-ico">${meIcon('bell')}</div>
                 <h2>Nenhum aviso por enquanto</h2>
                 <p>Quando alguém curtir você ou der match, o nome e a foto da pessoa aparecem aqui.</p>
                 <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
@@ -1813,6 +1817,7 @@ function renderMessages() {
             : '';
         messagesContent.innerHTML = `
             <div class="empty-state">
+                <div class="empty-ico">${meIcon('chat')}</div>
                 <h2>Nenhuma conversa por aqui</h2>
                 <p>Quando houver match, a conversa começa aqui.${extra}</p>
                 <button class="btn-primary" onclick="backToDiscover()">Descobrir pessoas</button>
@@ -1971,6 +1976,7 @@ function renderChatWindow() {
     if (!profile) {
         win.innerHTML = `
             <div class="chat-placeholder">
+                <div class="empty-ico">${meIcon('chat')}</div>
                 <h2>Suas conversas</h2>
                 <p>Escolha uma conversa na lista para começar.</p>
             </div>
@@ -2506,6 +2512,9 @@ const ME_ICONS = {
     trash: '<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
     alert: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
     check: '<path d="M20 6 9 17l-5-5"/>',
+    chat: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.6-.8L3 21l1.9-5.1A8.4 8.4 0 1 1 21 11.5z"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+    compass: '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     heart: '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
     sparkle: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/>',
