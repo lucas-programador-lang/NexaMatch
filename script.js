@@ -2557,7 +2557,7 @@ function renderMyProfile() {
 
                     <div class="me-hero-info">
                         <h2 class="me-name" id="me-name">Seu nome</h2>
-                        <p class="me-sub" id="me-sub">Complete seu perfil</p>
+                        <div class="me-sub" id="me-sub">Complete seu perfil</div>
                         <button type="button" class="me-remove" id="me-remove" onclick="removeMyPhoto()" hidden>${meIcon('trash')}Remover foto</button>
                     </div>
 
@@ -2580,6 +2580,15 @@ function renderMyProfile() {
 
                 <div class="me-stats" id="me-stats"></div>
             </section>
+
+            <!-- ===== Atalhos das seções ===== -->
+            <nav class="me-tabs" aria-label="Seções do perfil">
+                <button type="button" class="me-tab" data-target="me-step-1" onclick="meJump('me-step-1')"><i>${meIcon('user')}</i><span>Básico</span><b class="dot"></b></button>
+                <button type="button" class="me-tab" data-target="me-step-2" onclick="meJump('me-step-2')"><i>${meIcon('edit')}</i><span>Sobre você</span><b class="dot"></b></button>
+                <button type="button" class="me-tab" data-target="me-step-3" onclick="meJump('me-step-3')"><i>${meIcon('sparkle')}</i><span>Interesses</span><b class="dot"></b></button>
+                <button type="button" class="me-tab" data-target="me-step-4" onclick="meJump('me-step-4')"><i>${meIcon('camera')}</i><span>Fotos</span></button>
+                <button type="button" class="me-tab" data-target="me-account" onclick="meJump('me-account')"><i>${meIcon('mail')}</i><span>Conta</span></button>
+            </nav>
 
             <!-- ===== Corpo: formulário + prévia ===== -->
             <div class="me-grid">
@@ -2703,7 +2712,8 @@ function renderMyProfile() {
                         </div>
                     </form>
 
-                    <section class="me-account me-acct" aria-label="Conta">
+                    <section class="me-account me-acct" id="me-account" aria-label="Conta">
+                        <h3 class="me-group-title">Conta</h3>
                         <article class="acct-card">
                             <div class="acct-main">
                                 <span class="acct-icon">${meIcon('mail')}</span>
@@ -2753,6 +2763,7 @@ function renderMyProfile() {
     renderInterestChips();
     updateProfileSummary();
     updateProfileStats();
+    watchMeSections();
 }
 
 // Prévia: mostra como seu perfil aparece para os outros (atualiza enquanto você digita)
@@ -2807,6 +2818,7 @@ function updateMePreview() {
         'me-step-3': draftInterests.length >= 3
     };
     Object.entries(done).forEach(([id, ok]) => document.getElementById(id)?.classList.toggle('done', ok));
+    document.querySelectorAll('.me-tab[data-target]').forEach(tab => tab.classList.toggle('done', Boolean(done[tab.dataset.target])));
 
     // Checklist ao vivo: mostra o que ainda falta para o perfil ficar completo
     const tips = document.getElementById('me-tips');
@@ -2891,6 +2903,30 @@ function renderMyAvatar() {
 }
 
 // Topo: nome, idade, cidade e anel de perfil completo
+// Atalhos do topo: rolam até a seção e acompanham a seção visível
+let meSectionObserver = null;
+function meJump(id) {
+    const target = document.getElementById(id);
+    if (!target) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    target.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+}
+function watchMeSections() {
+    if (meSectionObserver) meSectionObserver.disconnect();
+    if (!('IntersectionObserver' in window)) return;
+    meSectionObserver = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            document.querySelectorAll('.me-tab').forEach(tab =>
+                tab.classList.toggle('active', tab.dataset.target === entry.target.id));
+        });
+    }, { rootMargin: '-25% 0px -60% 0px' });
+    ['me-step-1', 'me-step-2', 'me-step-3', 'me-step-4', 'me-account'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) meSectionObserver.observe(el);
+    });
+}
+
 function updateProfileSummary() {
     const name = document.getElementById('me-name');
     if (!name) return;
@@ -2900,7 +2936,11 @@ function updateProfileSummary() {
     const circumference = 2 * Math.PI * 44;
 
     name.textContent = myProfile.name || 'Seu nome';
-    document.getElementById('me-sub').textContent = details || 'Complete seu perfil';
+    const bits = [];
+    if (myProfile.username) bits.push(`<span class="me-chip handle">@${escapeHtml(myProfile.username)}</span>`);
+    if (myProfile.age) bits.push(`<span class="me-chip">${escapeHtml(myProfile.age)} anos</span>`);
+    if (myProfile.location) bits.push(`<span class="me-chip">${meIcon('pin')}${escapeHtml(myProfile.location)}</span>`);
+    document.getElementById('me-sub').innerHTML = bits.join('') || 'Complete seu perfil';
     document.getElementById('me-percent').textContent = percent + '%';
 
     const ring = document.getElementById('me-ring-fg');
@@ -3761,7 +3801,7 @@ async function fillLocation() {
 // Este arquivo é um módulo: as funções chamadas pelos botões do HTML (onclick="...")
 // precisam ser publicadas no window.
 Object.assign(window, {
-    addInterest, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
+    addInterest, meJump, backToDiscover, changePage, closeChat, deleteMyAccount, goBack, goToMessages, openPhoto, openTopUp, sendChatPhoto,
     fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, handleExtraPhotos, removeExtraPhoto, openGallery, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
