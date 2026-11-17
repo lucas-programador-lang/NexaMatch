@@ -2005,7 +2005,7 @@ const lockStateOf = id => `${blockedByMe.has(id) ? 1 : 0}${blockedMe.has(id) ? 1
 
 function chatBannerHtml(profile) {
     if (profile && blockedByMe.has(profile.id)) {
-        return `<div class="chat-banner locked"><span>${meIcon('ban')}Você bloqueou ${profile.name}. Desbloqueie para voltar a conversar.</span></div>`;
+        return `<div class="chat-banner locked"><span>${meIcon('ban')}Você bloqueou ${profile.name}.</span><button type="button" class="banner-unblock" onclick="unblockPerson('${profile.id}')">${meIcon('shield')}Desbloquear</button></div>`;
     }
     if (profile && chatLocked(profile.id)) {
         return `<div class="chat-banner locked"><span>${meIcon('ban')}Não é possível enviar mensagens para esta pessoa.</span></div>`;
@@ -2074,13 +2074,10 @@ function renderChatWindow() {
                 <div class="chat-status">
                     <em class="chat-presence" id="chat-presence" hidden></em>
                     <span id="chat-sub"><b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b></span>
-                    ${blockedByMe.has(profile.id)
-                        ? `<button type="button" class="chip-unblock" onclick="unblockPerson('${profile.id}')">${meIcon('shield')}<span>Desbloquear</span></button>`
-                        : blockedMe.has(profile.id) ? ''
-                        : `<button type="button" class="chip-block" onclick="blockPerson('${profile.id}')">${meIcon('ban')}<span>Bloquear</span></button>`}
                 </div>
             </div>
             ${blockedMe.has(profile.id) ? '' : `<button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>`}
+            ${isBlocked(profile.id) ? '' : `<button type="button" class="chat-block-btn" onclick="blockPerson('${profile.id}')" title="Bloquear ${profile.name}" aria-label="Bloquear ${profile.name}">${meIcon('ban')}</button>`}
         </div>
 
         <div id="chat-banner">${chatBannerHtml(profile)}</div>
