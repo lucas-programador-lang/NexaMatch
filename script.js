@@ -719,6 +719,8 @@ function updateTypingBubble() {
     }
 }
 
+const cityLabelHtml = profile => profile.location ? `<b class="cs-city">${escapeHtml(profile.location)}</b>` : '';
+
 // Cabeçalho da conversa: selo Online/Offline, bolinha na foto e "visto por último"
 function updateChatPresence() {
     const pill = document.getElementById('chat-presence');
@@ -732,18 +734,20 @@ function updateChatPresence() {
     if (!state) {
         pill.hidden = true;
         if (dot) dot.className = 'presence-dot';
-        if (sub && profile) sub.innerHTML = `<b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>`;
+        if (sub && profile) sub.innerHTML = cityLabelHtml(profile);
         return;
     }
 
     pill.hidden = false;
-    pill.className = `chat-presence ${state.typing ? 'typing' : state.online ? 'on' : 'off'}`;
-    pill.textContent = state.typing ? 'digitando' : state.online ? 'Online' : 'Offline';
+    // estilo WhatsApp: online / digitando… / visto por último (nunca "offline")
+    pill.className = `cs-state ${state.typing ? 'typing' : state.online ? 'on' : 'off'}`;
+    if (state.typing) pill.textContent = 'digitando…';
+    else if (state.online) pill.textContent = 'online';
+    else if (state.lastSeen) pill.textContent = formatLastSeen(state.lastSeen).replace('visto ', 'visto por último ');
+    else pill.hidden = true;
     if (dot) dot.className = `presence-dot ${state.online ? 'on' : 'off'}`;
     if (sub && profile) {
-        // cidade e "visto por último" em partes separadas: o celular mostra uma linha para cada
-        sub.innerHTML = `<b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b>` +
-            (!state.online && state.lastSeen ? `<i class="sub-seen" style="background-image:none;padding:0 .85rem">${meIcon('clock')}<span>${escapeHtml(formatLastSeen(state.lastSeen))}</span></i>` : '');
+        sub.innerHTML = cityLabelHtml(profile);
     }
 }
 
@@ -2072,8 +2076,8 @@ function renderChatWindow() {
                     <strong>${profile.name}</strong>
                 </div>
                 <div class="chat-status">
-                    <em class="chat-presence" id="chat-presence" hidden></em>
-                    <span id="chat-sub"><b class="sub-loc" style="background-image:none;padding:0 .85rem">${meIcon('pin')}<span>${escapeHtml(profile.location)}</span></b></span>
+                    <em class="cs-state" id="chat-presence" hidden></em>
+                    <span id="chat-sub">${cityLabelHtml(profile)}</span>
                 </div>
             </div>
             ${blockedMe.has(profile.id) ? '' : `<button class="btn-view" onclick="viewProfile('${profile.id}')">Ver perfil</button>`}
