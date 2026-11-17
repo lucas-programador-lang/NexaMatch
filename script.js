@@ -2458,13 +2458,18 @@ function openGallery(id, start = 0) {
         ${list.length > 1 ? `
             <button type="button" class="gv-nav gv-prev" aria-label="Foto anterior">‹</button>
             <button type="button" class="gv-nav gv-next" aria-label="Próxima foto">›</button>
-            <span class="gv-count"></span>` : ''}`;
+            <span class="gv-count"></span>
+            <div class="gv-thumbs">${list.map((src, i) => `<button type="button" class="gv-thumb" data-i="${i}" aria-label="Foto ${i + 1}"><img src="${src}" alt=""></button>`).join('')}</div>` : ''}`;
     const img = overlay.querySelector('img');
     const count = overlay.querySelector('.gv-count');
     const show = n => {
         index = (n + list.length) % list.length;
         img.src = list[index];
         if (count) count.textContent = `${index + 1} / ${list.length}`;
+        overlay.querySelectorAll('.gv-thumb').forEach((t, i) => {
+            t.classList.toggle('on', i === index);
+            if (i === index) t.scrollIntoView({ block: 'nearest', inline: 'center' });
+        });
     };
     const close = () => {
         document.removeEventListener('keydown', onKey);
@@ -2477,6 +2482,9 @@ function openGallery(id, start = 0) {
         else if (event.key === 'ArrowLeft') show(index - 1);
     };
     overlay.addEventListener('click', event => {
+        const thumb = event.target.closest('.gv-thumb');
+        if (thumb) { show(Number(thumb.dataset.i)); return; }
+        if (event.target.closest('.gv-thumbs')) return;
         if (event.target.closest('.gv-prev')) show(index - 1);
         else if (event.target.closest('.gv-next')) show(index + 1);
         else close();
