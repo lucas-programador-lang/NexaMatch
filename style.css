@@ -10517,3 +10517,35 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     #messages-content #chat-sub .sub-loc,
     #messages-content #chat-sub .sub-seen { min-height: 2rem; }
 }
+
+
+/* ==========================================================
+   ÍCONES PREENCHIDOS (mais nítidos em tamanho pequeno)
+   ========================================================== */
+#messages-content #chat-sub .sub-loc svg,
+#messages-content #chat-sub .sub-seen svg { display: none !important; }
+
+#messages-content #chat-sub .sub-loc::before,
+#messages-content #chat-sub .sub-seen::before {
+    content: '' !important; display: block !important; flex: none;
+    width: 1rem; height: 1rem; margin: 0 !important; opacity: 1 !important; background: currentColor;
+}
+#messages-content #chat-sub .sub-loc::before { color: #4fe3f7; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z'/></svg>") center / contain no-repeat; }
+#messages-content #chat-sub .sub-seen::before { color: #d2c6ff; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.1 4.5h2.2v4.7l3.4 2-1.1 1.9-4.5-2.7V6.5z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.1 4.5h2.2v4.7l3.4 2-1.1 1.9-4.5-2.7V6.5z'/></svg>") center / contain no-repeat; }
+
+#messages-content .chat-header .chat-block-btn svg { display: none; }
+#messages-content .chat-header .chat-block-btn::before {
+    content: ''; display: block; width: 1.15rem; height: 1.15rem; background: currentColor; -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM4.5 12a7.5 7.5 0 0 1 12.2-5.8L6.2 16.7A7.5 7.5 0 0 1 4.5 12zm15 0a7.5 7.5 0 0 1-12.2 5.8L17.8 7.3A7.5 7.5 0 0 1 19.5 12z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zM4.5 12a7.5 7.5 0 0 1 12.2-5.8L6.2 16.7A7.5 7.5 0 0 1 4.5 12zm15 0a7.5 7.5 0 0 1-12.2 5.8L17.8 7.3A7.5 7.5 0 0 1 19.5 12z'/></svg>") center / contain no-repeat;
+}
+@media (min-width: 601px) {
+    #messages-content .chat-header .btn-view::before { -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z'/></svg>") center / contain no-repeat; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='black' fill-rule='evenodd' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z'/></svg>") center / contain no-repeat; }
+}
+@media (max-width: 600px) {
+    #messages-content .chat-header .btn-view {
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23d6dcff' fill-rule='evenodd' d='M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5z'/></svg>");
+        background-size: 1.1rem 1.1rem;
+    }
+    #messages-content .chat-header .chat-block-btn::before { width: 1.05rem; height: 1.05rem; }
+    #messages-content #chat-sub .sub-loc::before,
+    #messages-content #chat-sub .sub-seen::before { width: 0.9rem; height: 0.9rem; }
+}
