@@ -10292,3 +10292,57 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     #messages-content #chat-sub .sub-seen svg { width: 1.3rem; height: 1.3rem; padding: 0.28rem; }
     #messages-content .chat-status .chat-presence { padding: 0 0.5rem 0 0.45rem; font-size: 0.7rem; }
 }
+
+/* ==========================================================
+   BLOQUEAR / DESBLOQUEAR
+   ========================================================== */
+.btn-block {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    width: 100%; min-height: 2.8rem; margin-top: 0.9rem; padding: 0 1.1rem;
+    font: inherit; font-size: 0.88rem; font-weight: 600; cursor: pointer;
+    color: #ff9db8; background: rgba(255, 79, 120, 0.07);
+    border: 1px solid rgba(255, 79, 120, 0.3); border-radius: 999px;
+    transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+}
+.btn-block svg { width: 1.05rem; height: 1.05rem; flex: none; }
+.btn-block span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-block:hover, .btn-block:focus-visible { color: #fff; background: rgba(255, 79, 120, 0.2); border-color: rgba(255, 79, 120, 0.7); transform: translateY(-1px); }
+.btn-block:active { transform: scale(0.98); }
+
+.me-blocked { margin-top: 1.4rem; }
+.blocked-list { display: grid; gap: 0.7rem; }
+.blocked-item {
+    display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 0.85rem;
+    padding: 0.75rem 0.9rem; border-radius: 1.1rem;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.blocked-avatar {
+    width: 3rem; height: 3rem; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+    background: #2a2a4a; color: #b9c2ee; font-weight: 700; border: 2px solid rgba(255, 255, 255, 0.15);
+}
+.blocked-avatar img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.6); }
+.blocked-info { display: grid; gap: 0.15rem; min-width: 0; }
+.blocked-info strong { font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blocked-info small { font-size: 0.78rem; color: #aab2da; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-unblock {
+    min-height: 2.4rem; padding: 0 1rem; font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer;
+    color: #eafcff; border-radius: 999px; border: 1px solid rgba(45, 226, 245, 0.45);
+    background: linear-gradient(135deg, rgba(45, 226, 245, 0.2), rgba(139, 92, 246, 0.22));
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+.btn-unblock:hover, .btn-unblock:focus-visible { transform: translateY(-1px); border-color: #2de2f5; box-shadow: 0 10px 22px -12px rgba(45, 226, 245, 0.8); }
+.blocked-empty {
+    display: flex; align-items: center; gap: 0.9rem; padding: 1rem 1.1rem; border-radius: 1.1rem;
+    border: 1px dashed rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.03);
+}
+.blocked-empty i { flex: none; width: 2.6rem; height: 2.6rem; border-radius: 50%; display: grid; place-items: center; color: #2de2f5; background: rgba(45, 226, 245, 0.1); }
+.blocked-empty i svg { width: 1.3rem; height: 1.3rem; }
+.blocked-empty p { margin: 0; display: grid; gap: 0.15rem; }
+.blocked-empty span { font-size: 0.82rem; color: #aab2da; }
+
+@media (max-width: 600px) {
+    .blocked-item { grid-template-columns: auto minmax(0, 1fr); }
+    .btn-unblock { grid-column: 1 / -1; width: 100%; min-height: 2.7rem; }
+    .btn-block { min-height: 3rem; }
+}
+@media (prefers-reduced-motion: reduce) { .btn-block, .btn-unblock { transition: none; } }
