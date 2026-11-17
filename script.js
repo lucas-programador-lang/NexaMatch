@@ -156,7 +156,10 @@ let draftPhoto = myProfile.photo;              // foto em edição
 let draftPhotos = [...myProfile.photos];       // fotos extras em edição
 
 // ---------- Estado em tempo real ----------
-let profiles = [];                  // outras pessoas cadastradas
+let profiles = [];                  // outras pessoas cadastradas (sem quem foi bloqueado nem quem me bloqueou)
+let rawProfiles = [];               // todas as pessoas, inclusive bloqueadas (usado na lista de bloqueados)
+const blockedByMe = new Map();      // quem eu bloqueei -> quando
+const blockedMe = new Set();        // quem me bloqueou (não aparece nada para essa pessoa saber disso)
 const likedProfiles = new Set();    // quem você curtiu
 const incomingLikes = new Map();    // quem curtiu você -> quando
 let matchByUser = new Map();        // id da pessoa -> { id, createdAt, lastMessage, unread }
@@ -168,7 +171,7 @@ let currentThread = [];             // mensagens da conversa aberta
 let threadUnsub = null;
 let notifBaseline = null;           // destaca o que é novo enquanto a tela de avisos está aberta
 const unsubscribers = [];
-const loaded = { users: false, likes: false, incoming: false, matches: false, chats: false, wallet: false };
+const loaded = { users: false, likes: false, incoming: false, matches: false, chats: false, wallet: false, blocks: false, blocksMe: false };
 
 const grid = document.getElementById('profiles-grid');
 const detail = document.getElementById('profile-detail');
@@ -185,6 +188,11 @@ let toastTimer = null;
 let currentChatId = null; // conversa aberta em Mensagens
 
 const findProfile = id => profiles.find(p => p.id === id);
+// Bloqueio vale nos dois sentidos: quem bloqueia e quem foi bloqueado deixam de se ver
+const isBlocked = id => blockedByMe.has(id) || blockedMe.has(id);
+function rebuildProfiles() {
+    profiles = rawProfiles.filter(p => !isBlocked(p.id));
+}
 // A pessoa curte você
 const likesYouNow = profile => Boolean(profile && incomingLikes.has(profile.id));
 // Match = as duas curtidas existem e o documento do match já foi criado
@@ -393,7 +401,7 @@ async function createMatch(otherId) {
 function ensureMatches() {
     if (!loaded.likes || !loaded.incoming || !loaded.matches) return;
     likedProfiles.forEach(id => {
-        if (incomingLikes.has(id) && !matchByUser.has(id)) createMatch(id);
+        if (incomingLikes.has(id) && !matchByUser.has(id) && !isBlocked(id)) createMatch(id);
     });
 }
 
@@ -772,15 +780,49 @@ function tickIcon(seen, pop = false) {
     return `<svg class="tick ${seen ? 'seen' : 'sent'} ${pop ? 'pop' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="${label}"><title>${label}</title>${paths}</svg>`;
 }
 
+// Depois que a lista de bloqueios muda: some com a pessoa de todas as telas
+function applyBlockChanges() {
+    rebuildProfiles();
+    if (currentChatId && isBlocked(currentChatId)) {
+        stopThread();
+        currentChatId = null;
+    }
+    if (currentProfileId && isBlocked(currentProfileId)) {
+        currentProfileId = null;
+        if (isPageVisible('perfil-pessoa')) backToDiscover();
+    }
+    renderBlockedList();
+    scheduleRefresh();
+}
+
 function startRealtime() {
     // 1) Pessoas cadastradas (mural Descobrir)
     unsubscribers.push(onSnapshot(collection(db, 'users'), snapshot => {
-        profiles = snapshot.docs
+        rawProfiles = snapshot.docs
             .filter(d => d.id !== myId)
             .map(d => normalizeProfile(d.id, d.data({ serverTimestamps: 'estimate' })));
+        rebuildProfiles();
         loaded.users = true;
         scheduleRefresh();
     }, onListenError));
+
+    // 1b) Bloqueios: quem eu bloqueei e quem me bloqueou
+    unsubscribers.push(onSnapshot(query(collection(db, 'blocks'), where('blocker', '==', myId)), snapshot => {
+        blockedByMe.clear();
+        snapshot.docs.forEach(d => {
+            const data = d.data({ serverTimestamps: 'estimate' });
+            if (data.blocked) blockedByMe.set(String(data.blocked), toMillis(data.createdAt) || Date.now());
+        });
+        loaded.blocks = true;
+        applyBlockChanges();
+    }, error => { loaded.blocks = true; onListenError(error); scheduleRefresh(); }));
+
+    unsubscribers.push(onSnapshot(query(collection(db, 'blocks'), where('blocked', '==', myId)), snapshot => {
+        blockedMe.clear();
+        snapshot.docs.forEach(d => { if (d.data().blocker) blockedMe.add(String(d.data().blocker)); });
+        loaded.blocksMe = true;
+        applyBlockChanges();
+    }, error => { loaded.blocksMe = true; onListenError(error); scheduleRefresh(); }));
 
     // 2) Curtidas que eu enviei
     unsubscribers.push(onSnapshot(query(collection(db, 'likes'), where('from', '==', myId)), snapshot => {
@@ -1033,7 +1075,7 @@ function renderProfiles() {
     updateDiscoverFilter();
     updateLocationFilter();
 
-    if (!loaded.users) {
+    if (!loaded.users || !loaded.blocks || !loaded.blocksMe) {
         grid.innerHTML = `
             <div class="empty-state">
                 <h2>Carregando...</h2>
@@ -1233,7 +1275,7 @@ function hideToast() {
 const likingNow = new Set();
 
 async function handleLike(id) {
-    if (likedProfiles.has(id) || likingNow.has(id)) return;
+    if (likedProfiles.has(id) || likingNow.has(id) || isBlocked(id)) return;
 
     const profile = findProfile(id);
     if (!profile) return;
@@ -1407,6 +1449,10 @@ function renderProfileDetail(id) {
                         : `<button class="btn-locked" onclick="showToast('Você só pode enviar mensagem depois do match.')">Mensagem bloqueada</button>`}
                     <button class="btn-view" onclick="goBack()">${backLabel()}</button>
                 </div>
+
+                <button type="button" class="btn-block" onclick="blockPerson('${profile.id}')">
+                    ${meIcon('ban')}<span>Bloquear ${profile.name}</span>
+                </button>
             </div>
         </div>
     `;
@@ -1526,13 +1572,13 @@ function buildNotifications() {
     incomingLikes.forEach((time, profileId) => {
         // some o aviso de "curtiu você" quando você já curtiu de volta
         // ou quando você desfez o match depois dessa curtida
-        if (likedProfiles.has(profileId)) return;
+        if (likedProfiles.has(profileId) || isBlocked(profileId)) return;
         if ((hiddenLikes[profileId] || 0) >= time) return;
         items.push({ type: 'like', profileId, time });
     });
 
     matchByUser.forEach((match, profileId) => {
-        if (isMatch(profileId)) items.push({ type: 'match', profileId, time: match.createdAt });
+        if (isMatch(profileId) && !isBlocked(profileId)) items.push({ type: 'match', profileId, time: match.createdAt });
     });
 
     return items;
@@ -2507,6 +2553,8 @@ const ME_ICONS = {
     camera: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
     user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
     link: '<path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
     pin: '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
     mail: '<path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/><path d="m22 6-10 7L2 6"/>',
     trash: '<path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
@@ -2721,6 +2769,11 @@ function renderMyProfile() {
                         </div>
                     </form>
 
+                    <section class="me-blocked" id="me-blocked" aria-label="Pessoas bloqueadas">
+                        <h3 class="me-group-title">Pessoas bloqueadas</h3>
+                        <div class="blocked-list" id="blocked-list"></div>
+                    </section>
+
                     <section class="me-account me-acct" id="me-account" aria-label="Conta">
                         <h3 class="me-group-title">Conta</h3>
                         <article class="acct-card">
@@ -2769,6 +2822,7 @@ function renderMyProfile() {
 
     renderMyAvatar();
     renderMyPhotos();
+    renderBlockedList();
     renderInterestChips();
     updateProfileSummary();
     updateProfileStats();
@@ -3648,6 +3702,84 @@ function doLogout() {
 
 // ----- Apagar tudo -----
 // ----- Janela de confirmação (substitui o confirm() do navegador) -----
+// ---------- Bloquear e desbloquear ----------
+const blockingNow = new Set();
+
+async function blockPerson(id) {
+    const profile = findProfile(id);
+    if (!profile || blockingNow.has(id) || blockedByMe.has(id)) return;
+    const name = decodeHtml(profile.name);
+
+    const ok = await askConfirm({
+        title: `Bloquear ${name}?`,
+        message: `Vocês deixam de se ver no NexaMatch: sem perfil, curtidas, matches nem mensagens. ${name} não é avisada. Você pode desbloquear quando quiser em Meu Perfil.`,
+        confirmText: 'Bloquear',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!ok) return;
+
+    blockingNow.add(id);
+    try {
+        await setDoc(doc(db, 'blocks', `${myId}_${id}`), { blocker: myId, blocked: id, createdAt: serverTimestamp() });
+        blockedByMe.set(id, Date.now());
+        applyBlockChanges();
+        showToast(`${name} foi bloqueada.`, 'Desfazer', () => unblockPerson(id));
+    } catch (error) {
+        console.error(error);
+        showToast('Não consegui bloquear agora. Publique as regras do firestore.rules e tente de novo.');
+    } finally {
+        blockingNow.delete(id);
+    }
+}
+
+async function unblockPerson(id) {
+    if (!blockedByMe.has(id) || blockingNow.has(id)) return;
+    blockingNow.add(id);
+    try {
+        await deleteDoc(doc(db, 'blocks', `${myId}_${id}`));
+        blockedByMe.delete(id);
+        applyBlockChanges();
+        const person = rawProfiles.find(p => p.id === id);
+        showToast(person ? `${decodeHtml(person.name)} foi desbloqueada.` : 'Pessoa desbloqueada.');
+    } catch (error) {
+        console.error(error);
+        showToast('Não consegui desbloquear agora. Tente de novo.');
+    } finally {
+        blockingNow.delete(id);
+    }
+}
+
+// Lista em Meu Perfil
+function renderBlockedList() {
+    const box = document.getElementById('blocked-list');
+    if (!box) return;
+
+    if (!blockedByMe.size) {
+        box.innerHTML = `
+            <div class="blocked-empty">
+                <i>${meIcon('shield')}</i>
+                <p><strong>Ninguém bloqueado</strong><span>Para bloquear alguém, abra o perfil da pessoa e toque em Bloquear.</span></p>
+            </div>`;
+        return;
+    }
+
+    box.innerHTML = [...blockedByMe.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .map(([id]) => {
+            const person = rawProfiles.find(p => p.id === id);
+            const name = person ? person.name : 'Conta removida';
+            const photo = person ? `<img src="${person.photo}" alt="">` : `<span>?</span>`;
+            const place = person ? person.location : '';
+            return `
+                <article class="blocked-item">
+                    <div class="blocked-avatar">${photo}</div>
+                    <div class="blocked-info"><strong>${name}</strong>${place ? `<small>${place}</small>` : ''}</div>
+                    <button type="button" class="btn-unblock" onclick="unblockPerson('${escapeHtml(id)}')">Desbloquear</button>
+                </article>`;
+        }).join('');
+}
+
 function askConfirm({ title, message, items = [], image = '', confirmText = 'Confirmar', cancelText = 'Cancelar', danger = false }) {
     return new Promise(resolve => {
         const previousFocus = document.activeElement;
@@ -3734,6 +3866,9 @@ async function deleteMyAccount() {
         // 2º matches e mensagens, 3º perfil e dados privados
         for (const matchId of matchIds) await deleteMatchData(matchId);
         for (const chatId of chatIds) await deleteConversationData('chats', chatId);
+        // meus bloqueios (os que fizeram contra mim são apagados pela outra pessoa)
+        const mine = await getDocs(query(collection(db, 'blocks'), where('blocker', '==', myId))).catch(() => null);
+        if (mine) for (const d of mine.docs) await deleteDoc(d.ref).catch(() => {});
         await deleteDoc(doc(db, 'wallets', myId)).catch(() => {}); // pode nem existir
         presenceStopped = true; // não recria o documento de presença depois de apagado
         await deleteDoc(doc(db, 'presence', myId)).catch(() => {});
@@ -3814,7 +3949,7 @@ Object.assign(window, {
     fillLocation, setStateFilter, setCityFilter, clearLocationFilter, handleLike, handlePhotoUpload, handleExtraPhotos, removeExtraPhoto, openGallery, interestKey, logoutUser, openChat, quickInterest, removeInterest,
     removeLike, removeMyPhoto, renderMyAvatar, saveProfileForm, selectAllGenders, sendMessage,
     showToast, toggleDiscoverGender, toggleSound, updateMePreview, updateBioCount, viewProfile,
-    profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
+    blockPerson, unblockPerson, profileKeyOf, resolveProfileKey, copyMyLink, updateUsernameHint
 });
 
 const pendingDraft = readDraft();
