@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexaMatch</title>
-    <link rel="stylesheet" href="style.css?v=20261116h">
+    <link rel="stylesheet" href="style.css?v=20261116j">
     <!-- Só entra quem estiver logado: o script.js confere o login no Firebase e, se
          não houver, manda para o login. Até lá a página fica escondida (se algo falhar,
          ela aparece depois de 6 segundos para você ver o que está acontecendo). -->
@@ -28,8 +28,12 @@
     <main>
         <!-- Página 1: Descobrir (Visível por padrão) -->
         <div id="page-descobrir" class="page-content">
-            <div class="controls">
-                <h1>Mural de Conexões</h1>
+            <div class="controls page-head">
+                <span class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></span>
+                <div class="ph-text">
+                    <h1>Mural de Conexões</h1>
+                    <p>Deslize, curta e conheça gente nova.</p>
+                </div>
                 <div class="location-filters">
                     <select id="state-filter" aria-label="Filtrar por estado" onchange="setStateFilter(this.value)">
                         <option value="all">Todo o Brasil</option>
@@ -47,21 +51,39 @@
 
         <!-- Página 2: Meus Matches (Oculta por padrão) -->
         <div id="page-matches" class="page-content" style="display: none;">
-            <h1>Meus Matches</h1>
+            <div class="page-head">
+                <span class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>
+                <div class="ph-text">
+                    <h1>Meus Matches</h1>
+                    <p>Quem também curtiu você e quem ainda está respondendo.</p>
+                </div>
+            </div>
             <!-- O JavaScript monta a lista aqui dentro -->
             <div id="matches-content"></div>
         </div>
 
         <!-- Página 3: Mensagens (Oculta por padrão) -->
         <div id="page-mensagens" class="page-content" style="display: none;">
-            <h1>Mensagens</h1>
+            <div class="page-head">
+                <span class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.6-.8L3 21l1.9-5.1A8.4 8.4 0 1 1 21 11.5z"/></svg></span>
+                <div class="ph-text">
+                    <h1>Mensagens</h1>
+                    <p>Suas conversas em um só lugar.</p>
+                </div>
+            </div>
             <!-- O JavaScript monta a lista de conversas e o chat aqui dentro -->
             <div id="messages-content"></div>
         </div>
 
         <!-- Página: Notificações (quem curtiu você / quem deu match) -->
         <div id="page-notificacoes" class="page-content" style="display: none;">
-            <h1>Notificações</h1>
+            <div class="page-head">
+                <span class="ph-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+                <div class="ph-text">
+                    <h1>Notificações</h1>
+                    <p>Curtidas e matches novos, do mais recente ao mais antigo.</p>
+                </div>
+            </div>
             <div id="notifications-content"></div>
         </div>
 
@@ -85,6 +107,6 @@
     <script src="nav.js?v=20261112c" defer></script>
     <script src="swipe.js?v=20261114a" defer></script>
     <script src="profile-link.js?v=20261116a" defer></script>
-    <script type="module" src="script.js?v=20261116i"></script>
+    <script type="module" src="script.js?v=20261116j"></script>
 </body>
 </html>
