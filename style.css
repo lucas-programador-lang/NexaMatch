@@ -9566,3 +9566,220 @@ nav a.active:nth-child(5)::before { animation: nxIconUser 0.7s cubic-bezier(0.3,
 @media (prefers-reduced-motion: reduce) {
     .int-meter i, .me-page .chip-edit button { transition: none; }
 }
+
+/* ==========================================================
+   MEU PERFIL — acabamento profissional (v9)
+   Um só padrão de cartão, cabeçalho, estado, campos e atalhos
+   ========================================================== */
+
+/* ----- topo: dados em "etiquetas" ----- */
+.me-page .me-sub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin: 0.55rem 0 0;
+    white-space: normal;
+    overflow: visible;
+}
+.me-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    height: 1.85rem;
+    padding: 0 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #d3d9f3;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 999px;
+}
+.me-chip svg { width: 0.85rem; height: 0.85rem; opacity: 0.8; }
+.me-chip.handle { color: #7eeeff; background: rgba(45, 226, 245, 0.09); border-color: rgba(45, 226, 245, 0.4); }
+
+/* ----- atalhos das seções ----- */
+.me-tabs {
+    display: flex;
+    gap: 0.3rem;
+    margin: 1.3rem 0 1.4rem;
+    padding: 0.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    background: rgba(12, 16, 38, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.15rem;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+.me-tabs::-webkit-scrollbar { display: none; }
+.me-tab {
+    flex: 1 1 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.65rem 1rem;
+    font: inherit;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #a9b2d6;
+    white-space: nowrap;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    cursor: pointer;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+.me-tab i { display: grid; place-items: center; }
+.me-tab svg { width: 1rem; height: 1rem; }
+.me-tab .dot { width: 0.45rem; height: 0.45rem; background: #ffc857; border-radius: 50%; box-shadow: 0 0 8px rgba(255, 200, 87, 0.7); }
+.me-tab.done .dot { background: #34f5a1; box-shadow: 0 0 8px rgba(52, 245, 161, 0.7); }
+.me-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.me-tab.active { color: #fff; background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(45, 226, 245, 0.16)); border-color: rgba(139, 92, 246, 0.55); }
+.me-tab:focus-visible { outline: 2px solid #7eeeff; outline-offset: 2px; }
+
+/* ----- cartões das seções: um padrão só ----- */
+.me-page .me-step { --sc: 139, 92, 246; scroll-margin-top: 6rem; }
+.me-page #me-step-1 { --sc: 45, 226, 245; }
+.me-page #me-step-2 { --sc: 139, 92, 246; }
+.me-page #me-step-3 { --sc: 255, 79, 163; }
+.me-page #me-step-4 { --sc: 255, 200, 87; }
+.me-page .me-account { scroll-margin-top: 6rem; }
+
+.me-page .me-step {
+    padding: 1.5rem 1.7rem 1.7rem;
+    background:
+        radial-gradient(26rem 9rem at 0% 0%, rgba(var(--sc), 0.11), transparent 70%),
+        linear-gradient(180deg, #131938 0%, #0d1129 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 1.4rem;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.07) inset, 0 28px 46px -36px #000;
+    transition: border-color 0.25s, box-shadow 0.25s;
+}
+.me-page .me-step:hover, .me-page .me-step:focus-within { border-color: rgba(var(--sc), 0.4); }
+.me-page .me-step.done { border-color: rgba(var(--sc), 0.28); }
+
+.me-page .me-step-head {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 1.15rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.me-page .me-step-head > i,
+.me-page .me-step.done .me-step-head > i {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.9rem;
+    height: 2.9rem;
+    color: rgb(var(--sc));
+    background: rgba(var(--sc), 0.14);
+    border: 1px solid rgba(var(--sc), 0.42);
+    border-radius: 0.95rem;
+    box-shadow: 0 0 20px rgba(var(--sc), 0.3);
+}
+.me-page .me-step-head > i::after,
+.me-page .me-step.done .me-step-head > i::after { content: none; }
+.me-page .me-step-head > i svg { width: 1.3rem; height: 1.3rem; }
+.me-page .me-step-head h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+.me-page .me-step-head p { margin: 0.2rem 0 0; font-size: 0.85rem; line-height: 1.4; color: #a9b2d6; }
+
+/* estado da seção: "Pendente" / "Completo" */
+.me-page .me-step .me-step-state,
+.me-page .me-step.done .me-step-state {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: auto;
+    height: 1.9rem;
+    padding: 0 0.8rem;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #ffc857;
+    background: rgba(255, 200, 87, 0.1);
+    border: 1px solid rgba(255, 200, 87, 0.38);
+    border-radius: 999px;
+    box-shadow: none;
+    animation: none;
+}
+.me-page .me-step .me-step-state svg { display: none; }
+.me-page .me-step .me-step-state::before { content: ""; width: 0.45rem; height: 0.45rem; background: currentColor; border-radius: 50%; }
+.me-page .me-step .me-step-state::after { content: "Pendente"; }
+.me-page .me-step.done .me-step-state { color: #34f5a1; background: rgba(52, 245, 161, 0.1); border-color: rgba(52, 245, 161, 0.4); }
+.me-page .me-step.done .me-step-state::after { content: "Completo"; }
+
+.me-page .me-count {
+    flex: none;
+    padding: 0.28rem 0.7rem;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #d3d9f3;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+}
+
+/* ----- campos ----- */
+.me-page .field > span { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.01em; color: #cfd5f5; }
+.me-page .input-wrap,
+.me-page textarea {
+    background: rgba(4, 6, 20, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 0.95rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.me-page .input-wrap:focus-within,
+.me-page textarea:focus {
+    border-color: rgba(var(--sc), 0.9);
+    box-shadow: 0 0 0 4px rgba(var(--sc), 0.18);
+    outline: none;
+}
+.me-page .me-locked-note {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.8rem;
+    color: #b6bddc;
+    background: rgba(45, 226, 245, 0.06);
+    border: 1px solid rgba(45, 226, 245, 0.2);
+    border-radius: 0.85rem;
+}
+
+/* ----- grupo "Conta" ----- */
+.me-group-title {
+    margin: 0 0 0.2rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8f98c0;
+}
+
+/* ----- celular ----- */
+@media (max-width: 860px) {
+    .me-page .me-sub { justify-content: center; }
+    .me-tabs { margin: 1.1rem 0 1.1rem; border-radius: 1rem; }
+    .me-tab { flex: none; padding: 0.65rem 0.95rem; }
+    .me-page .me-step { padding: 1.15rem 1.1rem 1.3rem; border-radius: 1.2rem; scroll-margin-top: 5rem; }
+    .me-page .me-step-head { gap: 0.8rem; padding-bottom: 1rem; }
+    .me-page .me-step-head > i,
+    .me-page .me-step.done .me-step-head > i { width: 2.5rem; height: 2.5rem; border-radius: 0.85rem; }
+    .me-page .me-step-head h3 { font-size: 1.02rem; }
+    .me-page .me-step-head p { font-size: 0.8rem; }
+}
+@media (max-width: 480px) {
+    /* só o pontinho colorido, sem a palavra, para sobrar espaço ao título */
+    .me-page .me-step .me-step-state, .me-page .me-step.done .me-step-state { width: 1.9rem; padding: 0; justify-content: center; }
+    .me-page .me-step .me-step-state::after, .me-page .me-step.done .me-step-state::after { content: none; }
+    .me-chip { height: 1.7rem; font-size: 0.76rem; padding: 0 0.65rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .me-tab, .me-page .me-step, .me-page .input-wrap, .me-page textarea { transition: none; }
+}
