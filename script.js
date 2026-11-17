@@ -2095,7 +2095,7 @@ function renderChatWindow() {
                 ${meIcon('image')}
                 <input type="file" accept="image/*" hidden onchange="sendChatPhoto(event)">
             </label>
-            <input id="chat-input" type="text" placeholder="${price ? `Mensagem · ${formatMoney(price)}` : `Escreva uma mensagem para ${profile.name}`}" autocomplete="off" maxlength="500">
+            <input id="chat-input" type="text" placeholder="${price ? `Mensagem · ${formatMoney(price)}` : 'Escreva uma mensagem'}" autocomplete="off" maxlength="500">
             <button type="submit" class="chat-send" aria-label="Enviar mensagem"></button>
         </form>`}
     `;
