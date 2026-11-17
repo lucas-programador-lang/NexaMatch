@@ -10574,3 +10574,14 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
 @media (max-width: 600px) {
     #messages-content .chat-header .chat-avatar .presence-dot { width: 0.8rem; height: 0.8rem; border-width: 2.5px; }
 }
+
+/* bolinha do avatar: tamanho exato (a regra base usava content-box e inchava a bolinha) */
+#messages-content .chat-header .chat-avatar .presence-dot {
+    box-sizing: border-box;
+    width: 1rem; height: 1rem;
+    right: -0.05rem; bottom: -0.05rem;
+    border: 3px solid #15112d;
+}
+@media (max-width: 600px) {
+    #messages-content .chat-header .chat-avatar .presence-dot { width: 0.85rem; height: 0.85rem; border-width: 2.5px; }
+}
