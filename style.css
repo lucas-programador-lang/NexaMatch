@@ -10839,3 +10839,38 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     .gallery-viewer .gv-nav { display: none; }   /* no celular: arrastar de lado ou tocar nas miniaturas */
     .modal-overlay.gallery-viewer { padding: 3.4rem 0.5rem 5.8rem; }
 }
+
+/* ==========================================================
+   FOTO NA CONVERSA — tamanho fixo e horário por cima da imagem
+   (antes a foto encolhia junto com o balão)
+   ========================================================== */
+#messages-content .bubble.has-image {
+    position: relative;
+    padding: 0.28rem;
+    max-width: none;
+    width: fit-content;
+}
+#messages-content .bubble.has-image .bubble-img {
+    width: min(19rem, 68vw);
+    max-width: none;
+    height: auto;
+    max-height: 26rem;
+    min-height: 6rem;
+    object-fit: cover;
+    border-radius: 1rem;
+    cursor: zoom-in;
+}
+#messages-content .bubble.has-image > span { padding: 0.35rem 0.6rem 0.1rem; }
+#messages-content .bubble.has-image > small { padding: 0 0.6rem 0.1rem; }
+
+/* só foto (sem texto): horário em uma pílula sobre a imagem */
+#messages-content .bubble.has-image:not(:has(> span)) > small {
+    position: absolute; right: 0.7rem; bottom: 0.65rem;
+    padding: 0.18rem 0.55rem; border-radius: 999px;
+    color: #fff; opacity: 1;
+    background: rgba(8, 6, 24, 0.55);
+    -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+@media (max-width: 600px) {
+    #messages-content .bubble.has-image .bubble-img { width: min(16rem, 66vw); max-height: 22rem; }
+}
