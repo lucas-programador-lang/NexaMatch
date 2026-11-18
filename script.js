@@ -2427,7 +2427,7 @@ function openPhoto(src) {
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay photo-viewer';
-    overlay.innerHTML = `<img src="${src}" alt="Foto da conversa"><button type="button" aria-label="Fechar">×</button>`;
+    overlay.innerHTML = `<img src="${src}" alt="Foto da conversa"><button type="button" class="pv-close" aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>`;
 
     const close = () => {
         document.removeEventListener('keydown', onKey);
@@ -2454,7 +2454,7 @@ function openGallery(id, start = 0) {
     overlay.className = 'modal-overlay photo-viewer gallery-viewer';
     overlay.innerHTML = `
         <img alt="Foto de ${profile.name}">
-        <button type="button" class="gv-close" aria-label="Fechar">×</button>
+        <button type="button" class="gv-close pv-close" aria-label="Fechar"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
         ${list.length > 1 ? `
             <button type="button" class="gv-nav gv-prev" aria-label="Foto anterior">‹</button>
             <button type="button" class="gv-nav gv-next" aria-label="Próxima foto">›</button>
