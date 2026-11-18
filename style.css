@@ -10923,11 +10923,10 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
 
 
 /* ==========================================================
-   BOTÃO FECHAR (X) DOS VISUALIZADORES DE FOTO  — v2
+   BOTÃO "FECHAR" DOS VISUALIZADORES DE FOTO — v3
    Vale para a galeria do perfil (Matches > Ver perfil) e para a
-   foto aberta na conversa (Mensagens).
-   Computador: pílula "Fechar" com ícone X em círculo degradê.
-   Celular: botão redondo grande (área de toque de 48px).
+   foto aberta na conversa (Mensagens). Só o texto "Fechar", em
+   pílula colorida (degradê roxo → rosa) com brilho e reflexo.
    ========================================================== */
 .modal-overlay.photo-viewer .pv-close {
     position: absolute;
@@ -10937,86 +10936,88 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     bottom: auto;
     z-index: 6;
     width: auto;
-    height: 2.9rem;
-    min-width: 2.9rem;
-    padding: 0 1.15rem 0 0.4rem;
+    height: 2.7rem;
+    min-width: 0;
+    padding: 0 1.6rem;
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
+    justify-content: center;
+    overflow: hidden;
     color: #fff;
     font-family: var(--font-display, inherit);
-    font-size: 0.88rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    font-size: 0.92rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
     line-height: 1;
-    background: rgba(18, 13, 44, 0.78);
-    border: 1px solid rgba(167, 139, 250, 0.55);
+    text-shadow: 0 1px 3px rgba(60, 10, 90, 0.55);
+    background: linear-gradient(135deg, #8b5cf6 0%, #c026d3 55%, #ec4899 100%);
+    border: 1px solid rgba(255, 255, 255, 0.55);
     border-radius: 999px;
-    box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.85), 0 0 0 4px rgba(139, 92, 246, 0.12);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    box-shadow:
+        0 0 0 3px rgba(192, 38, 211, 0.18),
+        0 0 22px rgba(168, 85, 247, 0.75),
+        0 10px 26px -6px rgba(236, 72, 153, 0.7),
+        inset 0 1px 0 rgba(255, 255, 255, 0.55);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transform: none;
-    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    animation: pvGlow 2.6s ease-in-out infinite;
 }
 
-.modal-overlay.photo-viewer .pv-close .pv-x {
-    flex: none;
-    width: 2.05rem;
-    height: 2.05rem;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    color: #fff;
-    background: linear-gradient(135deg, #8b5cf6, #2de2f5);
-    box-shadow: 0 4px 12px -2px rgba(45, 226, 245, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
-    transition: transform 0.25s ease;
-}
-
-.modal-overlay.photo-viewer .pv-close .pv-x svg {
-    display: block;
-    width: 1rem;
-    height: 1rem;
+/* reflexo brilhante que passa pelo botão */
+.modal-overlay.photo-viewer .pv-close::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -60%;
+    width: 40%;
+    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+    transform: skewX(-20deg);
     pointer-events: none;
+    animation: pvShine 3.2s ease-in-out infinite;
 }
-
-.modal-overlay.photo-viewer .pv-close .pv-close-text { display: block; pointer-events: none; }
 
 .modal-overlay.photo-viewer .pv-close:hover {
-    background: rgba(40, 26, 92, 0.92);
-    border-color: rgba(45, 226, 245, 0.85);
-    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.9), 0 0 0 5px rgba(45, 226, 245, 0.16);
-    transform: translateY(-1px);
+    filter: brightness(1.12) saturate(1.1);
+    transform: translateY(-1px) scale(1.04);
+    box-shadow:
+        0 0 0 4px rgba(236, 72, 153, 0.25),
+        0 0 30px rgba(192, 132, 252, 0.95),
+        0 12px 30px -6px rgba(236, 72, 153, 0.85),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
-.modal-overlay.photo-viewer .pv-close:hover .pv-x { transform: rotate(90deg); }
 .modal-overlay.photo-viewer .pv-close:active { transform: scale(0.95); }
 
 .modal-overlay.photo-viewer .pv-close:focus-visible {
-    outline: 2px solid var(--cyan, #2de2f5);
+    outline: 2px solid #fff;
     outline-offset: 3px;
 }
 
-/* celular: só o círculo, sem o texto */
+@keyframes pvGlow {
+    0%, 100% { filter: brightness(1); }
+    50%      { filter: brightness(1.14); }
+}
+
+@keyframes pvShine {
+    0%, 55% { left: -60%; }
+    100%    { left: 130%; }
+}
+
+/* celular: um pouco menor, mas com área de toque confortável */
 @media (max-width: 600px) {
     .modal-overlay.photo-viewer .pv-close {
         top: calc(0.75rem + env(safe-area-inset-top, 0px));
         right: 0.75rem;
-        width: 3rem;
-        height: 3rem;
-        min-width: 3rem;
-        padding: 0;
-        gap: 0;
-        justify-content: center;
+        height: 2.6rem;
+        padding: 0 1.3rem;
+        font-size: 0.88rem;
     }
-    .modal-overlay.photo-viewer .pv-close .pv-x { width: 2.35rem; height: 2.35rem; }
-    .modal-overlay.photo-viewer .pv-close .pv-x svg { width: 1.1rem; height: 1.1rem; }
-    .modal-overlay.photo-viewer .pv-close .pv-close-text { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .modal-overlay.photo-viewer .pv-close,
-    .modal-overlay.photo-viewer .pv-close .pv-x { transition: none; }
-    .modal-overlay.photo-viewer .pv-close:hover .pv-x { transform: none; }
+    .modal-overlay.photo-viewer .pv-close { animation: none; transition: none; }
+    .modal-overlay.photo-viewer .pv-close::after { animation: none; display: none; }
 }
