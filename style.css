@@ -10920,3 +10920,68 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
 #messages-content .chat-item .unread-badge { animation: none; }
 #messages-content .chat-item .unread-badge::before,
 #messages-content .chat-item .unread-badge::after { content: none; }
+
+
+/* ==========================================================
+   BOTÃO FECHAR (X) DOS VISUALIZADORES DE FOTO
+   Vale para a galeria do perfil (Matches > Ver perfil) e para a
+   foto aberta dentro da conversa (Mensagens). Ícone SVG nítido,
+   botão de vidro redondo, área de toque de 44px+ no celular.
+   ========================================================== */
+.modal-overlay.photo-viewer .pv-close {
+    position: absolute;
+    top: calc(0.9rem + env(safe-area-inset-top, 0px));
+    right: 0.9rem;
+    z-index: 5;
+    width: 2.9rem;
+    height: 2.9rem;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 0;
+    line-height: 0;
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 50%;
+    box-shadow: 0 8px 22px -6px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.22s ease, background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.modal-overlay.photo-viewer .pv-close svg {
+    display: block;
+    width: 1.15rem;
+    height: 1.15rem;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45));
+    transition: transform 0.22s ease;
+    pointer-events: none;
+}
+
+.modal-overlay.photo-viewer .pv-close:hover {
+    background: linear-gradient(145deg, rgba(139, 92, 246, 0.75), rgba(45, 226, 245, 0.35));
+    border-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 26px -6px rgba(139, 92, 246, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    transform: scale(1.06);
+}
+
+.modal-overlay.photo-viewer .pv-close:hover svg { transform: rotate(90deg); }
+.modal-overlay.photo-viewer .pv-close:active { transform: scale(0.92); }
+
+.modal-overlay.photo-viewer .pv-close:focus-visible {
+    outline: 2px solid var(--cyan, #2de2f5);
+    outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+    .modal-overlay.photo-viewer .pv-close { top: calc(0.7rem + env(safe-area-inset-top, 0px)); right: 0.7rem; width: 2.8rem; height: 2.8rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .modal-overlay.photo-viewer .pv-close,
+    .modal-overlay.photo-viewer .pv-close svg { transition: none; }
+    .modal-overlay.photo-viewer .pv-close:hover svg { transform: none; }
+}
