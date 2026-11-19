@@ -12,7 +12,18 @@
     if (!panel || !scrim || !opener || !nav) return;
 
     const body = document.body;
+    const topBar = document.querySelector('body > header');
+    const desktop = window.matchMedia('(min-width: 861px)');
     let isOpen = false;
+
+    // computador: o painel fica logo abaixo da barra de cima, encostado no avatar (à direita)
+    function place() {
+        if (desktop.matches && topBar) {
+            panel.style.top = Math.round(topBar.getBoundingClientRect().bottom + 6) + 'px';
+        } else {
+            panel.style.removeProperty('top');
+        }
+    }
 
     function pageOf(link) {
         const match = /changePage\('([a-z-]+)'/.exec(link.getAttribute('onclick') || '');
@@ -26,6 +37,7 @@
     function open() {
         if (isOpen) return;
         isOpen = true;
+        place();
         body.classList.add('dw-on');
         panel.setAttribute('aria-hidden', 'false');
         opener.setAttribute('aria-expanded', 'true');
@@ -118,6 +130,8 @@
     // mantém tudo em dia: aba ativa e contadores
     const observer = new MutationObserver(() => { syncActive(); syncBadges(); });
     observer.observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'], childList: true, characterData: true });
+
+    window.addEventListener('resize', () => { if (isOpen) place(); });
 
     syncActive();
     syncBadges();
