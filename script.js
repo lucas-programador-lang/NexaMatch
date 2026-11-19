@@ -512,6 +512,7 @@ function toggleSound() {
     unlockAudio();
     if (soundOn) playSound('receive'); // mostra como é o som
     if (document.getElementById('chat-shell')) renderChatList();
+    syncDrawer();
 }
 
 // Avisos rápidos para o que aconteceu enquanto você usava o app
@@ -2696,7 +2697,32 @@ function quickInterest(text) {
     addInterest();
 }
 
+// Menu lateral: foto, nome e @ da pessoa + interruptor de sons do chat
+function syncDrawer() {
+    const name = String(myProfile.name || (currentUser && currentUser.name) || '').trim();
+    const photo = safePhoto(myProfile.photo);
+    const initial = (name.charAt(0) || '?').toUpperCase();
+    ['dw-open-avatar', 'dw-avatar'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (photo) {
+            el.style.backgroundImage = `url("${photo}")`;
+            el.textContent = '';
+        } else {
+            el.style.backgroundImage = '';
+            el.textContent = initial;
+        }
+    });
+    const nameEl = document.getElementById('dw-name');
+    if (nameEl) nameEl.textContent = name || 'Meu perfil';
+    const handleEl = document.getElementById('dw-handle');
+    if (handleEl) handleEl.textContent = myProfile.username ? '@' + myProfile.username : 'Ver e editar perfil';
+    const soundEl = document.getElementById('dw-sound');
+    if (soundEl) soundEl.setAttribute('aria-checked', soundOn ? 'true' : 'false');
+}
+
 function renderMyProfile() {
+    syncDrawer();
     const root = document.getElementById('my-profile');
     if (!root) return;
 
