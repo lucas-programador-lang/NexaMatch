@@ -2354,36 +2354,96 @@ async function sendMessage(event) {
     }
 }
 
-// Lê a foto escolhida, reduz e converte para JPEG (cabe no limite de 1 MB do Firestore)
-function readChatPhoto(file) {
+// ---------- Qualidade das fotos ----------
+// Abre o arquivo como imagem (sem passar por base64, bem mais leve para fotos grandes do celular)
+function readImageFile(file) {
     return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('read'));
-        reader.onload = () => {
-            const image = new Image();
-            image.onerror = () => reject(new Error('open'));
-            image.onload = () => {
-                const scale = Math.min(1, 1000 / Math.max(image.width, image.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.max(1, Math.round(image.width * scale));
-                canvas.height = Math.max(1, Math.round(image.height * scale));
-                const context = canvas.getContext('2d');
-                context.fillStyle = '#ffffff';
-                context.fillRect(0, 0, canvas.width, canvas.height);
-                context.drawImage(image, 0, 0, canvas.width, canvas.height);
-
-                let quality = 0.8;
-                let url = canvas.toDataURL('image/jpeg', quality);
-                while (url.length > 420000 && quality > 0.4) {
-                    quality -= 0.1;
-                    url = canvas.toDataURL('image/jpeg', quality);
-                }
-                url.length > 420000 ? reject(new Error('big')) : resolve(url);
-            };
-            image.src = reader.result;
-        };
-        reader.readAsDataURL(file);
+        const url = URL.createObjectURL(file);
+        const image = new Image();
+        image.onload = () => { URL.revokeObjectURL(url); resolve(image); };
+        image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('open')); };
+        image.src = url;
     });
+}
+
+// Reduz em etapas (metade por vez) com suavização alta: fica bem mais nítido que reduzir tudo de uma vez
+function scaleImage(source, targetW, targetH, background) {
+    let current = source;
+    let w = source.naturalWidth || source.width;
+    let h = source.naturalHeight || source.height;
+    while (w / 2 >= targetW && h / 2 >= targetH) {
+        w = Math.round(w / 2);
+        h = Math.round(h / 2);
+        const step = document.createElement('canvas');
+        step.width = w;
+        step.height = h;
+        const stepCtx = step.getContext('2d');
+        stepCtx.imageSmoothingEnabled = true;
+        stepCtx.imageSmoothingQuality = 'high';
+        stepCtx.drawImage(current, 0, 0, w, h);
+        current = step;
+    }
+    const out = document.createElement('canvas');
+    out.width = targetW;
+    out.height = targetH;
+    const ctx = out.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, targetW, targetH);
+    ctx.drawImage(current, 0, 0, targetW, targetH);
+    return out;
+}
+
+// Acha a MAIOR qualidade JPEG que ainda cabe no limite de tamanho (em vez de uma qualidade fixa)
+function encodeJpegWithin(canvas, maxChars, qMax, qMin) {
+    const best = canvas.toDataURL('image/jpeg', qMax);
+    if (best.length <= maxChars) return best;
+    let result = canvas.toDataURL('image/jpeg', qMin);
+    if (result.length > maxChars) return '';
+    let low = qMin;
+    let high = qMax;
+    for (let i = 0; i < 6; i++) {
+        const mid = (low + high) / 2;
+        const test = canvas.toDataURL('image/jpeg', mid);
+        if (test.length <= maxChars) { result = test; low = mid; } else { high = mid; }
+    }
+    return result;
+}
+
+// Tenta do maior tamanho para o menor até a foto caber no limite, sempre com a melhor qualidade possível
+function fitPhoto(image, { sizes, maxChars, square = false, background = '#000', qMax = 0.92, qMin = 0.62 }) {
+    const iw = image.naturalWidth || image.width;
+    const ih = image.naturalHeight || image.height;
+    let source = image;
+    let sw = iw;
+    let sh = ih;
+    if (square) {
+        const side = Math.min(iw, ih);
+        const crop = document.createElement('canvas');
+        crop.width = side;
+        crop.height = side;
+        crop.getContext('2d').drawImage(image, (iw - side) / 2, (ih - side) / 2, side, side, 0, 0, side, side);
+        source = crop;
+        sw = side;
+        sh = side;
+    }
+    for (const size of sizes) {
+        const scale = Math.min(1, size / Math.max(sw, sh)); // nunca aumenta a foto
+        const w = Math.max(1, Math.round(sw * scale));
+        const h = Math.max(1, Math.round(sh * scale));
+        const url = encodeJpegWithin(scaleImage(source, w, h, background), maxChars, qMax, qMin);
+        if (url) return url;
+    }
+    return '';
+}
+
+// Foto da conversa: até 1600px, no limite de 420 mil caracteres (cabe no Firestore)
+async function readChatPhoto(file) {
+    const image = await readImageFile(file);
+    const url = fitPhoto(image, { sizes: [1600, 1400, 1200, 1000, 800], maxChars: 420000, background: '#ffffff', qMax: 0.9, qMin: 0.7 });
+    if (!url) throw new Error('big');
+    return url;
 }
 
 async function sendChatPhoto(event) {
@@ -3173,8 +3233,8 @@ function interestKey(event) {
 }
 
 // ----- Foto -----
-// Recorta em quadrado e reduz, para caber no armazenamento do navegador
-function handlePhotoUpload(event) {
+// Recorta em quadrado (até 900px) com a melhor qualidade que cabe no limite do perfil
+async function handlePhotoUpload(event) {
     const file = event.target.files && event.target.files[0];
     event.target.value = '';
     if (!file) return;
@@ -3184,54 +3244,33 @@ function handlePhotoUpload(event) {
         return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-        const image = new Image();
-        image.onload = () => {
-            const size = 480;
-            const scale = Math.max(size / image.width, size / image.height);
-            const width = image.width * scale;
-            const height = image.height * scale;
+    let image;
+    try {
+        image = await readImageFile(file);
+    } catch (error) {
+        showToast('Não consegui abrir essa imagem.');
+        return;
+    }
 
-            const canvas = document.createElement('canvas');
-            canvas.width = size;
-            canvas.height = size;
-            canvas.getContext('2d').drawImage(image, (size - width) / 2, (size - height) / 2, width, height);
+    const url = fitPhoto(image, { sizes: [900, 800, 700, 600, 480], maxChars: 250000, square: true, background: '#000', qMax: 0.92, qMin: 0.65 });
+    if (!url) {
+        showToast('Essa foto é pesada demais. Escolha outra.');
+        return;
+    }
 
-            draftPhoto = canvas.toDataURL('image/jpeg', 0.82);
-            renderMyAvatar();
-            showToast('Foto pronta. Clique em Salvar perfil.');
-        };
-        image.onerror = () => showToast('Não consegui abrir essa imagem.');
-        image.src = reader.result;
-    };
-    reader.onerror = () => showToast('Não consegui ler esse arquivo.');
-    reader.readAsDataURL(file);
+    draftPhoto = url;
+    renderMyAvatar();
+    showToast('Foto pronta. Clique em Salvar perfil.');
 }
 
-// Reduz uma imagem (lado maior 720px, JPEG) para caber no Firestore
-function resizeToJpeg(file, max = 720, quality = 0.72) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onerror = () => reject(new Error('read'));
-        reader.onload = () => {
-            const image = new Image();
-            image.onerror = () => reject(new Error('image'));
-            image.onload = () => {
-                const scale = Math.min(1, max / Math.max(image.width, image.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.max(1, Math.round(image.width * scale));
-                canvas.height = Math.max(1, Math.round(image.height * scale));
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#000';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
-                resolve(canvas.toDataURL('image/jpeg', quality));
-            };
-            image.src = reader.result;
-        };
-        reader.readAsDataURL(file);
-    });
+// Fotos extras: lado maior até 1080px, com a melhor qualidade que cabe em ~130 mil caracteres cada
+// (5 fotos extras + a principal continuam dentro do limite de 900 mil do perfil)
+async function resizeToJpeg(file, max = 1080, maxChars = 130000) {
+    const image = await readImageFile(file);
+    const sizes = [max, 960, 840, 720, 600].filter(size => size <= max);
+    const url = fitPhoto(image, { sizes, maxChars, background: '#000', qMax: 0.9, qMin: 0.6 });
+    if (!url) throw new Error('big');
+    return url;
 }
 
 function renderMyPhotos() {
