@@ -929,6 +929,7 @@ function startRealtime() {
         chatByUser = next;
         earnedCents = earned;
         paidMessages = paid;
+        syncWallet();
         loaded.chats = true;
         markCurrentChatRead();
         scheduleRefresh();
@@ -938,6 +939,7 @@ function startRealtime() {
     unsubscribers.push(onSnapshot(doc(db, 'wallets', myId), snapshot => {
         walletCents = snapshot.exists() ? Math.max(0, Number(snapshot.data().balanceCents) || 0) : 0;
         loaded.wallet = true;
+        syncWallet();
         scheduleRefresh();
     }, onListenError));
 
@@ -2697,8 +2699,35 @@ function quickInterest(text) {
     addInterest();
 }
 
+// Cápsula do topo: saldo (homem, com botão +) ou ganhos (mulher)
+function syncWallet() {
+    const box = document.getElementById('hd-wallet');
+    if (!box) return;
+    const label = document.getElementById('hd-wallet-label');
+    const value = document.getElementById('hd-wallet-value');
+    const plus = document.getElementById('hd-wallet-plus');
+    if (myGender === 'homem') {
+        box.hidden = false;
+        box.dataset.mode = 'topup';
+        label.textContent = 'Meu saldo';
+        value.textContent = formatMoney(walletCents);
+        plus.hidden = false;
+        box.setAttribute('aria-label', `Meu saldo: ${formatMoney(walletCents)}. Adicionar saldo`);
+    } else if (myGender === 'mulher') {
+        box.hidden = false;
+        box.dataset.mode = 'earn';
+        label.textContent = 'Ganhos';
+        value.textContent = formatMoney(earnedCents);
+        plus.hidden = true;
+        box.setAttribute('aria-label', `Ganhos com mensagens: ${formatMoney(earnedCents)}`);
+    } else {
+        box.hidden = true;
+    }
+}
+
 // Menu lateral: foto, nome e @ da pessoa + interruptor de sons do chat
 function syncDrawer() {
+    syncWallet();
     const name = String(myProfile.name || (currentUser && currentUser.name) || '').trim();
     const photo = safePhoto(myProfile.photo);
     const initial = (name.charAt(0) || '?').toUpperCase();
