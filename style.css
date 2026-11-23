@@ -11024,15 +11024,11 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
 
 
 /* ==========================================================
-   MENUS NO ESTILO TANGO LIVE — v3
-   Visual reto e escuro (#151515), linhas finas, ícones brancos.
-   • Computador: barra de cima reta com as abas (ícone em cima,
-     nome embaixo) e o avatar à direita. O avatar abre o menu
-     como um painel encaixado logo abaixo da barra.
-   • Celular: barra de baixo reta com as abas; o avatar fica à
-     esquerda e o menu ocupa a tela toda.
-   • Menu: cartão do perfil, grupos com títulos pequenos, linhas
-     com cantos arredondados e "Sair da conta" num cartão separado.
+   MENU LATERAL (estilo Tango Live) — v4
+   O menu de cima e a barra de baixo ficam com o visual e as
+   cores ORIGINAIS do NexaMatch. Aqui só entram:
+   • o avatar no topo, que abre o menu lateral;
+   • o menu lateral (escuro, cartão do perfil, grupos, sair).
    ========================================================== */
 
 :root {
@@ -11045,32 +11041,15 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
     --tg-muted: #8c8c8c;
 }
 
-/* ----- Barra de cima reta ----- */
-header {
-    position: sticky;
-    top: 0;
-    z-index: 300;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.4rem 1.2rem;
-    background: var(--tg-bg);
-    border-bottom: 1px solid var(--tg-line);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-    box-shadow: none;
-}
-
-header .logo { order: 1; filter: none; font-size: 1.35rem; }
+header { position: relative; }
 
 /* ----- Botão do avatar ----- */
 .dw-open {
     position: relative;
-    order: 3;
     flex: none;
     width: 2.6rem;
     height: 2.6rem;
-    margin: 0 0 0 auto;
+    margin: 0 0.3rem 0 0;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -11110,160 +11089,20 @@ header .logo { order: 1; filter: none; font-size: 1.35rem; }
     height: 0.8rem;
     border-radius: 50%;
     background: var(--pink);
-    border: 2px solid var(--tg-bg);
+    border: 2px solid var(--bg-color);
 }
 
 .dw-open.has-news .dw-open-dot { display: block; }
 
-/* ----- Abas (ícone em cima, nome embaixo) ----- */
-nav,
-nav.nx-ready { animation: none; }
 
-body:not(.auth-pending) nav { animation: none; }
-
-nav::before,
-nav::after,
-nav.nx-ready::after,
-nav .nx-spot,
-nav .nx-ind { display: none; }
-
-nav a {
-    flex-direction: column;
-    justify-content: center;
-    gap: 0.22rem;
-    min-height: 3.3rem;
-    padding: 0.5rem 0.1rem 0.4rem;
-    overflow: visible;
-    font-size: 0.68rem;
-    font-weight: 500;
-    letter-spacing: 0;
-    line-height: 1.2;
-    text-align: center;
-    color: rgba(255, 255, 255, 0.62);
-    border-radius: 0.6rem;
-    background: transparent;
-    box-shadow: none;
-    text-shadow: none;
-    transition: color 0.15s;
-}
-
-nav a:hover { background: transparent; color: #fff; }
-
-nav a::before {
-    width: 1.5rem;
-    height: 1.5rem;
-    background: currentColor;
-    filter: none;
-    transform: none;
-}
-
-nav a.active,
-nav a.active:hover,
-nav.nx-ready a.active,
-nav.nx-ready a.active:hover {
-    color: #fff;
-    font-weight: 700;
-    background: transparent;
-    box-shadow: none;
-    text-shadow: none;
-}
-
-nav a.active::before,
-nav a.active:hover::before,
-nav a.active:nth-child(n)::before {
-    background: currentColor;
-    filter: none;
-    transform: none;
-    animation: none !important;
-}
-
-nav a.active::after,
-nav.nx-ready a.active::after { display: none; }
-
-/* nomes curtos nas abas ("Matches", "Perfil") */
-nav .nav-extra { display: none; }
-
-nav a .nav-badge,
-nav a.active .nav-badge {
-    position: absolute;
-    top: 0.3rem;
-    left: calc(50% + 0.4rem);
-    min-width: 0.95rem;
-    height: 0.95rem;
-    padding: 0 0.2rem;
-    background: var(--pink);
-    color: #fff;
-    font-size: 0.62rem;
-    border: 2px solid var(--tg-bg);
-    box-sizing: content-box;
-    box-shadow: none;
-}
-
-/* ===== Computador: abas na barra de cima, à esquerda da logo ===== */
-@media (min-width: 861px) {
-    nav,
-    nav.nx-ready {
-        position: static;
-        order: 2;
-        left: auto;
-        right: auto;
-        top: auto;
-        bottom: auto;
-        z-index: auto;
-        width: auto;
-        max-width: none;
-        margin: 0 0 0 1.4rem;
-        padding: 0;
-        justify-content: flex-start;
-        gap: 0.2rem;
-        border: 0;
-        border-radius: 0;
-        background: transparent;
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        box-shadow: none;
-        transform: none;
-    }
-
-    nav a { flex: 0 0 auto; min-width: 5.2rem; padding: 0.45rem 0.9rem; }
-}
-
-/* ===== Celular: abas na barra de baixo, avatar à esquerda ===== */
+/* celular: avatar à esquerda, logo no centro */
 @media (max-width: 860px) {
-    header { justify-content: center; padding: 0.7rem 1rem; }
-
     .dw-open {
         position: absolute;
         left: 1rem;
         top: calc(50% - 1.3rem);
         margin: 0;
     }
-
-    nav,
-    nav.nx-ready {
-        position: fixed;
-        left: 0;
-        right: 0;
-        top: auto;
-        bottom: 0;
-        z-index: 200;
-        width: 100%;
-        max-width: none;
-        justify-content: center;
-        gap: 0;
-        margin: 0;
-        padding: 0.2rem max(0.4rem, calc((100% - 640px) / 2)) calc(0.2rem + env(safe-area-inset-bottom, 0px));
-        border: 0;
-        border-top: 1px solid var(--tg-line);
-        border-radius: 0;
-        background: var(--tg-bg);
-        -webkit-backdrop-filter: none;
-        backdrop-filter: none;
-        box-shadow: none;
-        transform: none;
-    }
-
-    nav a { flex: 1 1 0; min-width: 0; }
 }
 
 /* ----- Fundo atrás do menu ----- */
@@ -11307,7 +11146,7 @@ body.dw-on .dw {
 @media (min-width: 861px) {
     .dw {
         top: 4.9rem;
-        right: 1.2rem;
+        left: 1.2rem;
         width: 330px;
         max-height: calc(100dvh - 6rem);
         border-radius: 1rem;
