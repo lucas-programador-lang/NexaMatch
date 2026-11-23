@@ -11024,24 +11024,94 @@ main .chat-placeholder p { margin: 0; font-size: 0.9rem; color: #a9b2d6; }
 
 
 /* ==========================================================
-   MENU LATERAL (estilo Tango Live) — v4
-   O menu de cima e a barra de baixo ficam com o visual e as
-   cores ORIGINAIS do NexaMatch. Aqui só entram:
-   • o avatar no topo, que abre o menu lateral;
-   • o menu lateral (escuro, cartão do perfil, grupos, sair).
+   LAYOUT NO ESTILO TANGO LIVE, COM AS CORES DO NEXAMATCH — v5
+   • Computador: barra de cima com a logo à esquerda, as abas
+     centralizadas (ícone em cima, nome embaixo), e à direita a
+     cápsula de saldo e o avatar. O avatar abre o menu lateral.
+   • Celular: topo com avatar, logo e saldo; as abas ficam numa
+     barra reta embaixo. O menu lateral ocupa a tela toda.
+   • Cores: azul-noite do site, degradê ciano → violeta → rosa.
    ========================================================== */
 
 :root {
-    --tg-bg: #151515;
-    --tg-bg-2: #1b1b1b;
-    --tg-bg-3: #262626;
-    --tg-deep: #0f0f0f;
-    --tg-line: #2a2a2a;
-    --tg-line-2: #3a3a3a;
-    --tg-muted: #8c8c8c;
+    --tg-bg: #0d0a26;
+    --tg-bg-2: #13103a;
+    --tg-bg-3: #1d1947;
+    --tg-deep: #080619;
+    --tg-line: rgba(255, 255, 255, 0.09);
+    --tg-line-2: rgba(255, 255, 255, 0.17);
+    --tg-muted: #8f93b8;
+    --hd-bg: rgba(9, 7, 26, 0.94);
 }
 
-header { position: relative; }
+/* ----- Barra de cima ----- */
+header {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.35rem 1.4rem;
+    background: var(--hd-bg);
+    border-bottom: 1px solid var(--tg-line);
+    box-shadow: 0 12px 30px -20px rgba(0, 0, 0, 0.9);
+}
+
+header .logo { justify-self: start; font-size: 1.4rem; }
+
+/* lado direito: saldo + avatar */
+.hd-right {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    gap: 0.8rem;
+}
+
+/* ----- Cápsula de saldo ----- */
+.hd-wallet {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.4rem;
+    padding: 0 0.35rem 0 0.9rem;
+    border: 1px solid var(--tg-line-2);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.hd-wallet[hidden] { display: none; }
+.hd-wallet:hover { background: rgba(255, 255, 255, 0.09); border-color: rgba(167, 139, 250, 0.6); }
+.hd-wallet:active { transform: scale(0.97); }
+.hd-wallet:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.hd-wallet[data-mode="earn"] { cursor: default; padding-right: 0.95rem; }
+.hd-wallet[data-mode="earn"]:hover { background: rgba(255, 255, 255, 0.05); border-color: var(--tg-line-2); }
+.hd-wallet[data-mode="earn"]:active { transform: none; }
+
+.hd-wallet-label { color: var(--tg-muted); font-weight: 500; white-space: nowrap; }
+.hd-wallet-value { font-weight: 700; font-size: 0.85rem; white-space: nowrap; }
+
+.hd-wallet-plus {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: var(--grad-brand);
+    color: #fff;
+    box-shadow: 0 4px 14px -3px rgba(139, 92, 246, 0.8);
+}
+
+.hd-wallet-plus[hidden] { display: none; }
+.hd-wallet-plus svg { width: 0.95rem; height: 0.95rem; }
 
 /* ----- Botão do avatar ----- */
 .dw-open {
@@ -11049,7 +11119,7 @@ header { position: relative; }
     flex: none;
     width: 2.6rem;
     height: 2.6rem;
-    margin: 0 0.3rem 0 0;
+    margin: 0;
     padding: 0;
     border: 0;
     border-radius: 50%;
@@ -11079,6 +11149,8 @@ header { position: relative; }
     line-height: 1;
 }
 
+.dw-open .dw-avatar { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16), 0 6px 18px -6px rgba(139, 92, 246, 0.75); }
+
 /* bolinha rosa: tem novidade (matches, mensagens ou avisos) */
 .dw-open-dot {
     position: absolute;
@@ -11089,20 +11161,212 @@ header { position: relative; }
     height: 0.8rem;
     border-radius: 50%;
     background: var(--pink);
-    border: 2px solid var(--bg-color);
+    border: 2px solid #0a081f;
 }
 
 .dw-open.has-news .dw-open-dot { display: block; }
 
+/* ----- Abas (ícone em cima, nome embaixo) ----- */
+nav,
+nav.nx-ready { animation: none; }
 
-/* celular: avatar à esquerda, logo no centro */
+body:not(.auth-pending) nav { animation: none; }
+
+nav::before,
+nav::after,
+nav.nx-ready::after,
+nav .nx-spot,
+nav .nx-ind { display: none; }
+
+nav a {
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.22rem;
+    min-height: 3.3rem;
+    padding: 0.5rem 0.1rem 0.4rem;
+    overflow: visible;
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0;
+    line-height: 1.2;
+    text-align: center;
+    color: #9aa1c6;
+    border-radius: 0.6rem;
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
+    transition: color 0.15s;
+}
+
+nav a:hover { background: transparent; color: #fff; }
+
+nav a::before {
+    width: 1.55rem;
+    height: 1.55rem;
+    background-color: currentColor;
+    filter: none;
+    transform: none;
+}
+
+/* aba ativa: texto branco e ícone em degradê */
+nav a.active,
+nav a.active:hover,
+nav.nx-ready a.active,
+nav.nx-ready a.active:hover {
+    color: #fff;
+    font-weight: 700;
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
+}
+
+nav a.active::before,
+nav a.active:hover::before,
+nav a.active:nth-child(n)::before {
+    background: var(--grad-brand);
+    filter: drop-shadow(0 0 7px rgba(139, 92, 246, 0.65));
+    transform: none;
+    animation: none !important;
+}
+
+/* linha de destaque da aba ativa */
+nav a.active::after,
+nav.nx-ready a.active::after {
+    display: block;
+    content: "" !important;
+    position: absolute;
+    left: 24%;
+    right: 24%;
+    width: auto;
+    height: 2px;
+    border-radius: 3px;
+    background: var(--grad-brand);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.7);
+    transform: none;
+    animation: none !important;
+}
+
+/* nomes curtos nas abas ("Matches", "Perfil") */
+nav .nav-extra { display: none; }
+
+nav a .nav-badge,
+nav a.active .nav-badge {
+    position: absolute;
+    top: 0.3rem;
+    left: calc(50% + 0.45rem);
+    min-width: 0.95rem;
+    height: 0.95rem;
+    padding: 0 0.2rem;
+    background: var(--pink);
+    color: #fff;
+    font-size: 0.62rem;
+    border: 2px solid #0a081f;
+    box-sizing: content-box;
+    box-shadow: none;
+}
+
+/* ===== Computador: abas centralizadas na barra de cima ===== */
+@media (min-width: 861px) {
+    nav,
+    nav.nx-ready {
+        position: static;
+        justify-self: center;
+        z-index: auto;
+        width: auto;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        gap: 0.3rem;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+        box-shadow: none;
+        transform: none;
+    }
+
+    nav a { flex: 0 0 auto; min-width: 5.6rem; padding: 0.45rem 0.9rem; }
+
+    /* a linha de destaque encosta na borda da barra */
+    nav a.active::after,
+    nav.nx-ready a.active::after { top: auto; bottom: -0.36rem; }
+}
+
+/* larguras médias: sem espaço para o texto da logo nem para o rótulo "Meu saldo" */
+@media (min-width: 861px) and (max-width: 1180px) {
+    header .logo { font-size: 0; gap: 0; }
+    .hd-wallet-label { display: none; }
+}
+
+@media (min-width: 861px) and (max-width: 940px) {
+    nav a { min-width: 4.6rem; padding: 0.45rem 0.6rem; }
+}
+
+/* ===== Celular: topo com avatar, logo e saldo; abas na barra de baixo ===== */
 @media (max-width: 860px) {
+    header {
+        display: flex;
+        justify-content: center;
+        padding: 0.55rem 1rem;
+        min-height: 3.7rem;
+    }
+
+    header .logo { font-size: 1.3rem; }
+
+    /* avatar à esquerda e saldo à direita, a logo fica no centro */
+    .hd-right { display: contents; }
+
     .dw-open {
         position: absolute;
         left: 1rem;
         top: calc(50% - 1.3rem);
-        margin: 0;
     }
+
+    .hd-wallet {
+        position: absolute;
+        right: 1rem;
+        top: calc(50% - 1.2rem);
+        height: 2.4rem;
+        padding-left: 0.75rem;
+    }
+
+    .hd-wallet-label { display: none; }
+
+    nav,
+    nav.nx-ready {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: auto;
+        bottom: 0;
+        z-index: 200;
+        width: 100%;
+        max-width: none;
+        justify-content: center;
+        gap: 0;
+        margin: 0;
+        padding: 0.2rem max(0.4rem, calc((100% - 640px) / 2)) calc(0.2rem + env(safe-area-inset-bottom, 0px));
+        border: 0;
+        border-top: 1px solid var(--tg-line);
+        border-radius: 0;
+        background: rgba(9, 7, 26, 0.97);
+        -webkit-backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 -12px 30px -14px rgba(0, 0, 0, 0.85);
+        transform: none;
+    }
+
+    nav a { flex: 1 1 0; min-width: 0; padding: 0.5rem 0.1rem 0.4rem; }
+
+    /* no celular a linha de destaque fica em cima da aba */
+    nav a.active::after,
+    nav.nx-ready a.active::after { top: 0; bottom: auto; left: 28%; right: 28%; border-radius: 0 0 3px 3px; }
+}
+
+/* telas bem estreitas: a logo mostra só o ícone, para caber o saldo */
+@media (max-width: 400px) {
+    header .logo { font-size: 0; gap: 0; }
 }
 
 /* ----- Fundo atrás do menu ----- */
@@ -11146,7 +11410,7 @@ body.dw-on .dw {
 @media (min-width: 861px) {
     .dw {
         top: 4.9rem;
-        left: 1.2rem;
+        right: 1.2rem;
         width: 330px;
         max-height: calc(100dvh - 6rem);
         border-radius: 1rem;
@@ -11309,7 +11573,7 @@ body.dw-on .dw {
 .dw-item > span { flex: 1; min-width: 0; }
 
 .dw-item:hover { background: var(--tg-bg-3); }
-.dw-item:active { background: #303030; }
+.dw-item:active { background: #26215a; }
 .dw-item:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
 
 /* página em que você está */
@@ -11355,8 +11619,8 @@ body.dw-on .dw {
     transition: transform 0.2s ease, background 0.2s;
 }
 
-.dw-toggle[aria-checked="true"] .dw-switch { background: #f43f6e; }
-.dw-toggle[aria-checked="true"] .dw-switch::after { background: #151515; transform: translateX(1.1rem); }
+.dw-toggle[aria-checked="true"] .dw-switch { background: var(--grad-brand); }
+.dw-toggle[aria-checked="true"] .dw-switch::after { background: #0d0a26; transform: translateX(1.1rem); }
 
 /* rodapé: cartão separado (como o "Suporte ao Cliente" do Tango) */
 .dw-foot {
@@ -11368,21 +11632,4 @@ body.dw-on .dw {
 
 @media (prefers-reduced-motion: reduce) {
     .dw, .dw-scrim, .dw-item, .dw-switch, .dw-switch::after, .dw-open { transition: none; }
-}
-
-/* ----- Larguras médias (860 a 1180px): evita o menu flutuante cobrir a logo e o avatar -----
-   O visual do menu continua o mesmo; só a logo mostra apenas o ícone (sem o texto)
-   e, nas larguras mais estreitas, os nomes ficam curtos ("Matches", "Perfil"). */
-@media (min-width: 861px) and (max-width: 1180px) {
-    header .logo { font-size: 0; gap: 0; }
-}
-
-@media (min-width: 861px) and (max-width: 940px) {
-    nav { right: 1rem; }
-    nav .nav-extra { display: none; }
-}
-
-/* quase no limite do celular (861 a 900px) não sobra espaço: fica só o avatar */
-@media (min-width: 861px) and (max-width: 900px) {
-    header .logo { display: none; }
 }
