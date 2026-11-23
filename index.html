@@ -15,10 +15,6 @@
 </head>
 <body class="auth-pending">
     <header>
-        <button type="button" class="dw-open" id="dw-open" aria-label="Abrir menu" aria-controls="dw-panel" aria-expanded="false">
-            <span class="dw-avatar" id="dw-open-avatar" aria-hidden="true"></span>
-            <i class="dw-open-dot" aria-hidden="true"></i>
-        </button>
         <div class="logo">NEXA<span>MATCH</span></div>
         <nav>
             <a href="#" class="active" onclick="changePage('descobrir', this)"><span class="nav-label">Descobrir</span></a>
@@ -27,6 +23,17 @@
             <a href="#" onclick="changePage('notificacoes', this)"><span class="nav-label">Avisos</span> <span class="nav-badge" id="notifications-badge"></span></a>
             <a href="#" onclick="changePage('perfil', this)"><span class="nav-label"><span class="nav-extra">Meu </span>Perfil</span></a>
         </nav>
+        <div class="hd-right">
+            <button type="button" class="hd-wallet" id="hd-wallet" data-mode="topup" hidden onclick="if (this.dataset.mode === 'topup') openTopUp()">
+                <span class="hd-wallet-label" id="hd-wallet-label">Meu saldo</span>
+                <b class="hd-wallet-value" id="hd-wallet-value">R$ 0,00</b>
+                <span class="hd-wallet-plus" id="hd-wallet-plus" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+            </button>
+            <button type="button" class="dw-open" id="dw-open" aria-label="Abrir menu" aria-controls="dw-panel" aria-expanded="false">
+                <span class="dw-avatar" id="dw-open-avatar" aria-hidden="true"></span>
+                <i class="dw-open-dot" aria-hidden="true"></i>
+            </button>
+        </div>
     </header>
 
 
