@@ -67,14 +67,11 @@
         });
     }
 
-    // copia os contadores (matches, mensagens, avisos) do menu principal
+    // bolinha rosa no avatar quando há novidade (matches, mensagens ou avisos)
     function syncBadges() {
-        let anyNews = false;
-        panel.querySelectorAll('[data-badge]').forEach(badge => {
-            const source = document.getElementById(badge.getAttribute('data-badge'));
-            const text = source ? source.textContent.trim() : '';
-            badge.textContent = text;
-            if (text) anyNews = true;
+        const anyNews = ['matches-badge', 'messages-badge', 'notifications-badge'].some(id => {
+            const el = document.getElementById(id);
+            return !!(el && el.textContent.trim());
         });
         opener.classList.toggle('has-news', anyNews);
     }
