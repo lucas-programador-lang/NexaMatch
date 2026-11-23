@@ -11369,3 +11369,20 @@ body.dw-on .dw {
 @media (prefers-reduced-motion: reduce) {
     .dw, .dw-scrim, .dw-item, .dw-switch, .dw-switch::after, .dw-open { transition: none; }
 }
+
+/* ----- Larguras médias (860 a 1180px): evita o menu flutuante cobrir a logo e o avatar -----
+   O visual do menu continua o mesmo; só a logo mostra apenas o ícone (sem o texto)
+   e, nas larguras mais estreitas, os nomes ficam curtos ("Matches", "Perfil"). */
+@media (min-width: 861px) and (max-width: 1180px) {
+    header .logo { font-size: 0; gap: 0; }
+}
+
+@media (min-width: 861px) and (max-width: 940px) {
+    nav { right: 1rem; }
+    nav .nav-extra { display: none; }
+}
+
+/* quase no limite do celular (861 a 900px) não sobra espaço: fica só o avatar */
+@media (min-width: 861px) and (max-width: 900px) {
+    header .logo { display: none; }
+}
