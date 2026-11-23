@@ -11633,3 +11633,299 @@ body.dw-on .dw {
 @media (prefers-reduced-motion: reduce) {
     .dw, .dw-scrim, .dw-item, .dw-switch, .dw-switch::after, .dw-open { transition: none; }
 }
+
+
+/* ==========================================================
+   ACABAMENTO: BRILHO, BORDAS EM DEGRADÊ E CORES — v6
+   Deixa a barra de cima, as abas, o saldo, o avatar e o menu
+   lateral com o brilho do NexaMatch (ciano → violeta → rosa).
+   Tudo aqui só acrescenta por cima da versão v5.
+   ========================================================== */
+
+:root {
+    --glow-v: rgba(139, 92, 246, 0.6);
+    --glow-c: rgba(45, 226, 245, 0.45);
+    --glow-p: rgba(255, 79, 163, 0.5);
+    --edge: linear-gradient(135deg, #2de2f5 0%, #8b5cf6 52%, #ff4fa3 100%);
+}
+
+/* ----- Barra de cima: fundo suave e linha de degradê brilhando embaixo ----- */
+header {
+    background:
+        radial-gradient(60% 140% at 50% -40%, rgba(139, 92, 246, 0.22), transparent 70%),
+        linear-gradient(180deg, rgba(15, 11, 44, 0.97), rgba(9, 7, 26, 0.94));
+    border-bottom: 0;
+}
+
+header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent 0%, #2de2f5 16%, #8b5cf6 40%, #ff4fa3 64%, #2de2f5 84%, transparent 100%);
+    background-size: 200% 100%;
+    box-shadow: 0 0 14px rgba(139, 92, 246, 0.85), 0 6px 26px rgba(255, 79, 163, 0.3);
+    opacity: 0.95;
+    animation: hdLine 10s linear infinite;
+}
+
+@keyframes hdLine {
+    from { background-position: 0 0; }
+    to   { background-position: -200% 0; }
+}
+
+/* ----- Abas: brilho atrás do ícone ativo e ao passar o mouse ----- */
+nav a:hover::before { filter: drop-shadow(0 0 7px rgba(167, 139, 250, 0.75)); }
+
+nav a.active,
+nav a.active:hover,
+nav.nx-ready a.active,
+nav.nx-ready a.active:hover {
+    background: radial-gradient(ellipse 70% 60% at 50% 30%, rgba(139, 92, 246, 0.28), transparent 75%);
+}
+
+nav a.active::before,
+nav a.active:hover::before,
+nav a.active:nth-child(n)::before {
+    filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.9)) drop-shadow(0 0 14px rgba(45, 226, 245, 0.35));
+}
+
+nav a.active::after,
+nav.nx-ready a.active::after {
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.95), 0 0 24px rgba(255, 79, 163, 0.45);
+}
+
+nav a .nav-badge,
+nav a.active .nav-badge { box-shadow: 0 0 10px rgba(255, 79, 163, 0.8); }
+
+/* ----- Cápsula de saldo: borda em degradê e brilho ----- */
+.hd-wallet,
+.hd-wallet[data-mode="earn"] {
+    border: 1px solid transparent;
+    background:
+        linear-gradient(#0e0b2b, #0e0b2b) padding-box,
+        var(--edge) border-box;
+    box-shadow: 0 0 18px -3px var(--glow-v);
+}
+
+.hd-wallet:hover,
+.hd-wallet[data-mode="earn"]:hover {
+    background:
+        linear-gradient(#15114a, #15114a) padding-box,
+        var(--edge) border-box;
+    border-color: transparent;
+}
+
+.hd-wallet:hover { box-shadow: 0 0 24px -2px var(--glow-v), 0 0 40px -10px var(--glow-p); transform: translateY(-1px); }
+.hd-wallet[data-mode="earn"]:hover { box-shadow: 0 0 18px -3px var(--glow-v); transform: none; }
+
+.hd-wallet-value { text-shadow: 0 0 12px rgba(167, 139, 250, 0.55); }
+
+.hd-wallet-plus {
+    box-shadow: 0 0 14px var(--glow-v), 0 0 22px -4px var(--glow-p);
+    animation: plusGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes plusGlow {
+    0%, 100% { box-shadow: 0 0 10px var(--glow-v), 0 0 18px -4px var(--glow-p); }
+    50%      { box-shadow: 0 0 18px var(--glow-v), 0 0 30px -2px var(--glow-p); }
+}
+
+/* ----- Avatar: anel de degradê girando devagar, com brilho ----- */
+.dw-open::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    z-index: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #2de2f5, #8b5cf6, #ff4fa3, #2de2f5);
+    box-shadow: 0 0 14px var(--glow-v), 0 0 24px -4px var(--glow-p);
+    animation: ringSpin 7s linear infinite;
+}
+
+@keyframes ringSpin { to { transform: rotate(360deg); } }
+
+.dw-open .dw-avatar {
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 0 0 2px #0a081f;
+}
+
+.dw-open-dot { z-index: 2; box-shadow: 0 0 10px rgba(255, 79, 163, 0.9); }
+
+/* ----- Fundo atrás do menu lateral ----- */
+.dw-scrim {
+    background: radial-gradient(80% 60% at 80% 0%, rgba(139, 92, 246, 0.16), transparent 70%), rgba(5, 3, 18, 0.62);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+}
+
+/* ----- Painel do menu lateral ----- */
+.dw {
+    background:
+        radial-gradient(120% 55% at 0% 0%, rgba(139, 92, 246, 0.22), transparent 62%),
+        radial-gradient(110% 50% at 100% 100%, rgba(255, 79, 163, 0.14), transparent 62%),
+        #070516;
+}
+
+/* computador: painel com borda em degradê e brilho */
+@media (min-width: 861px) {
+    .dw {
+        border: 1px solid transparent;
+        background:
+            radial-gradient(120% 55% at 0% 0%, rgba(139, 92, 246, 0.22), transparent 62%) padding-box,
+            radial-gradient(110% 50% at 100% 100%, rgba(255, 79, 163, 0.14), transparent 62%) padding-box,
+            linear-gradient(#070516, #070516) padding-box,
+            var(--edge) border-box;
+        box-shadow:
+            0 28px 64px -16px rgba(0, 0, 0, 0.9),
+            0 0 44px -8px var(--glow-v),
+            0 0 90px -24px var(--glow-p);
+    }
+}
+
+/* celular: tela cheia, com uma linha de degradê brilhando no topo */
+@media (max-width: 860px) {
+    .dw::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--edge);
+        box-shadow: 0 0 16px var(--glow-v), 0 4px 24px var(--glow-p);
+    }
+}
+
+/* cartões do menu (lista e rodapé) */
+.dw-card,
+.dw-foot {
+    background: linear-gradient(180deg, #100c30 0%, #0b0925 100%);
+    border: 1px solid rgba(167, 139, 250, 0.2);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+}
+
+/* ----- Cartão do perfil: borda em degradê e brilho ----- */
+.dw-profile {
+    border: 1px solid transparent;
+    background:
+        linear-gradient(135deg, #1a1448, #110d33) padding-box,
+        var(--edge) border-box;
+    box-shadow: 0 0 22px -6px var(--glow-v);
+}
+
+.dw-profile:hover {
+    background:
+        linear-gradient(135deg, #211a5c, #140f3d) padding-box,
+        var(--edge) border-box;
+    box-shadow: 0 0 28px -4px var(--glow-v), 0 0 40px -10px var(--glow-p);
+}
+
+@media (min-width: 861px) {
+    .dw-profile {
+        box-shadow: 0 0 22px -6px var(--glow-v), 0 -0.35rem 0 #100c30;
+    }
+    .dw-profile:hover {
+        box-shadow: 0 0 28px -4px var(--glow-v), 0 0 40px -10px var(--glow-p), 0 -0.35rem 0 #100c30;
+    }
+}
+
+.dw-avatar-lg { box-shadow: 0 0 0 2px #0a081f, 0 0 16px -2px var(--glow-v); }
+
+.dw-pf-cam,
+.dw-pf-go {
+    border-color: rgba(167, 139, 250, 0.45);
+    background: rgba(139, 92, 246, 0.12);
+    transition: background 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.dw-profile:hover .dw-pf-cam,
+.dw-profile:hover .dw-pf-go {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: rgba(45, 226, 245, 0.7);
+    box-shadow: 0 0 12px var(--glow-c);
+}
+
+/* ----- Títulos de grupo com linha esmaecendo ----- */
+.dw-title {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: #a9a4e6;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    font-size: 0.66rem;
+}
+
+.dw-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(167, 139, 250, 0.45), transparent);
+}
+
+/* ----- Linhas do menu ----- */
+.dw-item:hover {
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.22), rgba(139, 92, 246, 0.04));
+}
+
+.dw-item:hover svg { color: #fff; filter: drop-shadow(0 0 6px rgba(167, 139, 250, 0.85)); }
+
+.dw-item.is-active {
+    background: linear-gradient(90deg, rgba(139, 92, 246, 0.32), rgba(255, 79, 163, 0.07));
+    box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.3), 0 0 24px -8px var(--glow-v);
+}
+
+.dw-item.is-active::before {
+    content: "";
+    position: absolute;
+    left: 0.3rem;
+    top: 0.6rem;
+    bottom: 0.6rem;
+    width: 3px;
+    border-radius: 3px;
+    background: var(--edge);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.95);
+}
+
+.dw-item.is-active svg { filter: drop-shadow(0 0 7px rgba(139, 92, 246, 0.95)); }
+
+/* ----- Interruptor com brilho ----- */
+.dw-toggle[aria-checked="true"] .dw-switch {
+    background: var(--edge);
+    box-shadow: 0 0 14px var(--glow-p), 0 0 22px -4px var(--glow-v);
+}
+
+/* ----- Sair da conta ----- */
+.dw-logout,
+.dw-logout svg { color: #ffb0cf; }
+
+.dw-logout:hover {
+    background: linear-gradient(90deg, rgba(255, 79, 163, 0.22), rgba(255, 79, 163, 0.04));
+    box-shadow: inset 0 0 0 1px rgba(255, 79, 163, 0.4), 0 0 22px -8px var(--glow-p);
+}
+
+.dw-logout:hover svg { filter: drop-shadow(0 0 7px rgba(255, 79, 163, 0.9)); }
+
+.dw-back:hover { background: rgba(139, 92, 246, 0.22); box-shadow: 0 0 14px -2px var(--glow-v); }
+
+/* ----- Celular: barra de baixo com linha de degradê brilhando em cima ----- */
+@media (max-width: 860px) {
+    nav,
+    nav.nx-ready {
+        border-top: 1px solid;
+        border-image: linear-gradient(90deg, transparent 0%, #2de2f5 18%, #8b5cf6 50%, #ff4fa3 82%, transparent 100%) 1;
+        box-shadow: 0 -14px 34px -14px rgba(139, 92, 246, 0.55), 0 -1px 14px rgba(139, 92, 246, 0.35);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    header::after,
+    .dw-open::before,
+    .hd-wallet-plus { animation: none; }
+}
